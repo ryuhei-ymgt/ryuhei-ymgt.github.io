@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DiffScope — Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0c0c10;
+  --surface:#13131a;
+  --surface2:#1a1a24;
+  --border:#252530;
+  --border2:#32323f;
+  --accent:#f0d060;
+  --accent2:#60d0f0;
+  --add:#50e896;
+  --del:#f06070;
+  --chg:#f0b050;
+  --text:#ddd8cc;
+  --white:#ffffff;
+  --r:10px;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Noto Serif JP',serif;
+  min-height:100vh;
+  padding:60px 24px 100px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:18px;
+  line-height:1.8;
+}
+
+/* grain */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;
+}
+
+.wrap{position:relative;z-index:1;width:100%;max-width:860px}
+
+/* ── Hero ── */
+.hero{
+  margin-bottom:64px;
+  padding-bottom:40px;
+  border-bottom:1px solid var(--border);
+}
+.logo{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:clamp(40px,6vw,64px);
+  font-weight:600;
+  letter-spacing:-2px;
+  line-height:1;
+  margin-bottom:14px;
+}
+.logo .d{color:var(--accent)}
+.logo .s{color:var(--accent2)}
+.hero-title{
+  font-size:26px;
+  font-weight:700;
+  color:var(--white);
+  margin-bottom:10px;
+}
+.hero-desc{
+  font-size:18px;
+  color:var(--white);
+  line-height:1.9;
+}
+.badge-row{
+  display:flex;gap:10px;flex-wrap:wrap;
+  margin-top:20px;
+}
+.badge{
+  display:inline-block;
+  padding:5px 16px;
+  border-radius:20px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:15px;font-weight:600;
+  letter-spacing:.05em;
+}
+.badge-pdf{background:#1a0d20;color:#c080f0;border:1px solid #3a1a40}
+.badge-word{background:#0d1a20;color:var(--accent2);border:1px solid #1a3040}
+.badge-txt{background:#1a1a0d;color:var(--accent);border:1px solid #30300a}
+.badge-local{background:#0d2010;color:var(--add);border:1px solid #1a4020}
+
+/* ── TOC ── */
+.toc{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  padding:28px 32px;
+  margin-bottom:56px;
+}
+.toc-title{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;letter-spacing:.2em;
+  color:var(--white);text-transform:uppercase;
+  margin-bottom:18px;
+}
+.toc ol{
+  list-style:none;
+  counter-reset:toc;
+  padding:0;
+}
+.toc ol li{
+  counter-increment:toc;
+  padding:6px 0;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.toc ol li:last-child{border-bottom:none}
+.toc ol li::before{
+  content:counter(toc,'0'counter(toc));
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;color:var(--accent);
+  font-weight:600;flex-shrink:0;
+}
+.toc ol li a{
+  color:var(--white);text-decoration:none;
+  font-size:18px;
+  transition:color .15s;
+}
+.toc ol li a:hover{color:var(--accent)}
+
+/* ── Section ── */
+.section{
+  margin-bottom:64px;
+  animation:fadeup .5s ease both;
+}
+@keyframes fadeup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.section-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;letter-spacing:.2em;
+  color:var(--accent);text-transform:uppercase;
+  margin-bottom:8px;
+}
+.section-title{
+  font-size:28px;font-weight:700;
+  color:var(--white);
+  margin-bottom:24px;
+  padding-bottom:12px;
+  border-bottom:2px solid var(--border2);
+}
+
+/* ── Step cards ── */
+.steps{display:flex;flex-direction:column;gap:16px}
+.step{
+  display:grid;
+  grid-template-columns:52px 1fr;
+  gap:0;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  overflow:hidden;
+  transition:border-color .2s;
+}
+.step:hover{border-color:var(--accent2)}
+.step-num{
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:22px;font-weight:600;
+  color:#0c0c10;
+  flex-shrink:0;
+}
+.step-body{padding:20px 24px}
+.step-label{
+  font-size:20px;font-weight:700;
+  color:var(--white);margin-bottom:8px;
+}
+.step-desc{font-size:18px;color:var(--white);line-height:1.8}
+.step-note{
+  margin-top:10px;
+  padding:10px 14px;
+  background:var(--surface2);
+  border-radius:6px;
+  font-size:16px;
+  color:var(--white);
+  border-left:3px solid var(--accent2);
+}
+
+/* ── Info cards ── */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.cards{grid-template-columns:1fr}}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  padding:22px 24px;
+}
+.card-icon{font-size:28px;margin-bottom:10px}
+.card-title{font-size:20px;font-weight:700;color:var(--white);margin-bottom:8px}
+.card-desc{font-size:17px;color:var(--white);line-height:1.8}
+
+/* ── Format table ── */
+.fmt-table{width:100%;border-collapse:collapse;font-size:18px}
+.fmt-table th{
+  padding:12px 18px;
+  background:var(--surface2);
+  color:var(--white);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:14px;letter-spacing:.1em;
+  text-transform:uppercase;
+  border-bottom:2px solid var(--border2);
+  text-align:left;
+}
+.fmt-table td{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  color:var(--white);
+  line-height:1.7;
+}
+.fmt-table tr:last-child td{border-bottom:none}
+.fmt-table tr:hover td{background:var(--surface)}
+.ok{color:var(--add);font-weight:700;font-family:'IBM Plex Mono',monospace}
+.ng{color:var(--del);font-weight:700;font-family:'IBM Plex Mono',monospace}
+
+/* ── Color legend ── */
+.legend{display:flex;flex-direction:column;gap:12px}
+.legend-row{
+  display:flex;align-items:flex-start;gap:16px;
+  padding:16px 20px;
+  background:var(--surface);
+  border-radius:var(--r);
+  border:1px solid var(--border2);
+}
+.legend-tag{
+  display:inline-block;padding:4px 14px;border-radius:4px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:15px;font-weight:600;
+  white-space:nowrap;flex-shrink:0;
+  min-width:80px;text-align:center;
+}
+.tag-add{background:#0d2218;color:var(--add);border:1px solid #1a3f28}
+.tag-del{background:#200d10;color:var(--del);border:1px solid #3f1a20}
+.tag-chg{background:#201508;color:var(--chg);border:1px solid #3f2a10}
+.legend-text{font-size:18px;color:var(--white);line-height:1.7}
+
+/* ── Checkbox section ── */
+.chk-demo{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.chk-demo-header{
+  background:var(--surface2);
+  padding:12px 20px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;letter-spacing:.1em;
+  color:var(--white);text-transform:uppercase;
+  border-bottom:1px solid var(--border2);
+}
+.chk-demo-row{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.chk-demo-row:last-child{border-bottom:none}
+.chk-demo-row.excluded{opacity:.35;text-decoration:line-through}
+.chk-demo-row input[type=checkbox]{
+  width:20px;height:20px;
+  accent-color:var(--del);flex-shrink:0;
+}
+.chk-demo-text{font-size:17px;color:var(--white)}
+.chk-demo-tag{
+  margin-left:auto;
+  padding:3px 10px;border-radius:3px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;font-weight:600;
+  white-space:nowrap;
+}
+
+/* ── Warning box ── */
+.warn-box{
+  padding:18px 22px;
+  background:#1a1408;
+  border-left:4px solid var(--chg);
+  border-radius:var(--r);
+  font-size:18px;
+  color:var(--white);
+  line-height:1.8;
+  margin-bottom:16px;
+}
+.warn-box strong{color:var(--chg)}
+
+.info-box{
+  padding:18px 22px;
+  background:#0d1a20;
+  border-left:4px solid var(--accent2);
+  border-radius:var(--r);
+  font-size:18px;
+  color:var(--white);
+  line-height:1.8;
+  margin-bottom:16px;
+}
+.info-box strong{color:var(--accent2)}
+
+/* ── Footer ── */
+footer{
+  margin-top:80px;
+  text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:14px;
+  color:var(--white);
+  letter-spacing:.08em;
+  padding-top:32px;
+  border-top:1px solid var(--border);
+  width:100%;
+  max-width:860px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Hero -->
+<div class="hero">
+  <div class="logo"><span class="d">Diff</span><span class="s">Scope</span></div>
+  <div class="hero-title">Manual</div>
+  <div class="hero-desc">
+    2つの文書ファイルをアップロードするだけで差分を自動検出し、<br>
+    CSV形式の対照表として出力できる文書差異発見ツールです。
+  </div>
+  <div class="badge-row">
+    <span class="badge badge-pdf">PDF対応</span>
+    <span class="badge badge-word">Word(.docx)対応</span>
+    <span class="badge badge-txt">TXT対応</span>
+    <span class="badge badge-local">完全ローカル処理</span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-title">目次</div>
+  <ol>
+    <li><a href="#s1">基本的な使い方</a></li>
+    <li><a href="#s2">対応ファイル形式</a></li>
+    <li><a href="#s3">差分結果の見方</a></li>
+    <li><a href="#s4">誤検知行の除外方法</a></li>
+    <li><a href="#s5">CSVダウンロード</a></li>
+    <li><a href="#s6">注意事項・制限</a></li>
+  </ol>
+</div>
+
+
+<!-- Section 1 -->
+<div class="section" id="s1">
+  <div class="section-num">Section 01</div>
+  <div class="section-title">基本的な使い方</div>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-label">DiffScope.html をブラウザで開く</div>
+        <div class="step-desc">
+          ダウンロードした <strong>DiffScope.html</strong> をダブルクリックします。<br>
+          Chrome・Edge・Safari などの最新ブラウザで動作します。<br>
+          インターネット接続・サーバー不要で、ファイルを開くだけで使えます。
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-label">ファイルAをアップロード（比較元）</div>
+        <div class="step-desc">
+          左側の「<strong>比較元ファイル</strong>」エリアをクリックするか、<br>
+          ファイルをドラッグ＆ドロップして旧バージョン・原文を選択します。
+        </div>
+        <div class="step-note">📁 対応形式：PDF / Word(.docx) / TXT</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-label">ファイルBをアップロード（比較先）</div>
+        <div class="step-desc">
+          右側の「<strong>比較先ファイル</strong>」エリアに新バージョン・改訂文を選択します。<br>
+          <strong>ファイルAと同じ形式</strong>（PDF同士、Word同士など）を選んでください。
+        </div>
+        <div class="step-note">⚠ 異なる形式（例：PDF×Word）を選ぶと警告が出て比較できません</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-label">「比較する」ボタンをクリック</div>
+        <div class="step-desc">
+          両方のファイルが選択されると「<strong>比較する</strong>」ボタンが有効になります。<br>
+          クリックするとファイルの読み込みと差分計算が始まります。<br>
+          ファイルの大きさによって数秒かかる場合があります。
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-label">差分結果を確認・CSVダウンロード</div>
+        <div class="step-desc">
+          画面下部に差分の一覧が表示されます。<br>
+          確認後、必要に応じて誤検知行をチェックして除外し、<br>
+          「<strong>▼ CSVダウンロード</strong>」ボタンで結果を保存します。
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Section 2 -->
+<div class="section" id="s2">
+  <div class="section-num">Section 02</div>
+  <div class="section-title">対応ファイル形式</div>
+
+  <div class="info-box">
+    <strong>重要：</strong> AとBは必ず同じ形式のファイルを選択してください。<br>
+    異なる形式の組み合わせは比較できません（自動でブロックされます）。
+  </div>
+
+  <table class="fmt-table">
+    <thead>
+      <tr>
+        <th>組み合わせ</th>
+        <th>比較</th>
+        <th>備考</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>PDF × PDF</td>
+        <td><span class="ok">✓ 可能</span></td>
+        <td>テキスト埋め込みPDFに対応。スキャンPDF（画像のみ）は不可。</td>
+      </tr>
+      <tr>
+        <td>Word × Word</td>
+        <td><span class="ok">✓ 可能</span></td>
+        <td>.docx 形式のみ対応。旧形式の .doc は非対応。</td>
+      </tr>
+      <tr>
+        <td>TXT × TXT</td>
+        <td><span class="ok">✓ 可能</span></td>
+        <td>UTF-8・Shift-JIS を自動判定。</td>
+      </tr>
+      <tr>
+        <td>PDF × Word</td>
+        <td><span class="ng">✗ 不可</span></td>
+        <td>テキスト抽出方式の違いにより精度が保証できないため制限。</td>
+      </tr>
+      <tr>
+        <td>PDF × TXT</td>
+        <td><span class="ng">✗ 不可</span></td>
+        <td>同上。</td>
+      </tr>
+      <tr>
+        <td>Word × TXT</td>
+        <td><span class="ng">✗ 不可</span></td>
+        <td>同上。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- Section 3 -->
+<div class="section" id="s3">
+  <div class="section-num">Section 03</div>
+  <div class="section-title">差分結果の見方</div>
+
+  <div class="legend">
+    <div class="legend-row">
+      <span class="legend-tag tag-add">追加</span>
+      <div class="legend-text">
+        <strong>ファイルBにのみ存在する行</strong>です。<br>
+        ファイルAには無く、ファイルBで新たに追加されたテキストを示します。
+      </div>
+    </div>
+    <div class="legend-row">
+      <span class="legend-tag tag-del">削除</span>
+      <div class="legend-text">
+        <strong>ファイルAにのみ存在する行</strong>です。<br>
+        ファイルAにあったテキストがファイルBで削除されたことを示します。
+      </div>
+    </div>
+    <div class="legend-row">
+      <span class="legend-tag tag-chg">変更</span>
+      <div class="legend-text">
+        <strong>AとBで内容が異なる行</strong>です。<br>
+        同じ位置の行が書き換えられたことを示します。AとBの内容を並べて確認できます。
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px">
+    <div class="info-box">
+      <strong>行番号について：</strong> 表の「行A」「行B」はファイル内の行番号です。<br>
+      追加行は「行A」が「-」、削除行は「行B」が「-」になります。<br>
+      また、完全に同一の行は結果に表示されません（差分のみ表示）。
+    </div>
+    <div class="info-box">
+      <strong>正規化処理について：</strong> 全角・半角の違い、余分なスペースなどは<br>
+      自動的に統一して比較されます。そのため「１２３」と「123」のような<br>
+      表記ゆれは差分として検出されません。
+    </div>
+  </div>
+</div>
+
+
+<!-- Section 4 -->
+<div class="section" id="s4">
+  <div class="section-num">Section 04</div>
+  <div class="section-title">誤検知行の除外方法</div>
+
+  <div class="warn-box">
+    <strong>誤検知とは：</strong> 実際には差異がないにもかかわらず、抽出方式の違いにより<br>
+    差分として表示されてしまうケースがあります。チェックボックスで除外できます。
+  </div>
+
+  <!-- Demo UI -->
+  <div class="chk-demo" style="margin-bottom:24px">
+    <div class="chk-demo-header">差分結果（イメージ）</div>
+    <div class="chk-demo-row">
+      <input type="checkbox" disabled>
+      <div class="chk-demo-text">第1条　甲は乙に対し、金100万円を支払う義務を負う。</div>
+      <span class="chk-demo-tag tag-chg" style="background:#201508;color:#f0b050;border:1px solid #3f2a10">変更</span>
+    </div>
+    <div class="chk-demo-row excluded">
+      <input type="checkbox" checked disabled>
+      <div class="chk-demo-text">第2条　支払期日は毎月末日とする。</div>
+      <span class="chk-demo-tag tag-chg" style="background:#201508;color:#f0b050;border:1px solid #3f2a10">変更</span>
+    </div>
+    <div class="chk-demo-row">
+      <input type="checkbox" disabled>
+      <div class="chk-demo-text">第3条　遅延損害金は年利14.6%とする。</div>
+      <span class="chk-demo-tag tag-add" style="background:#0d2218;color:#50e896;border:1px solid #1a3f28">追加</span>
+    </div>
+  </div>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-label">除外したい行のチェックボックスをクリック</div>
+        <div class="step-desc">
+          各行の左端にあるチェックボックスを入れると、<br>
+          その行が<strong>取り消し線つきで薄く</strong>表示され「除外」状態になります。
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-label">除外状況を確認する</div>
+        <div class="step-desc">
+          1件以上チェックすると画面上部に赤いバーが表示され、<br>
+          「<strong>◯件を除外中 — CSVには残り◯件が出力されます</strong>」と確認できます。
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-label">まとめて操作する場合</div>
+        <div class="step-desc">
+          テーブルのヘッダー行にある☑で<strong>全行まとめて選択／解除</strong>できます。<br>
+          また赤いバーの「<strong>すべて戻す</strong>」ボタンで全除外を一括解除できます。
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Section 5 -->
+<div class="section" id="s5">
+  <div class="section-num">Section 05</div>
+  <div class="section-title">CSVダウンロード</div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📥</div>
+      <div class="card-title">ダウンロード方法</div>
+      <div class="card-desc">
+        差分結果が表示された後、右上の「<strong>▼ CSVダウンロード</strong>」ボタンを押します。<br>
+        <code>diff_result.csv</code> という名前でダウンロードされます。
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Excelで開く方法</div>
+      <div class="card-desc">
+        CSVはExcel用のBOM付きUTF-8形式です。<br>
+        ダウンロードしたファイルをそのままダブルクリックするとExcelで開けます。文字化けしません。
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🗂</div>
+      <div class="card-title">CSVの列構成</div>
+      <div class="card-desc">
+        <strong>行番号A</strong> / <strong>行番号B</strong> / <strong>Aの内容</strong> / <strong>Bの内容</strong> / <strong>差分種別</strong><br>
+        の5列で構成されています。
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">✂️</div>
+      <div class="card-title">除外後のCSV</div>
+      <div class="card-desc">
+        チェックボックスで除外した行は<strong>CSVに含まれません。</strong><br>
+        チェック状態を変えるたびにCSVの内容もリアルタイムで更新されます。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Section 6 -->
+<div class="section" id="s6">
+  <div class="section-num">Section 06</div>
+  <div class="section-title">注意事項・制限</div>
+
+  <div class="warn-box">
+    <strong>スキャンPDF（画像PDF）は非対応です。</strong><br>
+    スキャンして作成されたPDFは内部にテキストデータがないため読み取れません。<br>
+    Adobe AcrobatなどでOCR処理を行い、テキスト付きPDFに変換してからお使いください。
+  </div>
+
+  <div class="warn-box">
+    <strong>Word旧形式（.doc）は非対応です。</strong><br>
+    Word 97〜2003形式の .doc ファイルは読み込めません。<br>
+    Wordで開いて「名前を付けて保存」から .docx 形式に変換してください。
+  </div>
+
+  <div class="info-box">
+    <strong>ファイルは外部に送信されません。</strong><br>
+    すべての処理はブラウザ内（ローカル）で完結します。アップロードしたファイルが<br>
+    インターネット上のサーバーに送られることは一切ありません。
+  </div>
+
+  <div class="info-box">
+    <strong>書式情報は比較対象外です。</strong><br>
+    太字・色・フォントサイズなどの書式は無視され、テキストの内容のみを比較します。<br>
+    これは差分確認の目的上、最も適切な動作です。
+  </div>
+
+  <div class="info-box">
+    <strong>クリアボタンについて。</strong><br>
+    「クリア」ボタンを押すと、選択ファイル・比較結果・除外状態がすべてリセットされます。<br>
+    新しいファイルを比較する際はクリアしてからご利用ください。
+  </div>
+</div>
+
+
+<footer>
+  DiffScope Manual — すべての処理はブラウザ内で完結します
+</footer>
+
+</div>
+</body>
+</html>
