@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #080b14;
+    --surface: #0f1422;
+    --surface2: #161d30;
+    --border: #1e2840;
+    --accent: #5b8dee;
+    --accent2: #f472b6;
+    --accent3: #34d399;
+    --text: #e2e8f8;
+    --muted: #6277a0;
+    --glow: rgba(91, 141, 238, 0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 60% at 15% 10%, rgba(91,141,238,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 50% at 85% 85%, rgba(244,114,182,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(52,211,153,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+    animation: bgPulse 10s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 50px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    text-align: center;
+    margin-bottom: 64px;
+    position: relative;
+  }
+
+  .header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(91,141,238,0.1);
+    border: 1px solid rgba(91,141,238,0.25);
+    border-radius: 100px;
+    padding: 6px 18px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .header-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  .header-title-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 7vw, 4.8rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, #ffffff 0%, #c7d8ff 40%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .h1-decoration {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+    border-radius: 2px;
+  }
+
+  .header-cards {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+  }
+
+  .header-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .header-card:hover {
+    border-color: rgba(91,141,238,0.4);
+    background: var(--surface2);
+  }
+
+  .header-card-icon {
+    font-size: 1.1rem;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px;
+    margin-bottom: 36px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    letter-spacing: 0.02em;
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, var(--accent), #7ba7f5);
+    color: white;
+    box-shadow: 0 4px 22px var(--glow);
+  }
+
+  .tab:hover:not(.active) {
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Drop Zone */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 18px;
+    padding: 56px 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dropzone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(91,141,238,0.04), rgba(244,114,182,0.04));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    box-shadow: 0 0 50px rgba(91,141,238,0.15);
+  }
+
+  .dropzone:hover::before, .dropzone.dragover::before { opacity: 1; }
+
+  .dropzone-icon {
+    font-size: 3.4rem;
+    margin-bottom: 18px;
+    display: block;
+    filter: drop-shadow(0 0 12px var(--glow));
+  }
+
+  .dropzone h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .dropzone p {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  /* File list */
+  .file-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .file-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.2s;
+    animation: slideIn 0.2s ease;
+    cursor: grab;
+    position: relative;
+  }
+
+  .file-item.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+  }
+
+  .file-item.drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 18px var(--glow);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .file-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+  .file-info { flex: 1; min-width: 0; }
+
+  .file-name {
+    font-size: 0.98rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+  }
+
+  .file-size {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .file-pages {
+    background: rgba(91,141,238,0.15);
+    color: var(--accent);
+    font-size: 0.82rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(91,141,238,0.3);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .drag-handle {
+    color: var(--muted);
+    cursor: grab;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .remove-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .remove-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(244,114,182,0.1);
+  }
+
+  /* Split options */
+  .split-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .split-option {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+  }
+
+  .split-option.selected {
+    border-color: var(--accent);
+    background: rgba(91,141,238,0.08);
+    box-shadow: 0 0 28px rgba(91,141,238,0.15);
+  }
+
+  .split-option-icon { font-size: 2.2rem; margin-bottom: 12px; }
+
+  .split-option h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .split-option p {
+    font-size: 0.87rem;
+    color: var(--muted);
+  }
+
+  /* Range input */
+  .range-input {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+
+  .range-input label {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  .range-input input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .range-input input:focus { border-color: var(--accent); }
+
+  .range-hint {
+    font-size: 0.84rem;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+
+  /* Action button */
+  .action-area {
+    margin-top: 30px;
+  }
+
+  .action-btn {
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent) 0%, #7ba7f5 100%);
+    color: white;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.3s;
+    box-shadow: 0 4px 28px var(--glow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.12));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .action-btn:hover::after { opacity: 1; }
+  .action-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 38px var(--glow); }
+  .action-btn:active { transform: translateY(0); }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Progress */
+  .progress-area {
+    display: none;
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+
+  .progress-area.visible { display: block; }
+
+  .progress-label {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  .progress-bar {
+    height: 7px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 12px var(--glow);
+  }
+
+  /* Result */
+  .result-area {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .result-area.visible { display: block; }
+
+  .result-item {
+    background: var(--surface);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 14px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+    animation: popIn 0.3s ease;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .result-icon { font-size: 1.7rem; }
+
+  .result-info { flex: 1; }
+
+  .result-name {
+    font-size: 1rem;
+    color: var(--accent3);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+  }
+
+  .result-size { font-size: 0.86rem; color: var(--muted); margin-top: 3px; }
+
+  .download-btn {
+    padding: 10px 18px;
+    border: 1px solid var(--accent3);
+    border-radius: 10px;
+    background: rgba(52, 211, 153, 0.1);
+    color: var(--accent3);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .download-btn:hover {
+    background: rgba(52, 211, 153, 0.2);
+    box-shadow: 0 0 18px rgba(52, 211, 153, 0.2);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 26px;
+    font-size: 0.97rem;
+    font-weight: 500;
+    z-index: 100;
+    transition: transform 0.3s ease;
+    box-shadow: 0 10px 36px rgba(0,0,0,0.5);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: var(--accent2); color: var(--accent2); }
+  .toast.success { border-color: var(--accent3); color: var(--accent3); }
+
+  .section-label {
+    font-size: 0.83rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+    margin-top: 30px;
+    font-weight: 600;
+  }
+
+  .info-banner {
+    background: rgba(91,141,238,0.08);
+    border: 1px solid rgba(91,141,238,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 0.93rem;
+    color: var(--muted);
+    margin-bottom: 22px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(91,141,238,0.15);
+    border: 1px solid rgba(91,141,238,0.3);
+    color: var(--accent);
+    font-size: 0.78rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-title-wrap">
+      <h1>PDF Tool</h1>
+      <div class="h1-decoration"></div>
+    </div>
+    <div class="header-cards">
+      <div class="header-card"><span class="header-card-icon">📎</span> 複数PDFを統合</div>
+      <div class="header-card"><span class="header-card-icon">✂️</span> ページを分割</div>
+      <div class="header-card"><span class="header-card-icon">🔒</span> 完全ローカル処理</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('merge')">📎 統合（マージ）</button>
+    <button class="tab" onclick="switchTab('split')">✂️ 分割（スプリット）</button>
+  </div>
+
+  <!-- MERGE PANEL -->
+  <div id="panel-merge" class="panel active">
+    <div class="info-banner">
+      💡 複数のPDFを一つのファイルに結合します。ファイルをドラッグして順序を変更できます。
+    </div>
+
+    <div class="dropzone" id="merge-drop" onclick="document.getElementById('merge-input').click()">
+      <input type="file" id="merge-input" accept=".pdf" multiple style="display:none" onchange="handleMergeFiles(this.files)">
+      <span class="dropzone-icon">📂</span>
+      <h3>PDFをドロップ または クリックして選択</h3>
+      <p>複数ファイル選択可 · PDFのみ</p>
+    </div>
+
+    <div id="merge-file-list" class="file-list"></div>
+
+    <div class="action-area">
+      <button class="action-btn" id="merge-btn" onclick="mergePDFs()" disabled>
+        📎 PDFを統合してダウンロード
+      </button>
+    </div>
+
+    <div class="progress-area" id="merge-progress">
+      <div class="progress-label">処理中...</div>
+      <div class="progress-bar"><div class="progress-fill" id="merge-fill"></div></div>
+    </div>
+
+    <div class="result-area" id="merge-result"></div>
+  </div>
+
+  <!-- SPLIT PANEL -->
+  <div id="panel-split" class="panel">
+    <div class="info-banner">
+      💡 1つのPDFを複数のファイルに分割します。全ページ分割またはページ範囲指定が選べます。
+    </div>
+
+    <div class="dropzone" id="split-drop" onclick="document.getElementById('split-input').click()">
+      <input type="file" id="split-input" accept=".pdf" style="display:none" onchange="handleSplitFile(this.files[0])">
+      <span class="dropzone-icon">📄</span>
+      <h3>PDFをドロップ または クリックして選択</h3>
+      <p>1ファイルのみ · PDFのみ</p>
+    </div>
+
+    <div id="split-file-info" style="display:none">
+      <div class="section-label">選択されたファイル</div>
+      <div class="file-item" style="cursor:default">
+        <span class="file-icon">📄</span>
+        <div class="file-info">
+          <div class="file-name" id="split-fname"></div>
+          <div class="file-size" id="split-fsize"></div>
+        </div>
+        <span class="file-pages" id="split-fpages"></span>
+        <button class="remove-btn" onclick="clearSplitFile()">×</button>
+      </div>
+    </div>
+
+    <div id="split-controls" style="display:none">
+      <div class="section-label">分割方法を選択</div>
+      <div class="split-options">
+        <div class="split-option selected" id="opt-all" onclick="selectSplitMode('all')">
+          <div class="split-option-icon">🗂️</div>
+          <h4>全ページ分割</h4>
+          <p>各ページを個別のPDFに</p>
+        </div>
+        <div class="split-option" id="opt-range" onclick="selectSplitMode('range')">
+          <div class="split-option-icon">✂️</div>
+          <h4>範囲指定</h4>
+          <p>ページ範囲を指定して抽出</p>
+        </div>
+      </div>
+
+      <div class="range-input" id="range-controls" style="display:none">
+        <label>ページ範囲</label>
+        <input type="text" id="range-input" placeholder="例: 1-3, 5, 7-9">
+        <div class="range-hint">カンマで複数範囲を指定できます。例: 1-3, 5, 8-10</div>
+      </div>
+
+      <div class="action-area">
+        <button class="action-btn" id="split-btn" onclick="splitPDF()">
+          ✂️ PDFを分割してダウンロード
+        </button>
+      </div>
+    </div>
+
+    <div class="progress-area" id="split-progress">
+      <div class="progress-label">処理中...</div>
+      <div class="progress-bar"><div class="progress-fill" id="split-fill"></div></div>
+    </div>
+
+    <div class="result-area" id="split-result"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { PDFDocument } = PDFLib;
+
+// ---- State ----
+let mergeFiles = [];
+let splitFile = null;
+let splitDoc = null;
+let splitMode = 'all';
+let dragSrcIndex = null;
+
+// ---- Tab ----
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === (tab === 'merge' ? 0 : 1)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ---- Toast ----
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ---- Format ----
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+// ========== MERGE ==========
+
+function setupDropzone(dropId, handler, multi = false) {
+  const el = document.getElementById(dropId);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    if (!files.length) return showToast('PDFファイルのみ対応しています', 'error');
+    handler(multi ? files : files[0]);
+  });
+}
+
+setupDropzone('merge-drop', files => handleMergeFiles(files), true);
+setupDropzone('split-drop', file => handleSplitFile(file), false);
+
+async function handleMergeFiles(files) {
+  const arr = Array.from(files);
+  for (const f of arr) {
+    const pages = await getPDFPages(f);
+    mergeFiles.push({ file: f, pages });
+  }
+  renderMergeList();
+  document.getElementById('merge-btn').disabled = mergeFiles.length < 2;
+  if (mergeFiles.length === 1) showToast('もう1つ以上PDFを追加してください', '');
+}
+
+async function getPDFPages(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
+    return doc.getPageCount();
+  } catch { return '?'; }
+}
+
+function renderMergeList() {
+  const list = document.getElementById('merge-file-list');
+  list.innerHTML = '';
+  mergeFiles.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.draggable = true;
+    div.dataset.index = i;
+    div.innerHTML = `
+      <span class="drag-handle">⠿</span>
+      <span class="file-icon">📄</span>
+      <div class="file-info">
+        <div class="file-name">${item.file.name}</div>
+        <div class="file-size">${fmtSize(item.file.size)}</div>
+      </div>
+      <span class="file-pages">${item.pages} ページ</span>
+      <button class="remove-btn" onclick="removeMergeFile(${i})">×</button>
+    `;
+    // Drag reorder
+    div.addEventListener('dragstart', e => { dragSrcIndex = i; div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-over')); });
+    div.addEventListener('dragover', e => { e.preventDefault(); div.classList.add('drag-over'); });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrcIndex === null || dragSrcIndex === i) return;
+      const moved = mergeFiles.splice(dragSrcIndex, 1)[0];
+      mergeFiles.splice(i, 0, moved);
+      dragSrcIndex = null;
+      renderMergeList();
+    });
+    list.appendChild(div);
+  });
+}
+
+function removeMergeFile(i) {
+  mergeFiles.splice(i, 1);
+  renderMergeList();
+  document.getElementById('merge-btn').disabled = mergeFiles.length < 2;
+}
+
+async function mergePDFs() {
+  if (mergeFiles.length < 2) return;
+  const prog = document.getElementById('merge-progress');
+  const fill = document.getElementById('merge-fill');
+  const result = document.getElementById('merge-result');
+  prog.classList.add('visible');
+  result.classList.remove('visible');
+  result.innerHTML = '';
+  fill.style.width = '10%';
+
+  try {
+    const merged = await PDFDocument.create();
+    for (let i = 0; i < mergeFiles.length; i++) {
+      const buf = await mergeFiles[i].file.arrayBuffer();
+      const doc = await PDFDocument.load(buf);
+      const pages = await merged.copyPages(doc, doc.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+      fill.style.width = ((i + 1) / mergeFiles.length * 90 + 5) + '%';
+    }
+    const bytes = await merged.save();
+    fill.style.width = '100%';
+
+    setTimeout(() => {
+      prog.classList.remove('visible');
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      result.classList.add('visible');
+      result.innerHTML = `
+        <div class="result-item">
+          <span class="result-icon">✅</span>
+          <div class="result-info">
+            <div class="result-name">merged.pdf</div>
+            <div class="result-size">${fmtSize(bytes.byteLength)} · ${merged.getPageCount()} ページ</div>
+          </div>
+          <button class="download-btn" onclick="downloadFile('${url}', 'merged.pdf')">⬇ ダウンロード</button>
+        </div>
+      `;
+      showToast('統合完了！', 'success');
+    }, 400);
+  } catch (e) {
+    prog.classList.remove('visible');
+    showToast('エラー: ' + e.message, 'error');
+  }
+}
+
+// ========== SPLIT ==========
+
+async function handleSplitFile(file) {
+  if (!file || file.type !== 'application/pdf') return showToast('PDFファイルのみ対応しています', 'error');
+  splitFile = file;
+  const buf = await file.arrayBuffer();
+  try {
+    splitDoc = await PDFDocument.load(buf);
+  } catch (e) {
+    showToast('PDFの読み込みに失敗しました', 'error'); return;
+  }
+  const pages = splitDoc.getPageCount();
+  document.getElementById('split-fname').textContent = file.name;
+  document.getElementById('split-fsize').textContent = fmtSize(file.size);
+  document.getElementById('split-fpages').textContent = pages + ' ページ';
+  document.getElementById('split-file-info').style.display = 'block';
+  document.getElementById('split-controls').style.display = 'block';
+}
+
+function clearSplitFile() {
+  splitFile = null; splitDoc = null;
+  document.getElementById('split-file-info').style.display = 'none';
+  document.getElementById('split-controls').style.display = 'none';
+  document.getElementById('split-result').classList.remove('visible');
+  document.getElementById('split-result').innerHTML = '';
+  document.getElementById('split-input').value = '';
+}
+
+function selectSplitMode(mode) {
+  splitMode = mode;
+  document.getElementById('opt-all').classList.toggle('selected', mode === 'all');
+  document.getElementById('opt-range').classList.toggle('selected', mode === 'range');
+  document.getElementById('range-controls').style.display = mode === 'range' ? 'block' : 'none';
+}
+
+function parseRanges(input, total) {
+  const ranges = [];
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [a, b] = part.split('-').map(n => parseInt(n));
+      if (isNaN(a) || isNaN(b) || a < 1 || b > total || a > b) return null;
+      ranges.push({ start: a - 1, end: b - 1, label: `${a}-${b}` });
+    } else {
+      const n = parseInt(part);
+      if (isNaN(n) || n < 1 || n > total) return null;
+      ranges.push({ start: n - 1, end: n - 1, label: `${n}` });
+    }
+  }
+  return ranges.length > 0 ? ranges : null;
+}
+
+async function splitPDF() {
+  if (!splitDoc) return;
+  const total = splitDoc.getPageCount();
+  const prog = document.getElementById('split-progress');
+  const fill = document.getElementById('split-fill');
+  const result = document.getElementById('split-result');
+
+  let ranges = [];
+  if (splitMode === 'all') {
+    for (let i = 0; i < total; i++) ranges.push({ start: i, end: i, label: String(i + 1) });
+  } else {
+    const input = document.getElementById('range-input').value.trim();
+    if (!input) return showToast('ページ範囲を入力してください', 'error');
+    ranges = parseRanges(input, total);
+    if (!ranges) return showToast('無効なページ範囲です', 'error');
+  }
+
+  prog.classList.add('visible');
+  result.classList.remove('visible');
+  result.innerHTML = '';
+  fill.style.width = '5%';
+
+  const results = [];
+  try {
+    const srcBuf = await splitFile.arrayBuffer();
+    for (let i = 0; i < ranges.length; i++) {
+      const r = ranges[i];
+      const newDoc = await PDFDocument.create();
+      const srcDoc = await PDFDocument.load(srcBuf);
+      const pageIndices = [];
+      for (let p = r.start; p <= r.end; p++) pageIndices.push(p);
+      const pages = await newDoc.copyPages(srcDoc, pageIndices);
+      pages.forEach(p => newDoc.addPage(p));
+      const bytes = await newDoc.save();
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const name = splitFile.name.replace('.pdf', '') + `_p${r.label}.pdf`;
+      results.push({ name, url, size: bytes.byteLength, pages: pageIndices.length });
+      fill.style.width = ((i + 1) / ranges.length * 90 + 5) + '%';
+    }
+    fill.style.width = '100%';
+
+    setTimeout(() => {
+      prog.classList.remove('visible');
+      result.classList.add('visible');
+      result.innerHTML = results.map(r => `
+        <div class="result-item">
+          <span class="result-icon">✅</span>
+          <div class="result-info">
+            <div class="result-name">${r.name}</div>
+            <div class="result-size">${fmtSize(r.size)} · ${r.pages} ページ</div>
+          </div>
+          <button class="download-btn" onclick="downloadFile('${r.url}', '${r.name}')">⬇ ダウンロード</button>
+        </div>
+      `).join('');
+      if (results.length > 1) {
+        result.innerHTML += `<button class="action-btn" style="margin-top:12px" onclick="downloadAll(${JSON.stringify(results.map(r => [r.url, r.name]))})">⬇ すべてダウンロード</button>`;
+      }
+      showToast(`${results.length}ファイルに分割完了！`, 'success');
+    }, 400);
+  } catch (e) {
+    prog.classList.remove('visible');
+    showToast('エラー: ' + e.message, 'error');
+  }
+}
+
+function downloadFile(url, name) {
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  a.click();
+}
+
+function downloadAll(pairs) {
+  pairs.forEach(([url, name], i) => setTimeout(() => downloadFile(url, name), i * 300));
+}
+</script>
+</body>
+</html>
