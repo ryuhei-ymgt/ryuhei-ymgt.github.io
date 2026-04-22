@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DiffScope — 文書差異発見</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0c0c10;
+  --surface:#13131a;
+  --surface2:#1a1a24;
+  --border:#252530;
+  --border2:#32323f;
+  --accent:#f0d060;
+  --accent2:#60d0f0;
+  --add:#50e896;
+  --del:#f06070;
+  --chg:#f0b050;
+  --text:#ddd8cc;
+  --muted:#ffffff;
+  --r:8px;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Mono',monospace;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:48px 20px 80px;
+  font-size:20px;
+}
+
+/* ── noise grain ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;
+}
+
+.page{position:relative;width:100%;max-width:1100px;z-index:1}
+
+/* ── Header ── */
+header{margin-bottom:52px}
+.logo{
+  font-size:clamp(52px,7vw,80px);
+  font-weight:600;
+  letter-spacing:-2px;
+  line-height:1;
+}
+.logo .d{color:var(--accent)}
+.logo .s{color:var(--accent2)}
+.sub{
+  font-family:'Noto Serif JP',serif;
+  font-size:22px;
+  color:var(--muted);
+  margin-top:10px;
+  letter-spacing:.06em;
+}
+
+/* ── Upload area ── */
+.upload-grid{
+  display:grid;
+  grid-template-columns:1fr 48px 1fr;
+  gap:0;
+  align-items:stretch;
+  margin-bottom:24px;
+}
+
+.drop-zone{
+  background:var(--surface);
+  border:1.5px dashed var(--border2);
+  border-radius:var(--r);
+  padding:32px 26px;
+  cursor:pointer;
+  transition:border-color .2s,background .2s,transform .15s;
+  position:relative;
+  overflow:hidden;
+  min-height:140px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.drop-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.drop-zone:hover,.drop-zone.over{
+  border-color:var(--accent);
+  background:var(--surface2);
+  transform:translateY(-1px);
+}
+.drop-zone.has-file{border-style:solid;border-color:var(--border2)}
+.drop-zone.mismatch{border-style:solid;border-color:var(--del) !important;background:#1a0d0e !important}
+
+.dz-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:6px;
+  background:var(--accent);color:#0c0c10;
+  font-size:18px;font-weight:600;
+  margin-bottom:12px;flex-shrink:0;
+}
+.dz-badge.b{background:var(--accent2)}
+.dz-label{font-size:18px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.dz-name{font-size:20px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dz-hint{font-family:'Noto Serif JP',serif;font-size:18px;color:var(--muted);margin-top:6px}
+
+.vs{
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;color:var(--border2);
+  letter-spacing:.05em;
+}
+
+/* ── Format mismatch warning ── */
+.fmt-warn{
+  display:none;
+  padding:16px 20px;
+  background:#1a1408;
+  border-left:3px solid var(--chg);
+  border-radius:var(--r);
+  font-size:20px;
+  color:var(--chg);
+  margin-bottom:20px;
+  line-height:1.7;
+  font-family:'Noto Serif JP',serif;
+}
+.fmt-warn.show{display:block}
+.fmt-warn strong{font-weight:600;color:#f0d080}
+.btn-row{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:32px}
+.btn-run{
+  padding:18px;
+  background:var(--accent);color:#0c0c10;
+  border:none;border-radius:var(--r);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:22px;font-weight:600;letter-spacing:.08em;
+  cursor:pointer;
+  transition:opacity .2s,transform .1s;
+}
+.btn-run:hover:not(:disabled){opacity:.85}
+.btn-run:active:not(:disabled){transform:scale(.99)}
+.btn-run:disabled{opacity:.3;cursor:not-allowed}
+.btn-clear{
+  padding:18px 28px;
+  background:transparent;color:var(--muted);
+  border:1.5px solid var(--border2);border-radius:var(--r);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:20px;font-weight:600;letter-spacing:.08em;
+  cursor:pointer;white-space:nowrap;
+  transition:border-color .2s,color .2s,background .2s;
+}
+.btn-clear:hover{border-color:var(--del);color:var(--del);background:#200d10}
+.btn-clear:disabled{opacity:.2;cursor:not-allowed}
+
+/* ── Progress ── */
+.progress-wrap{
+  display:none;padding:16px 20px;
+  background:var(--surface);border-radius:var(--r);
+  border-left:3px solid var(--accent);
+  margin-bottom:20px;
+}
+.progress-wrap.show{display:flex;align-items:center;gap:14px}
+.spin{
+  width:20px;height:20px;border-radius:50%;flex-shrink:0;
+  border:3px solid var(--border2);border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress-text{font-size:20px;color:var(--muted)}
+
+/* ── Error ── */
+.err{
+  display:none;padding:16px 20px;
+  background:#1a0d0e;border-left:3px solid var(--del);
+  border-radius:var(--r);font-size:20px;color:var(--del);
+  margin-bottom:20px;line-height:1.6;
+}
+.err.show{display:block}
+
+/* ── Results header ── */
+.res-bar{
+  display:none;
+  align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.res-bar.show{display:flex}
+.res-title{font-size:18px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.res-meta{font-size:20px;color:var(--muted);margin-top:4px}
+.btn-dl{
+  padding:12px 24px;
+  background:transparent;color:var(--accent2);
+  border:1.5px solid var(--accent2);border-radius:var(--r);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:18px;font-weight:600;letter-spacing:.08em;
+  cursor:pointer;transition:background .2s,color .2s;white-space:nowrap;
+}
+.btn-dl:hover{background:var(--accent2);color:#0c0c10}
+
+/* ── Stats pills ── */
+.stats{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.pill{
+  padding:6px 16px;border-radius:20px;
+  font-size:18px;font-weight:600;letter-spacing:.05em;
+}
+.pill-add{background:#0d2218;color:var(--add);border:1px solid #1a3f28}
+.pill-del{background:#200d10;color:var(--del);border:1px solid #3f1a20}
+.pill-chg{background:#201508;color:var(--chg);border:1px solid #3f2a10}
+
+/* ── Table ── */
+.tbl-wrap{
+  overflow-x:auto;
+  border:1px solid var(--border);border-radius:var(--r);
+}
+table{width:100%;border-collapse:collapse;font-size:20px}
+thead tr{background:var(--surface)}
+th{
+  padding:14px 18px;text-align:left;
+  font-size:16px;letter-spacing:.12em;color:var(--muted);
+  text-transform:uppercase;border-bottom:1px solid var(--border);
+  font-weight:600;white-space:nowrap;
+}
+td{
+  padding:12px 18px;border-bottom:1px solid #16161e;
+  vertical-align:top;line-height:1.65;
+  max-width:340px;word-break:break-all;
+}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#15151e}
+
+td.lnum{color:var(--muted);font-size:18px;white-space:nowrap;width:70px}
+td.content{font-family:'Noto Serif JP',serif;font-size:20px}
+
+.row-add td:first-child{border-left:3px solid var(--add)}
+.row-del td:first-child{border-left:3px solid var(--del)}
+.row-chg td:first-child{border-left:3px solid var(--chg)}
+
+.tag{
+  display:inline-block;padding:4px 10px;border-radius:4px;
+  font-size:16px;font-weight:600;letter-spacing:.06em;white-space:nowrap;
+}
+.tag-追加{background:#0d2218;color:var(--add);border:1px solid #1a3f28}
+.tag-削除{background:#200d10;color:var(--del);border:1px solid #3f1a20}
+.tag-変更{background:#201508;color:var(--chg);border:1px solid #3f2a10}
+
+/* ── Checkbox column ── */
+.th-chk{width:52px;text-align:center}
+td.td-chk{text-align:center;vertical-align:middle;width:52px}
+input[type=checkbox]{
+  width:20px;height:20px;cursor:pointer;
+  accent-color:var(--del);
+}
+tr.excluded{opacity:.35;text-decoration:line-through}
+tr.excluded td{color:var(--muted)}
+
+/* ── Exclude info bar ── */
+.exclude-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;
+  background:#200d10;
+  border:1px solid #3f1a20;
+  border-radius:var(--r);
+  margin-bottom:14px;
+  font-size:18px;
+  color:var(--del);
+  gap:16px;
+}
+.btn-uncheck{
+  padding:8px 18px;
+  background:transparent;color:var(--del);
+  border:1.5px solid var(--del);border-radius:var(--r);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:16px;font-weight:600;
+  cursor:pointer;white-space:nowrap;
+  transition:background .2s,color .2s;
+}
+.btn-uncheck:hover{background:var(--del);color:#0c0c10}
+  display:none;text-align:center;
+  padding:60px 20px;
+  font-family:'Noto Serif JP',serif;
+  color:var(--muted);font-size:22px;
+}
+.empty.show{display:block}
+
+footer{
+  margin-top:60px;font-size:18px;
+  color:#ffffff;letter-spacing:.08em;text-align:center;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="logo"><span class="d">Diff</span><span class="s">Scope</span></div>
+  <div class="sub">文書差異発見ツール — ブラウザのみで完結 / PDF×PDF・Word×Word・TXT×TXT 対応 / CSV 出力</div>
+</header>
+
+<!-- Upload -->
+<div class="upload-grid">
+  <div class="drop-zone" id="zoneA">
+    <input type="file" id="fileA" accept=".pdf,.txt,.text,.docx">
+    <div class="dz-badge">A</div>
+    <div class="dz-label">比較元ファイル</div>
+    <div class="dz-name" id="nameA">クリックまたはドロップ</div>
+    <div class="dz-hint">PDF / Word(.docx) / TXT</div>
+  </div>
+
+  <div class="vs">VS</div>
+
+  <div class="drop-zone" id="zoneB">
+    <input type="file" id="fileB" accept=".pdf,.txt,.text,.docx">
+    <div class="dz-badge b">B</div>
+    <div class="dz-label">比較先ファイル</div>
+    <div class="dz-name" id="nameB">クリックまたはドロップ</div>
+    <div class="dz-hint">PDF / Word(.docx) / TXT</div>
+  </div>
+</div>
+
+<div class="fmt-warn" id="fmtWarn">
+  ⚠ AとBのファイル形式が異なります。精度が保証できないため、<strong>同じ形式のファイル同士</strong>（PDF×PDF、Word×Word、TXT×TXT）を選択してください。
+</div>
+
+<div class="btn-row">
+  <button class="btn-run" id="btnRun" disabled>比較する</button>
+  <button class="btn-clear" id="btnClear" disabled>クリア</button>
+</div>
+
+<div class="progress-wrap" id="prog">
+  <div class="spin"></div>
+  <div class="progress-text" id="progMsg">処理中…</div>
+</div>
+
+<div class="err" id="errBox"></div>
+
+<div class="res-bar" id="resBar">
+  <div>
+    <div class="res-title">差分結果</div>
+    <div class="res-meta" id="resMeta"></div>
+  </div>
+  <button class="btn-dl" id="btnDl">▼ CSVダウンロード</button>
+</div>
+
+<div class="exclude-bar" id="excludeBar" style="display:none">
+  <span id="excludeMsg"></span>
+  <button class="btn-uncheck" id="btnUncheck">すべて戻す</button>
+</div>
+
+<div class="stats" id="statsRow"></div>
+
+<div class="tbl-wrap" id="tblWrap" style="display:none">
+  <table>
+    <thead>
+      <tr>
+        <th class="th-chk"><input type="checkbox" id="chkAll" title="全選択/解除"></th>
+        <th>行A</th><th>行B</th>
+        <th>Aの内容</th><th>Bの内容</th>
+        <th>種別</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="empty" id="emptyMsg">差分はありませんでした。2つのファイルは完全に同一です。</div>
+
+<footer>DiffScope — PDF・Word(.docx)・TXT 対応 / すべての処理はブラウザ内で完結します。ファイルは外部に送信されません。</footer>
+</div>
+
+<!-- PDF.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Mammoth.js CDN for Word (.docx) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+// ─── PDF.js worker ────────────────────────────────────
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ─── DOM refs ─────────────────────────────────────────
+const fileA   = document.getElementById('fileA');
+const fileB   = document.getElementById('fileB');
+const nameA   = document.getElementById('nameA');
+const nameB   = document.getElementById('nameB');
+const zoneA   = document.getElementById('zoneA');
+const zoneB   = document.getElementById('zoneB');
+const btnClear = document.getElementById('btnClear');
+const prog    = document.getElementById('prog');
+const progMsg = document.getElementById('progMsg');
+const errBox  = document.getElementById('errBox');
+const resBar  = document.getElementById('resBar');
+const resMeta = document.getElementById('resMeta');
+const btnDl   = document.getElementById('btnDl');
+const statsRow= document.getElementById('statsRow');
+const tblWrap = document.getElementById('tblWrap');
+const tbody   = document.getElementById('tbody');
+const emptyMsg= document.getElementById('emptyMsg');
+
+const fmtWarn = document.getElementById('fmtWarn');
+
+let csvData = null;
+
+// ─── ファイル種別取得 ──────────────────────────────────
+function getExt(file){
+  if(!file) return null;
+  const n = file.name.toLowerCase();
+  if(n.endsWith('.pdf'))  return 'pdf';
+  if(n.endsWith('.docx')) return 'docx';
+  return 'txt';
+}
+
+// ─── File input listeners ──────────────────────────────
+fileA.addEventListener('change', () => { nameA.textContent = fileA.files[0]?.name ?? 'クリックまたはドロップ'; zoneA.classList.toggle('has-file', !!fileA.files[0]); checkBtn(); });
+fileB.addEventListener('change', () => { nameB.textContent = fileB.files[0]?.name ?? 'クリックまたはドロップ'; zoneB.classList.toggle('has-file', !!fileB.files[0]); checkBtn(); });
+
+function checkBtn(){
+  const fa = fileA.files[0], fb = fileB.files[0];
+  const hasFiles = !!(fa && fb);
+  const sameFormat = hasFiles && getExt(fa) === getExt(fb);
+
+  // 形式不一致警告
+  fmtWarn.classList.toggle('show', hasFiles && !sameFormat);
+  // ゾーンの枠を赤くして視覚的に警告
+  zoneA.classList.toggle('mismatch', hasFiles && !sameFormat);
+  zoneB.classList.toggle('mismatch', hasFiles && !sameFormat);
+
+  // 比較ボタンは同一形式のときだけ有効
+  btnRun.disabled  = !sameFormat;
+  btnClear.disabled = !hasFiles;
+}
+
+// ─── Clear button ──────────────────────────────────────
+btnClear.addEventListener('click', () => {
+  fileA.value=''; fileB.value='';
+  nameA.textContent='クリックまたはドロップ';
+  nameB.textContent='クリックまたはドロップ';
+  zoneA.classList.remove('has-file','mismatch');
+  zoneB.classList.remove('has-file','mismatch');
+  fmtWarn.classList.remove('show');
+  btnClear.disabled = true;
+  btnRun.disabled = true;
+  reset();
+});
+
+// ─── Drag & drop ──────────────────────────────────────
+setupDrop(zoneA, fileA, nameA);
+setupDrop(zoneB, fileB, nameB);
+
+function setupDrop(zone, input, nameEl){
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if(!f) return;
+    const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
+    nameEl.textContent = f.name;
+    zone.classList.add('has-file');
+    checkBtn();
+  });
+}
+
+// ─── Main compare ──────────────────────────────────────
+btnRun.addEventListener('click', async () => {
+  reset();
+  showProg('ファイルを読み込み中…');
+  try {
+    const [linesA, linesB] = await Promise.all([
+      readFile(fileA.files[0]),
+      readFile(fileB.files[0])
+    ]);
+    showProg('差分を計算中…');
+    await sleep(30); // UI 更新を確実に
+    const rows = computeDiff(linesA, linesB);
+    hideProg();
+    render(rows);
+  } catch(e){
+    hideProg();
+    showErr(e.message || String(e));
+  }
+});
+
+// ─── File reader ──────────────────────────────────────
+async function readFile(file){
+  const name = file.name.toLowerCase();
+  if(name.endsWith('.pdf')){
+    return readPDF(file);
+  } else if(name.endsWith('.docx')){
+    return readDOCX(file);
+  } else {
+    return readTXT(file);
+  }
+}
+
+async function readDOCX(file){
+  const buf = await file.arrayBuffer();
+  // mammoth でプレーンテキスト抽出
+  const result = await mammoth.extractRawText({arrayBuffer: buf});
+  if(result.messages && result.messages.length){
+    // 警告があっても続行（画像埋め込みなど）
+    console.warn('mammoth warnings:', result.messages);
+  }
+  const text = result.value || '';
+  // 段落区切りを改行として行分割
+  return text.split(/\r?\n/).map(l => l.trim());
+}
+
+async function readTXT(file){
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  // BOM検出
+  let text;
+  if(bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF){
+    text = new TextDecoder('utf-8').decode(buf.slice(3));
+  } else {
+    try { text = new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+    catch{ text = new TextDecoder('shift-jis').decode(buf); }
+  }
+  return text.split(/\r?\n/);
+}
+
+async function readPDF(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  const lines = [];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+
+    // y座標でグループ化して行を再構築
+    const yMap = new Map();
+    for(const item of content.items){
+      if(!item.str) continue;
+      const y = Math.round(item.transform[5]);
+      if(!yMap.has(y)) yMap.set(y, []);
+      yMap.get(y).push({x: item.transform[4], str: item.str});
+    }
+    // y降順（PDFの座標は下から上）→ 上から下の順
+    const sorted = [...yMap.entries()].sort((a,b) => b[0]-a[0]);
+    for(const [, words] of sorted){
+      words.sort((a,b) => a.x - b.x);
+      // 単語間の隙間が大きい場合のみスペースを挿入
+      let line = words[0].str;
+      for(let wi=1; wi<words.length; wi++){
+        const gap = words[wi].x - (words[wi-1].x + (words[wi-1].width||0));
+        line += (gap > 3 ? ' ' : '') + words[wi].str;
+      }
+      line = line.trim();
+      if(line) lines.push(line);
+    }
+    if(p < pdf.numPages) lines.push(''); // ページ区切り
+  }
+  return lines;
+}
+
+// ─── テキスト正規化（強化版）────────────────────────
+function normalize(s){
+  if(!s) return '';
+  return s
+    // 全角英数字 → 半角
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    // 全角スペース・タブ → 半角スペース
+    .replace(/[　\t]/g, ' ')
+    // 全角記号 → 半角
+    .replace(/（/g,'(').replace(/）/g,')')
+    .replace(/，/g,',').replace(/．/g,'.')
+    .replace(/；/g,';').replace(/：/g,':')
+    .replace(/！/g,'!').replace(/？/g,'?')
+    .replace(/／/g,'/').replace(/　/g,' ')
+    .replace(/‐|－|―|ー|─/g,'-')  // 各種ダッシュ統一
+    .replace(/"|"/g,'"').replace(/'|'/g,"'")  // 引用符統一
+    // ゼロ幅文字・制御文字除去
+    .replace(/[\u200B-\u200D\uFEFF\u00AD]/g,'')
+    // 連続スペース圧縮・前後除去
+    .replace(/ +/g,' ')
+    .trim();
+}
+
+// ─── Diff engine ─────────────────────────────────────
+function computeDiff(linesA, linesB){
+  // 行単位で比較（正規化済みで照合、元テキストで表示）
+  const normA = linesA.map(normalize);
+  const normB = linesB.map(normalize);
+  const ops = getOps(normA, normB);
+
+  const rows = [];
+  for(const op of ops){
+    const {tag, i1, i2, j1, j2} = op;
+    if(tag === 'equal') continue;
+
+    if(tag === 'replace'){
+      const blockA = linesA.slice(i1,i2);
+      const blockB = linesB.slice(j1,j2);
+      const nA = normA.slice(i1,i2);
+      const nB = normB.slice(j1,j2);
+      const len = Math.max(blockA.length, blockB.length);
+      for(let k=0;k<len;k++){
+        const ca = k<blockA.length ? blockA[k] : '';
+        const cb = k<blockB.length ? blockB[k] : '';
+        const na = k<nA.length ? nA[k] : '';
+        const nb = k<nB.length ? nB[k] : '';
+        const la = k<blockA.length ? i1+k+1 : null;
+        const lb = k<blockB.length ? j1+k+1 : null;
+        if(!cb && na) rows.push({la,lb:null,ca,cb:'',type:'削除'});
+        else if(!ca && nb) rows.push({la:null,lb,ca:'',cb,type:'追加'});
+        // 正規化後に一致 → 実質同一なのでスキップ
+        else if(na === nb) continue;
+        else if(na || nb) rows.push({la,lb,ca,cb,type:'変更'});
+      }
+    } else if(tag === 'delete'){
+      for(let k=i1;k<i2;k++){
+        if(normalize(linesA[k])) // 空行はスキップ
+          rows.push({la:k+1,lb:null,ca:linesA[k],cb:'',type:'削除'});
+      }
+    } else if(tag === 'insert'){
+      for(let k=j1;k<j2;k++){
+        if(normalize(linesB[k])) // 空行はスキップ
+          rows.push({la:null,lb:k+1,ca:'',cb:linesB[k],type:'追加'});
+      }
+    }
+  }
+  return rows;
+}
+
+// ─── LCS-based diff (SequenceMatcher 相当) ────────────
+function getOps(a, b){
+  // Build LCS table
+  const m=a.length, n=b.length;
+  // Use a simple O(mn) DP. For large files, splice into chunks.
+  const LIMIT = 3000;
+  if(m > LIMIT || n > LIMIT){
+    // fall back to line-hash greedy diff for huge files
+    return greedyDiff(a,b);
+  }
+  const dp = Array.from({length:m+1},()=>new Int32Array(n+1));
+  for(let i=m-1;i>=0;i--){
+    for(let j=n-1;j>=0;j--){
+      if(a[i]===b[j]) dp[i][j]=dp[i+1][j+1]+1;
+      else dp[i][j]=Math.max(dp[i+1][j],dp[i][j+1]);
+    }
+  }
+  // Backtrack
+  const ops=[];
+  let i=0,j=0;
+  let ei=-1,ej=-1,ei2=-1,ej2=-1,etag='';
+  const flush=()=>{ if(etag) ops.push({tag:etag,i1:ei,i2:ei2,j1:ej,j2:ej2}); etag=''; };
+  const push=(tag,ia,ib,ja,jb)=>{
+    if(etag===tag && ei2===ia && ej2===ja){ ei2=ib;ej2=jb; }
+    else { flush(); etag=tag;ei=ia;ei2=ib;ej=ja;ej2=jb; }
+  };
+  while(i<m||j<n){
+    if(i<m&&j<n&&a[i]===b[j]){ push('equal',i,i+1,j,j+1);i++;j++; }
+    else if(j<n&&(i>=m||dp[i][j+1]>=dp[i+1][j])){ push('insert',i,i,j,j+1);j++; }
+    else { push('delete',i,i+1,j,j);i++; }
+  }
+  flush();
+  // Merge adjacent delete+insert → replace
+  const merged=[];
+  for(let k=0;k<ops.length;k++){
+    if(ops[k].tag==='delete'&&k+1<ops.length&&ops[k+1].tag==='insert'){
+      merged.push({tag:'replace',i1:ops[k].i1,i2:ops[k].i2,j1:ops[k+1].j1,j2:ops[k+1].j2});
+      k++;
+    } else merged.push(ops[k]);
+  }
+  return merged;
+}
+
+function greedyDiff(a,b){
+  // Simple hash-based diff for large files
+  const ops=[];
+  let ia=0,ib=0;
+  const setA=new Set(a), setB=new Set(b);
+  while(ia<a.length&&ib<b.length){
+    if(a[ia]===b[ib]){ ops.push({tag:'equal',i1:ia,i2:ia+1,j1:ib,j2:ib+1}); ia++;ib++; }
+    else { ops.push({tag:'replace',i1:ia,i2:ia+1,j1:ib,j2:ib+1}); ia++;ib++; }
+  }
+  while(ia<a.length){ ops.push({tag:'delete',i1:ia,i2:ia+1,j1:ib,j2:ib}); ia++; }
+  while(ib<b.length){ ops.push({tag:'insert',i1:ia,i2:ia,j1:ib,j2:ib+1}); ib++; }
+  return ops;
+}
+
+// ─── Render ───────────────────────────────────────────
+let allRows = []; // 全差分データを保持
+
+function render(rows){
+  if(rows.length===0){ emptyMsg.classList.add('show'); return; }
+
+  allRows = rows;
+  buildTable(rows);
+}
+
+function buildTable(rows){
+  const counts={追加:0,削除:0,変更:0};
+  rows.forEach(r=>counts[r.type]=(counts[r.type]||0)+1);
+
+  statsRow.innerHTML='';
+  if(counts['追加']) statsRow.innerHTML+=`<span class="pill pill-add">追加 ${counts['追加']}件</span>`;
+  if(counts['削除']) statsRow.innerHTML+=`<span class="pill pill-del">削除 ${counts['削除']}件</span>`;
+  if(counts['変更']) statsRow.innerHTML+=`<span class="pill pill-chg">変更 ${counts['変更']}件</span>`;
+
+  resMeta.textContent = `合計 ${rows.length}件`;
+
+  tbody.innerHTML='';
+  const frag = document.createDocumentFragment();
+  rows.forEach(({la,lb,ca,cb,type}, idx)=>{
+    const tr = document.createElement('tr');
+    tr.className = type==='追加'?'row-add':type==='削除'?'row-del':'row-chg';
+    tr.dataset.idx = idx;
+    tr.innerHTML=`
+      <td class="td-chk"><input type="checkbox" class="row-chk" data-idx="${idx}" title="この行を除外"></td>
+      <td class="lnum">${la??'-'}</td>
+      <td class="lnum">${lb??'-'}</td>
+      <td class="content">${esc(ca)}</td>
+      <td class="content">${esc(cb)}</td>
+      <td><span class="tag tag-${esc(type)}">${esc(type)}</span></td>
+    `;
+    frag.appendChild(tr);
+  });
+  tbody.appendChild(frag);
+
+  // 行チェックボックスのイベント
+  tbody.querySelectorAll('.row-chk').forEach(chk=>{
+    chk.addEventListener('change', onRowCheck);
+  });
+
+  // 全選択チェックボックス
+  const chkAll = document.getElementById('chkAll');
+  chkAll.checked = false;
+  chkAll.addEventListener('change', ()=>{
+    tbody.querySelectorAll('.row-chk').forEach(c=>{ c.checked=chkAll.checked; c.dispatchEvent(new Event('change')); });
+  });
+
+  resBar.classList.add('show');
+  tblWrap.style.display='block';
+  updateExcludeBar();
+  updateCsvData();
+}
+
+function onRowCheck(e){
+  const chk = e.target;
+  const tr = chk.closest('tr');
+  tr.classList.toggle('excluded', chk.checked);
+
+  // 全選択チェックの状態を同期
+  const all = [...tbody.querySelectorAll('.row-chk')];
+  const chkAll = document.getElementById('chkAll');
+  chkAll.checked = all.every(c=>c.checked);
+  chkAll.indeterminate = !chkAll.checked && all.some(c=>c.checked);
+
+  updateExcludeBar();
+  updateCsvData();
+}
+
+function updateExcludeBar(){
+  const excludeBar = document.getElementById('excludeBar');
+  const excludeMsg = document.getElementById('excludeMsg');
+  const excluded = [...tbody.querySelectorAll('.row-chk:checked')].length;
+  const total = allRows.length;
+  if(excluded > 0){
+    excludeBar.style.display='flex';
+    excludeMsg.textContent = `${excluded}件を除外中 — CSV には残り ${total - excluded}件 が出力されます`;
+  } else {
+    excludeBar.style.display='none';
+  }
+}
+
+function updateCsvData(){
+  const excludedIdx = new Set(
+    [...tbody.querySelectorAll('.row-chk:checked')].map(c=>Number(c.dataset.idx))
+  );
+  const activeRows = allRows.filter((_,i)=>!excludedIdx.has(i));
+
+  const bom='\uFEFF';
+  const header='行番号A,行番号B,Aの内容,Bの内容,差分種別\r\n';
+  const body=activeRows.map(({la,lb,ca,cb,type})=>
+    [la??'-',lb??'-',ca,cb,type].map(csvCell).join(',')
+  ).join('\r\n');
+  csvData = bom+header+body;
+}
+
+// 全チェック解除ボタン
+document.getElementById('btnUncheck').addEventListener('click',()=>{
+  tbody.querySelectorAll('.row-chk').forEach(c=>{ c.checked=false; c.closest('tr').classList.remove('excluded'); });
+  document.getElementById('chkAll').checked=false;
+  document.getElementById('chkAll').indeterminate=false;
+  updateExcludeBar();
+  updateCsvData();
+});
+
+btnDl.onclick=()=>{
+  if(!csvData) return;
+  const blob=new Blob([csvData],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='diff_result.csv'; a.click();
+  URL.revokeObjectURL(url);
+};
+
+// ─── Helpers ──────────────────────────────────────────
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function csvCell(v){ const s=String(v??''); return `"${s.replace(/"/g,'""')}"`; }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function reset(){
+  errBox.classList.remove('show');
+  resBar.classList.remove('show');
+  tblWrap.style.display='none';
+  emptyMsg.classList.remove('show');
+  tbody.innerHTML='';
+  statsRow.innerHTML='';
+  document.getElementById('excludeBar').style.display='none';
+  document.getElementById('chkAll').checked=false;
+  allRows=[];
+  csvData=null;
+}
+function showProg(msg){ progMsg.textContent=msg; prog.classList.add('show'); btnRun.disabled=true; }
+function hideProg(){ prog.classList.remove('show'); btnRun.disabled=false; }
+function showErr(msg){ errBox.textContent='⚠ '+msg; errBox.classList.add('show'); }
+</script>
+</body>
+</html>
