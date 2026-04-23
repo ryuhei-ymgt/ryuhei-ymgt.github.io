@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Aggregation Tool — 利用マニュアル</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --ink:    #1a1a18;
+    --ink-2:  #444441;
+    --ink-3:  #888780;
+    --ink-4:  #b4b2a9;
+    --bg:     #f7f5f0;
+    --surface:#ffffff;
+    --border: #e0ddd6;
+    --accent: #534AB7;
+    --accent-light: #EEEDFE;
+    --green:  #0F6E56;
+    --green-light: #E1F5EE;
+    --amber:  #854F0B;
+    --amber-light: #FAEEDA;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  .page-wrap { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 230px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.2rem;
+  }
+
+  .sidebar-logo .eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--ink-4);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .sidebar-logo .logo-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .sidebar nav { padding: 0 1rem; }
+
+  .nav-section {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--ink-4);
+    text-transform: uppercase;
+    padding: 0.8rem 0.5rem 0.3rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    color: var(--ink-2);
+    font-size: 13px;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+    margin-bottom: 1px;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+
+  .nav-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--ink-4);
+    flex-shrink: 0;
+    transition: background 0.12s;
+  }
+
+  .nav-item:hover .nav-dot, .nav-item.active .nav-dot { background: var(--accent); }
+
+  .main {
+    flex: 1;
+    max-width: 760px;
+    padding: 3rem 3.5rem;
+    min-width: 0;
+  }
+
+  .page-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-header .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .page-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  .page-header .subtitle { font-size: 14px; color: var(--ink-3); }
+
+  .section {
+    margin-bottom: 3.2rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .section-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-number {
+    width: 26px; height: 26px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .subsection { margin-bottom: 1.6rem; }
+
+  .subsection-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+    padding-left: 11px;
+    border-left: 3px solid var(--accent);
+  }
+
+  p { margin-bottom: 0.85rem; color: var(--ink-2); font-size: 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  .step-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .step {
+    display: flex;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .step-num {
+    width: 24px; height: 24px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-body strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+
+  .step-body p { font-size: 13px; color: var(--ink-3); margin-bottom: 0; }
+
+  .callout {
+    border-radius: 9px;
+    padding: 12px 14px;
+    margin: 14px 0;
+    display: flex;
+    gap: 9px;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; font-weight: 700; margin-bottom: 2px; }
+  .callout.info    { background: var(--accent-light); color: #26215C; }
+  .callout.success { background: var(--green-light);  color: #04342C; }
+  .callout.warning { background: var(--amber-light);  color: #412402; }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 15px;
+  }
+
+  .feature-card .fc-icon  { font-size: 20px; margin-bottom: 7px; }
+  .feature-card .fc-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+  .feature-card .fc-desc  { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+
+  .doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+
+  .doc-table th {
+    background: var(--bg);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--ink-2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .doc-table td {
+    padding: 9px 12px;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .doc-table tr:last-child td { border-bottom: none; }
+
+  code.inline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: #f0ede6;
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .tag-fixed { background: var(--green-light); color: var(--green); }
+  .tag-edit  { background: var(--accent-light); color: var(--accent); }
+
+  .divider { height: 1px; background: var(--border); margin: 2.5rem 0; }
+
+  .doc-footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--ink-4);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="eyebrow">Manual</div>
+      <div class="logo-title">Sales Aggregation Tool</div>
+    </div>
+    <nav>
+      <div class="nav-section">はじめに</div>
+      <a href="#overview" class="nav-item active"><span class="nav-dot"></span>ツールについて</a>
+      <a href="#features" class="nav-item"><span class="nav-dot"></span>機能一覧</a>
+
+      <div class="nav-section">基本操作</div>
+      <a href="#usage-basic"    class="nav-item"><span class="nav-dot"></span>基本的な使い方</a>
+      <a href="#usage-category" class="nav-item"><span class="nav-dot"></span>カテゴリ管理</a>
+      <a href="#usage-export"   class="nav-item"><span class="nav-dot"></span>CSV出力</a>
+
+      <div class="nav-section">仕様</div>
+      <a href="#spec-category" class="nav-item"><span class="nav-dot"></span>カテゴリルール</a>
+      <a href="#spec-tax"      class="nav-item"><span class="nav-dot"></span>税区分・消費税</a>
+      <a href="#spec-input"    class="nav-item"><span class="nav-dot"></span>入力ファイル形式</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <div class="page-header">
+      <div class="eyebrow">User Manual</div>
+      <h1>Sales Aggregation Tool<br>利用マニュアル</h1>
+      <p class="subtitle">販売管理システムからのXLS/CSVデータを読み込み、カテゴリ修正・集計・CSV出力を行うツールです。</p>
+    </div>
+
+    <!-- 1 -->
+    <section class="section" id="overview">
+      <h2 class="section-title"><span class="section-number">1</span>ツールについて</h2>
+      <p><code class="inline">sales-aggregation-tool.html</code> の1ファイルのみで動作します。サーバーやインターネット接続は不要で、HTMLファイルをブラウザで開くだけで使用できます。アップロードしたデータは外部に一切送信されません。</p>
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <div class="callout-body">
+          <strong>動作環境</strong>
+          Google Chrome / Microsoft Edge / Safari などモダンブラウザで動作します。Internet Explorerは非対応です。
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="section" id="features">
+      <h2 class="section-title"><span class="section-number">2</span>機能一覧</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-icon">📂</div>
+          <div class="fc-title">ファイル読み込み</div>
+          <div class="fc-desc">XLS / XLSX / CSV に対応。ドラッグ＆ドロップまたはクリックで読み込み。</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🏷</div>
+          <div class="fc-title">カテゴリ修正</div>
+          <div class="fc-desc">商品ごとにカテゴリをプルダウンで変更可能。変更行は緑色でハイライト表示。</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">⚙️</div>
+          <div class="fc-title">カテゴリ管理</div>
+          <div class="fc-desc">カテゴリの追加・編集・削除・並べ替えをアプリ内で行える。</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">📊</div>
+          <div class="fc-title">集計</div>
+          <div class="fc-desc">カテゴリ×税区分で売上金額を集計。消費税額を参考表示。</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">⬇️</div>
+          <div class="fc-title">CSV出力</div>
+          <div class="fc-desc">商品明細・集計結果をそれぞれCSVでダウンロード可能。</div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🏠</div>
+          <div class="fc-title">自家用の識別</div>
+          <div class="fc-desc">自家用取引を集計結果で括弧書き表示（うち自家用 ¥XX）。</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- 3 -->
+    <section class="section" id="usage-basic">
+      <h2 class="section-title"><span class="section-number">3</span>基本的な使い方</h2>
+      <div class="step-list">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>HTMLファイルをブラウザで開く</strong>
+            <p><code class="inline">sales-aggregation-tool.html</code> をダブルクリックしてブラウザで開きます。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>ファイルを読み込む</strong>
+            <p>アップロードエリアをクリックしてファイルを選択するか、ファイルをドラッグ＆ドロップします。XLS・XLSX・CSV に対応しています。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>カテゴリを確認・修正する</strong>
+            <p>読み込まれた商品一覧が表示されます。カテゴリ欄がプルダウンの行は変更できます。固定カテゴリ（清酒・リキュール・運賃）はバッジ表示で変更不可です。変更した行は緑色でハイライトされます。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>「集計する」ボタンを押す</strong>
+            <p>カテゴリ×税区分で集計された結果が表示されます。清酒・リキュールには自家用分の内訳も括弧書きで表示されます。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>CSVをダウンロードする（任意）</strong>
+            <p>商品一覧・集計結果それぞれの右上にある「CSV出力」ボタンからダウンロードできます。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="section" id="usage-category">
+      <h2 class="section-title"><span class="section-number">4</span>カテゴリ管理</h2>
+      <p>ファイル読み込みエリアの下にある「カテゴリを管理する」ボタンを押すと管理パネルが開きます。</p>
+
+      <div class="subsection">
+        <div class="subsection-title">カテゴリの追加</div>
+        <p>パネル下部の入力欄に新しいカテゴリ名を入力し「追加」ボタンを押します。Enterキーでも追加できます。追加されたカテゴリは「その他」の直前に挿入されます。</p>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">カテゴリ名の編集</div>
+        <p>リスト内のカテゴリ名を直接クリックして編集できます。フォーカスを外すと確定されます。固定カテゴリ（清酒・リキュール・運賃）は編集できません。</p>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">カテゴリの並べ替え</div>
+        <p>各行の左端にある「⠿」アイコンをドラッグして順番を変えられます。並べ替えは集計結果テーブルの表示順にも反映されます。</p>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">カテゴリの削除</div>
+        <p>各行の右端の「✕」ボタンで削除できます。固定カテゴリは削除できません。</p>
+      </div>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>適用前の注意</strong>
+          変更後は必ず「適用する」ボタンを押してください。「×」やキャンセルで閉じると変更は破棄されます。削除したカテゴリが商品に割り当てられている場合、自動的に「その他」に変更されます。
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="section" id="usage-export">
+      <h2 class="section-title"><span class="section-number">5</span>CSV出力</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>ボタンの場所</th>
+            <th>ファイル名</th>
+            <th>出力内容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>商品一覧テーブル右上</td>
+            <td><code class="inline">sales_detail_YYYYMMDD.csv</code></td>
+            <td>商品名称・酒別名称・取引名称・カテゴリ（修正後）・税区分・当年金額</td>
+          </tr>
+          <tr>
+            <td>集計結果テーブル右上</td>
+            <td><code class="inline">sales_summary_YYYYMMDD.csv</code></td>
+            <td>カテゴリ・税区分・売上金額合計・うち自家用・消費税（参考）＋合計行</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout success">
+        <span class="callout-icon">✓</span>
+        <div class="callout-body">
+          <strong>Excelで文字化けしません</strong>
+          出力CSVはUTF-8 BOM付きで保存されるため、Excelで開いても日本語が正しく表示されます。
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- 6 -->
+    <section class="section" id="spec-category">
+      <h2 class="section-title"><span class="section-number">6</span>カテゴリルール仕様</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>酒別名称</th>
+            <th>取引名称</th>
+            <th>カテゴリ</th>
+            <th>種別</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>清酒</td>
+            <td>売上 / 自家用</td>
+            <td>清酒</td>
+            <td><span class="tag tag-fixed">固定</span></td>
+          </tr>
+          <tr>
+            <td>リキュール</td>
+            <td>売上 / 自家用</td>
+            <td>リキュール</td>
+            <td><span class="tag tag-fixed">固定</span></td>
+          </tr>
+          <tr>
+            <td>運賃</td>
+            <td>—</td>
+            <td>運賃</td>
+            <td><span class="tag tag-fixed">固定</span></td>
+          </tr>
+          <tr>
+            <td>セット品・その他副資材等・値引・その他</td>
+            <td>—</td>
+            <td>初期値は酒別名称（変更可）</td>
+            <td><span class="tag tag-edit">変更可</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>自家用取引の清酒・リキュールは固定カテゴリのまま集計されますが、集計結果では「うち自家用」として金額の内訳が括弧書きで表示されます。</p>
+    </section>
+
+    <!-- 7 -->
+    <section class="section" id="spec-tax">
+      <h2 class="section-title"><span class="section-number">7</span>税区分・消費税の仕様</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>消費税率名称の値</th>
+            <th>表示ラベル</th>
+            <th>消費税計算</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="inline">0.1</code></td>
+            <td>10%（標準）</td>
+            <td>売上合計 × 0.1（四捨五入）</td>
+          </tr>
+          <tr>
+            <td><code class="inline">0.08</code></td>
+            <td>8%（軽減）</td>
+            <td>売上合計 × 0.08（四捨五入）</td>
+          </tr>
+          <tr>
+            <td>空欄 / null</td>
+            <td>対象外</td>
+            <td>—（輸出等）</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>消費税額は参考値として集計結果に表示されます。端数処理は四捨五入です。</p>
+    </section>
+
+    <!-- 8 -->
+    <section class="section" id="spec-input">
+      <h2 class="section-title"><span class="section-number">8</span>入力ファイル形式</h2>
+      <p>販売管理システムから出力されたXLS・XLSX・CSVファイルを想定しています。以下の列が含まれている必要があります（列順不問）。</p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>列名</th>
+            <th>内容</th>
+            <th>必須</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code class="inline">取引名称</code></td><td>「売上」「自家用」など</td><td>必須</td></tr>
+          <tr><td><code class="inline">酒別名称</code></td><td>「清酒」「リキュール」など</td><td>必須</td></tr>
+          <tr><td><code class="inline">商品名称</code></td><td>商品の名称</td><td>必須</td></tr>
+          <tr><td><code class="inline">消費税率名称</code></td><td>0.1 / 0.08 / 空欄</td><td>必須</td></tr>
+          <tr><td><code class="inline">当年金額</code></td><td>売上金額（数値）</td><td>必須</td></tr>
+        </tbody>
+      </table>
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <div class="callout-body">上記以外の列（取引コード・担当者名称など）は無視されます。ファイル先頭に集計期間などのタイトル行がある場合も自動的に読み飛ばします。</div>
+      </div>
+    </section>
+
+    <div class="doc-footer">
+      <span>Sales Aggregation Tool — User Manual</span>
+      <span>2026年4月</span>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('.section');
+  const navItems = document.querySelectorAll('.nav-item');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(i => i.classList.remove('active'));
+        const a = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { threshold: 0.35 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

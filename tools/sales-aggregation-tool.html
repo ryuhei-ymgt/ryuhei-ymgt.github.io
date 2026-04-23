@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Aggregation Tool</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: #f4f2ed;
+    color: #1a1a18;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  header {
+    margin-bottom: 2rem;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1a1a18;
+  }
+
+  header p {
+    font-size: 13px;
+    color: #888780;
+    margin-top: 4px;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1.5px dashed #b4b2a9;
+    border-radius: 12px;
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fff;
+    margin-bottom: 2rem;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: #534AB7;
+    background: #EEEDFE;
+  }
+
+  .upload-zone .upload-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    background: #D3D1C7;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-zone .upload-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: #5F5E5A;
+  }
+
+  .upload-zone p {
+    font-size: 14px;
+    color: #5F5E5A;
+  }
+
+  .upload-zone p span {
+    color: #534AB7;
+    font-weight: 500;
+  }
+
+  .upload-zone input[type="file"] {
+    display: none;
+  }
+
+  /* Section titles */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a18;
+  }
+
+  .badge {
+    font-size: 12px;
+    background: #D3D1C7;
+    color: #444441;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Table styles */
+  .table-wrap {
+    background: #fff;
+    border-radius: 12px;
+    border: 0.5px solid #D3D1C7;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: #f4f2ed;
+    border-bottom: 1px solid #D3D1C7;
+  }
+
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #5F5E5A;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+  }
+
+  tbody tr {
+    border-bottom: 0.5px solid #f0ede6;
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: #faf9f6;
+  }
+
+  tbody td {
+    padding: 9px 14px;
+    color: #1a1a18;
+    vertical-align: middle;
+  }
+
+  /* Category tags */
+  .cat-fixed {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    background: #E1F5EE;
+    color: #0F6E56;
+  }
+
+  .cat-fixed.jikayo {
+    background: #EEEDFE;
+    color: #3C3489;
+  }
+
+  .cat-fixed.unchin {
+    background: #FAEEDA;
+    color: #633806;
+  }
+
+  .cat-fixed.liqueur {
+    background: #FBEAF0;
+    color: #72243E;
+  }
+
+  /* Select dropdown */
+  select.cat-select {
+    font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid #b4b2a9;
+    border-radius: 6px;
+    background: #fff;
+    color: #1a1a18;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  select.cat-select:hover, select.cat-select:focus {
+    border-color: #534AB7;
+  }
+
+  select.cat-select.modified {
+    border-color: #1D9E75;
+    background: #E1F5EE;
+    color: #085041;
+    font-weight: 500;
+  }
+
+  /* Aggregate button */
+  .btn-aggregate {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #534AB7;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    font-family: inherit;
+    transition: background 0.2s, transform 0.1s;
+    margin-bottom: 2rem;
+  }
+
+  .btn-aggregate:hover {
+    background: #3C3489;
+  }
+
+  .btn-aggregate:active {
+    transform: scale(0.99);
+  }
+
+  /* Export buttons */
+  .export-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .btn-export {
+    flex: 1;
+    padding: 11px 16px;
+    border: 1.5px solid #534AB7;
+    background: #fff;
+    color: #534AB7;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-export:hover {
+    background: #EEEDFE;
+  }
+
+  .btn-export:active {
+    transform: scale(0.98);
+  }
+
+  /* Result table */
+  .result-section {
+    display: none;
+  }
+
+  .result-section.visible {
+    display: block;
+  }
+
+  .result-table thead tr {
+    background: #534AB7;
+  }
+
+  .result-table thead th {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .result-table .total-row {
+    background: #f4f2ed;
+    font-weight: 700;
+    border-top: 2px solid #b4b2a9;
+  }
+
+  .amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hidden { display: none; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .pill-10 {
+    background: #FAEEDA;
+    color: #633806;
+  }
+
+  .pill-8 {
+    background: #EAF3DE;
+    color: #27500A;
+  }
+
+  .pill-exempt {
+    background: #F1EFE8;
+    color: #5F5E5A;
+  }
+
+  /* Summary cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .summary-card {
+    background: #fff;
+    border: 0.5px solid #D3D1C7;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .summary-card .label {
+    font-size: 12px;
+    color: #888780;
+    margin-bottom: 4px;
+  }
+
+  .summary-card .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a18;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary-card .sub {
+    font-size: 11px;
+    color: #b4b2a9;
+    margin-top: 2px;
+  }
+
+  /* Category manager */
+  .cat-manager-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.5px solid #b4b2a9;
+    background: #fff;
+    color: #5F5E5A;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 2rem;
+  }
+
+  .cat-manager-btn:hover {
+    border-color: #534AB7;
+    color: #534AB7;
+    background: #EEEDFE;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,26,24,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    width: 480px;
+    max-width: 92vw;
+    max-height: 82vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a18;
+  }
+
+  .modal-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f4f2ed;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    color: #5F5E5A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+
+  .modal-close:hover { background: #D3D1C7; }
+
+  .modal-note {
+    font-size: 12px;
+    color: #888780;
+    background: #f4f2ed;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  .cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .cat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #faf9f6;
+    border: 0.5px solid #D3D1C7;
+    border-radius: 8px;
+  }
+
+  .cat-item.fixed-item {
+    background: #f4f2ed;
+    opacity: 0.7;
+  }
+
+  .cat-item .drag-handle {
+    cursor: grab;
+    color: #b4b2a9;
+    font-size: 14px;
+    padding: 2px 4px;
+    user-select: none;
+  }
+
+  .cat-item input.cat-name-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+
+  .cat-item input.cat-name-input:focus {
+    background: #fff;
+    box-shadow: 0 0 0 2px #534AB7;
+  }
+
+  .cat-item input.cat-name-input:disabled {
+    color: #888780;
+    cursor: not-allowed;
+  }
+
+  .fixed-badge {
+    font-size: 10px;
+    background: #E1F5EE;
+    color: #0F6E56;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .btn-del-cat {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #b4b2a9;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, color 0.1s;
+  }
+
+  .btn-del-cat:hover { background: #FCEBEB; color: #E24B4A; }
+
+  .add-cat-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .add-cat-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #b4b2a9;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .add-cat-row input:focus { border-color: #534AB7; }
+
+  .btn-add-cat {
+    padding: 8px 16px;
+    background: #534AB7;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .btn-add-cat:hover { background: #3C3489; }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 0.5px solid #D3D1C7;
+  }
+
+  .btn-modal-apply {
+    flex: 1;
+    padding: 10px;
+    background: #534AB7;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .btn-modal-apply:hover { background: #3C3489; }
+
+  .btn-modal-cancel {
+    padding: 10px 18px;
+    background: #fff;
+    color: #5F5E5A;
+    border: 1px solid #b4b2a9;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .btn-modal-cancel:hover { background: #f4f2ed; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sales Aggregation Tool</h1>
+  <p>XLS / CSV をアップロードして、カテゴリを修正・集計できます</p>
+</header>
+
+
+<!-- Category Manager Modal -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">カテゴリ管理</span>
+      <button class="modal-close" id="catModalClose">✕</button>
+    </div>
+    <div class="modal-note">
+      ・固定カテゴリ（清酒・リキュール・運賃）は編集・削除できません。<br>
+      ・カテゴリ名を直接編集、または行を並べ替えできます。<br>
+      ・「適用する」を押すと商品一覧のプルダウンに反映されます。
+    </div>
+    <div class="cat-list" id="catList"></div>
+    <div class="add-cat-row">
+      <input type="text" id="newCatInput" placeholder="新しいカテゴリ名を入力..." maxlength="20">
+      <button class="btn-add-cat" id="addCatBtn">追加</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="catModalCancel">キャンセル</button>
+      <button class="btn-modal-apply" id="catModalApply">適用する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Zone -->
+<div class="upload-zone" id="uploadZone">
+  <div class="upload-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  </div>
+  <p><span>ファイルを選択</span>またはここにドロップ</p>
+  <p style="font-size:12px; margin-top:6px;">XLS / XLSX / CSV に対応</p>
+  <input type="file" id="fileInput" accept=".xls,.xlsx,.csv">
+</div>
+
+
+<button class="cat-manager-btn" id="openCatManager">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+  カテゴリを管理する
+</button>
+
+<!-- Product List Table -->
+<div id="productSection" class="hidden">
+  <div class="section-header">
+    <span class="section-title">商品一覧（カテゴリ修正）</span>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="badge" id="rowCount"></span>
+      <button class="btn-export" id="exportDetailBtn" style="flex:none; padding:6px 14px; font-size:12px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        CSV出力
+      </button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table id="productTable">
+      <thead>
+        <tr>
+          <th>商品名称</th>
+          <th>酒別名称</th>
+          <th>取引名称</th>
+          <th>カテゴリ</th>
+          <th class="amount">当年金額</th>
+        </tr>
+      </thead>
+      <tbody id="productBody"></tbody>
+    </table>
+  </div>
+
+  <button class="btn-aggregate" id="aggregateBtn">集計する</button>
+</div>
+
+<!-- Result Section -->
+<div id="resultSection" class="result-section">
+  <div class="section-header">
+    <span class="section-title">集計結果</span>
+    <button class="btn-export" id="exportSummaryBtn" style="flex:none; padding:6px 14px; font-size:12px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      CSV出力
+    </button>
+  </div>
+
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <div class="table-wrap">
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>カテゴリ</th>
+          <th>税区分</th>
+          <th class="amount">売上金額合計</th>
+          <th class="amount">消費税（参考）</th>
+        </tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SheetJS for XLS/XLSX parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // ============================================================
+  // カテゴリマスタ
+  // ============================================================
+  let CATEGORY_MASTER = ['清酒', 'リキュール', '資材', 'グッズ', '運賃', '販管費計上', '酒粕', '食品', 'その他'];
+
+  // 変更不可の固定カテゴリ（自家用も含め、清酒・リキュール・運賃は固定）
+  const FIXED_CATEGORIES = ['清酒', 'リキュール', '運賃'];
+
+  // ============================================================
+  // 状態管理
+  // ============================================================
+  let rows = []; // { 商品名称, 酒別名称, 取引名称, 消費税率名称, 当年金額, initialCategory, currentCategory, isFixed }
+
+  // ============================================================
+  // UI Elements
+  // ============================================================
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const productSection = document.getElementById('productSection');
+  const productBody = document.getElementById('productBody');
+  const rowCount = document.getElementById('rowCount');
+  const aggregateBtn = document.getElementById('aggregateBtn');
+  const resultSection = document.getElementById('resultSection');
+  const resultBody = document.getElementById('resultBody');
+  const summaryCards = document.getElementById('summaryCards');
+
+  // ============================================================
+  // ファイルアップロード処理
+  // ============================================================
+  uploadZone.addEventListener('click', () => fileInput.click());
+
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('drag-over');
+  });
+
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const reader = new FileReader();
+
+    if (ext === 'csv') {
+      reader.onload = (e) => {
+        const text = e.target.result;
+        parseCSV(text);
+      };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      // XLS / XLSX
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        parseXLSData(json);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+  // ============================================================
+  // XLS/XLSX パース
+  // ============================================================
+  function parseXLSData(json) {
+    // ヘッダー行を探す（取引名称 or 取引ｺｰﾄﾞ が含まれる行）
+    let headerRowIndex = -1;
+    let headers = null;
+
+    for (let i = 0; i < Math.min(json.length, 10); i++) {
+      const vals = Object.values(json[i]).map(v => String(v));
+      if (vals.some(v => v.includes('取引') || v.includes('商品') || v.includes('酒別'))) {
+        headers = vals;
+        headerRowIndex = i;
+        break;
+      }
+    }
+
+    if (headerRowIndex === -1) {
+      // 1行目がヘッダーの場合
+      processRows(json);
+      return;
+    }
+
+    // ヘッダー行以降のデータを抽出
+    const dataRows = json.slice(headerRowIndex + 1);
+    const colKeys = Object.keys(json[headerRowIndex]);
+
+    // ヘッダーマッピング
+    const headerMap = {};
+    colKeys.forEach((key, idx) => {
+      headerMap[headers[idx]] = key;
+    });
+
+    // 必要な列を探す
+    const findCol = (patterns) => {
+      for (const h of headers) {
+        if (patterns.some(p => h.includes(p))) {
+          return headerMap[h];
+        }
+      }
+      return null;
+    };
+
+    const colMapping = {
+      取引名称: findCol(['取引名称']),
+      酒別名称: findCol(['酒別名称']),
+      商品名称: findCol(['商品名称']),
+      消費税率名称: findCol(['消費税率名称']),
+      当年金額: findCol(['当年金額']),
+    };
+
+    const normalized = dataRows
+      .filter(row => {
+        const amount = row[colMapping.当年金額];
+        const productName = row[colMapping.商品名称];
+        // 集計行（商品名称が空・NaN）を除外
+        return productName && String(productName).trim() !== '' && productName !== 'NaN';
+      })
+      .map(row => ({
+        取引名称: String(row[colMapping.取引名称] || '').trim(),
+        酒別名称: String(row[colMapping.酒別名称] || '').trim(),
+        商品名称: String(row[colMapping.商品名称] || '').trim(),
+        消費税率名称: row[colMapping.消費税率名称],
+        当年金額: Number(row[colMapping.当年金額]) || 0,
+      }));
+
+    buildRows(normalized);
+  }
+
+  // ============================================================
+  // CSV パース
+  // ============================================================
+  function parseCSV(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+    const idxOf = (patterns) => {
+      for (let i = 0; i < headers.length; i++) {
+        if (patterns.some(p => headers[i].includes(p))) return i;
+      }
+      return -1;
+    };
+
+    const idx = {
+      取引名称: idxOf(['取引名称']),
+      酒別名称: idxOf(['酒別名称']),
+      商品名称: idxOf(['商品名称']),
+      消費税率名称: idxOf(['消費税率名称']),
+      当年金額: idxOf(['当年金額']),
+    };
+
+    const data = lines.slice(1).map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+      return {
+        取引名称: cols[idx.取引名称] || '',
+        酒別名称: cols[idx.酒別名称] || '',
+        商品名称: cols[idx.商品名称] || '',
+        消費税率名称: cols[idx.消費税率名称] || '',
+        当年金額: parseFloat(cols[idx.当年金額]) || 0,
+      };
+    }).filter(r => r.商品名称 && r.商品名称.trim());
+
+    buildRows(data);
+  }
+
+  // ============================================================
+  // 行データ構築（カテゴリ付与）
+  // ============================================================
+  function buildRows(data) {
+    rows = data.map(r => {
+      let initialCategory;
+      let isFixed = false;
+
+      if (FIXED_CATEGORIES.includes(r.酒別名称)) {
+        // 清酒・リキュール・運賃 → 固定（自家用も含む）
+        initialCategory = r.酒別名称;
+        isFixed = true;
+      } else {
+        // それ以外 → 変更可能、初期値は酒別名称
+        initialCategory = r.酒別名称 || 'その他';
+        isFixed = false;
+      }
+
+      // カテゴリマスタに存在しない場合は「その他」にマップ
+      const currentCat = CATEGORY_MASTER.includes(initialCategory) ? initialCategory : 'その他';
+
+      return {
+        ...r,
+        initialCategory,
+        currentCategory: currentCat,
+        isFixed,
+      };
+    });
+
+    renderProductTable();
+  }
+
+  // ============================================================
+  // 消費税率ユーティリティ
+  // ============================================================
+  // 税率の表示名を返す（空欄・不明は「対象外」）
+  function formatTaxRate(val) {
+    if (val === null || val === undefined || String(val).trim() === '' || (typeof val === 'number' && isNaN(val))) return '対象外';
+    const num = parseFloat(val);
+    if (isNaN(num)) return '対象外';
+    if (Math.abs(num - 0.1) < 0.001 || Math.abs(num - 10) < 0.01) return '10%（標準）';
+    if (Math.abs(num - 0.08) < 0.001 || Math.abs(num - 8) < 0.01) return '8%（軽減）';
+    return '対象外';
+  }
+
+  // 税率の数値（0.1 / 0.08 / 0）を返す — 消費税額計算用
+  function getTaxRateNum(val) {
+    if (val === null || val === undefined || String(val).trim() === '' || (typeof val === 'number' && isNaN(val))) return 0;
+    const num = parseFloat(val);
+    if (isNaN(num)) return 0;
+    if (Math.abs(num - 0.1) < 0.001 || Math.abs(num - 10) < 0.01) return 0.1;
+    if (Math.abs(num - 0.08) < 0.001 || Math.abs(num - 8) < 0.01) return 0.08;
+    return 0;
+  }
+
+  // ============================================================
+  // 商品一覧テーブル描画
+  // ============================================================
+  function renderProductTable() {
+    productBody.innerHTML = '';
+
+    rows.forEach((row, idx) => {
+      const tr = document.createElement('tr');
+
+      // カテゴリセル
+      let catCell;
+      if (row.isFixed) {
+        let cls = 'cat-fixed';
+        if (row.currentCategory === '運賃') cls += ' unchin';
+        else if (row.currentCategory === 'リキュール') cls += ' liqueur';
+        catCell = `<span class="${cls}">${row.currentCategory}</span>`;
+      } else {
+        const options = CATEGORY_MASTER.map(c =>
+          `<option value="${c}" ${c === row.currentCategory ? 'selected' : ''}>${c}</option>`
+        ).join('');
+        const isModified = row.currentCategory !== (CATEGORY_MASTER.includes(row.initialCategory) ? row.initialCategory : 'その他');
+        catCell = `<select class="cat-select${isModified ? ' modified' : ''}" data-idx="${idx}">${options}</select>`;
+      }
+
+      const taxLabel = formatTaxRate(row.消費税率名称);
+
+      tr.innerHTML = `
+        <td>${row.商品名称}</td>
+        <td>${row.酒別名称}</td>
+        <td>${row.取引名称}</td>
+        <td>${catCell}</td>
+        <td class="amount">¥${row.当年金額.toLocaleString()}</td>
+      `;
+
+      productBody.appendChild(tr);
+    });
+
+    // プルダウンのイベントリスナー
+    document.querySelectorAll('select.cat-select').forEach(sel => {
+      sel.addEventListener('change', (e) => {
+        const i = parseInt(e.target.dataset.idx);
+        const prev = rows[i].currentCategory;
+        rows[i].currentCategory = e.target.value;
+        // 変更されたかどうかでスタイル変更
+        const initNormalized = CATEGORY_MASTER.includes(rows[i].initialCategory)
+          ? rows[i].initialCategory : 'その他';
+        if (rows[i].currentCategory !== initNormalized) {
+          e.target.classList.add('modified');
+        } else {
+          e.target.classList.remove('modified');
+        }
+      });
+    });
+
+    rowCount.textContent = `${rows.length} 件`;
+    productSection.classList.remove('hidden');
+    resultSection.classList.remove('visible');
+  }
+
+  // ============================================================
+  // 集計処理
+  // ============================================================
+  aggregateBtn.addEventListener('click', aggregate);
+
+  function aggregate() {
+    // グルーピング: カテゴリ × 税区分
+    const grouped = {};
+    let grandTotal = 0;
+
+    rows.forEach(row => {
+      const tax = formatTaxRate(row.消費税率名称);
+      const taxRateNum = getTaxRateNum(row.消費税率名称);
+      const key = `${row.currentCategory}__${tax}`;
+      if (!grouped[key]) {
+        grouped[key] = { category: row.currentCategory, tax, taxRateNum, total: 0, jikayoTotal: 0 };
+      }
+      grouped[key].total += row.当年金額;
+      // 自家用の取引金額を別途積算（清酒・リキュールに付記するため）
+      if (row.取引名称 === '自家用') {
+        grouped[key].jikayoTotal += row.当年金額;
+      }
+      grandTotal += row.当年金額;
+    });
+
+    // カテゴリ順でソート
+    const catOrder = ['清酒', 'リキュール', '資材', 'グッズ', '運賃', '販管費計上', '酒粕', '食品', 'その他'];
+    const sorted = Object.values(grouped).sort((a, b) => {
+      const ia = catOrder.indexOf(a.category);
+      const ib = catOrder.indexOf(b.category);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+
+    renderResult(sorted, grandTotal);
+  }
+
+  // ============================================================
+  // 集計結果描画
+  // ============================================================
+  function renderResult(data, grandTotal) {
+    // サマリカード
+    summaryCards.innerHTML = '';
+
+    // カテゴリ別集計（サマリ用）
+    const catTotals = {};
+    data.forEach(d => {
+      catTotals[d.category] = (catTotals[d.category] || 0) + d.total;
+    });
+
+    const topCats = Object.entries(catTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    // 合計カード
+    const totalCard = document.createElement('div');
+    totalCard.className = 'summary-card';
+    totalCard.innerHTML = `
+      <div class="label">売上合計</div>
+      <div class="value">¥${grandTotal.toLocaleString()}</div>
+      <div class="sub">${data.length} 区分</div>
+    `;
+    summaryCards.appendChild(totalCard);
+
+    topCats.forEach(([cat, total]) => {
+      const card = document.createElement('div');
+      card.className = 'summary-card';
+      const pct = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : 0;
+      card.innerHTML = `
+        <div class="label">${cat}</div>
+        <div class="value">¥${total.toLocaleString()}</div>
+        <div class="sub">${pct}%</div>
+      `;
+      summaryCards.appendChild(card);
+    });
+
+    // 結果テーブル
+    resultBody.innerHTML = '';
+
+    data.forEach(row => {
+      const tr = document.createElement('tr');
+      // 清酒・リキュールで自家用分がある場合は括弧書きで付記
+      const showJikayo = (row.category === '清酒' || row.category === 'リキュール') && row.jikayoTotal > 0;
+      const jikayoNote = showJikayo
+        ? `<span style="font-size:11px; color:#888780; margin-left:6px;">（うち自家用 ¥${row.jikayoTotal.toLocaleString()}）</span>`
+        : '';
+      // 税区分に応じたピルのスタイル
+      const pillCls = row.tax === '8%（軽減）' ? 'pill pill-8' : row.tax === '対象外' ? 'pill pill-exempt' : 'pill pill-10';
+      // 消費税額（四捨五入）
+      const taxAmt = Math.round(row.total * row.taxRateNum);
+      const taxAmtStr = row.taxRateNum > 0 ? `¥${taxAmt.toLocaleString()}` : '—';
+      tr.innerHTML = `
+        <td>${row.category}</td>
+        <td><span class="${pillCls}">${row.tax}</span></td>
+        <td class="amount">¥${row.total.toLocaleString()}${jikayoNote}</td>
+        <td class="amount" style="color:var(--tax-note-color, #888780); font-size:12px;">${taxAmtStr}</td>
+      `;
+      resultBody.appendChild(tr);
+    });
+
+    // 合計行（税率別に消費税を積算）
+    const totalTaxAmt = data.reduce((sum, row) => sum + Math.round(row.total * row.taxRateNum), 0);
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'total-row';
+    totalTr.innerHTML = `
+      <td colspan="2">合計</td>
+      <td class="amount">¥${grandTotal.toLocaleString()}</td>
+      <td class="amount" style="font-size:12px; color:#5F5E5A;">¥${totalTaxAmt.toLocaleString()}</td>
+    `;
+    resultBody.appendChild(totalTr);
+
+    resultSection.classList.add('visible');
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // 集計データをグローバルに保持（CSV出力用）
+    window._lastResultData = data;
+    window._lastGrandTotal = grandTotal;
+  }
+
+  // ============================================================
+  // CSV出力ユーティリティ
+  // ============================================================
+  function escapeCSV(val) {
+    const s = String(val === null || val === undefined ? '' : val);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  function downloadCSV(filename, headers, dataRows) {
+    const BOM = '\uFEFF'; // Excel用BOM（UTF-8）
+    const lines = [headers.map(escapeCSV).join(',')];
+    dataRows.forEach(r => lines.push(r.map(escapeCSV).join(',')));
+    const blob = new Blob([BOM + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ① 商品一覧（カテゴリ修正後）CSV出力
+  document.getElementById('exportDetailBtn').addEventListener('click', () => {
+    if (!rows.length) return;
+    const headers = ['商品名称', '酒別名称', '取引名称', 'カテゴリ', '税区分', '当年金額'];
+    const dataRows = rows.map(r => [
+      r.商品名称,
+      r.酒別名称,
+      r.取引名称,
+      r.currentCategory,
+      formatTaxRate(r.消費税率名称),
+      r.当年金額,
+    ]);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    downloadCSV(`sales_detail_${today}.csv`, headers, dataRows);
+  });
+
+  // ② 集計結果CSV出力
+  document.getElementById('exportSummaryBtn').addEventListener('click', () => {
+    const data = window._lastResultData;
+    if (!data) return;
+    const headers = ['カテゴリ', '税区分', '売上金額合計', 'うち自家用', '消費税（参考）'];
+    const dataRows = data.map(r => {
+      const taxAmt = r.taxRateNum > 0 ? Math.round(r.total * r.taxRateNum) : '';
+      const jikayo = (r.category === '清酒' || r.category === 'リキュール') && r.jikayoTotal > 0 ? r.jikayoTotal : '';
+      return [r.category, r.tax, r.total, jikayo, taxAmt];
+    });
+    // 合計行
+    const totalTaxAmt = data.reduce((sum, r) => sum + Math.round(r.total * r.taxRateNum), 0);
+    dataRows.push(['合計', '', window._lastGrandTotal, '', totalTaxAmt]);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    downloadCSV(`sales_summary_${today}.csv`, headers, dataRows);
+  });
+
+  // ============================================================
+  // カテゴリ管理モーダル
+  // ============================================================
+  const FIXED_CAT_NAMES = ['清酒', 'リキュール', '運賃']; // 編集・削除不可
+  let tempCategoryList = []; // モーダル内の一時リスト
+
+  const catModal = document.getElementById('catModal');
+  const catList  = document.getElementById('catList');
+  const newCatInput = document.getElementById('newCatInput');
+
+  // モーダルを開く
+  document.getElementById('openCatManager').addEventListener('click', () => {
+    tempCategoryList = [...CATEGORY_MASTER];
+    renderCatList();
+    catModal.classList.add('open');
+  });
+
+  // 閉じる（×・キャンセル）
+  document.getElementById('catModalClose').addEventListener('click', closeCatModal);
+  document.getElementById('catModalCancel').addEventListener('click', closeCatModal);
+  catModal.addEventListener('click', e => { if (e.target === catModal) closeCatModal(); });
+
+  function closeCatModal() {
+    catModal.classList.remove('open');
+    newCatInput.value = '';
+  }
+
+  // カテゴリリストを描画
+  function renderCatList() {
+    catList.innerHTML = '';
+    tempCategoryList.forEach((cat, i) => {
+      const isFixed = FIXED_CAT_NAMES.includes(cat);
+      const item = document.createElement('div');
+      item.className = 'cat-item' + (isFixed ? ' fixed-item' : '');
+      item.dataset.index = i;
+      item.draggable = !isFixed;
+
+      item.innerHTML = `
+        <span class="drag-handle" title="ドラッグで並べ替え">${isFixed ? '　' : '⠿'}</span>
+        <input class="cat-name-input" type="text" value="${cat}" maxlength="20" ${isFixed ? 'disabled' : ''} data-i="${i}">
+        ${isFixed
+          ? '<span class="fixed-badge">固定</span>'
+          : `<button class="btn-del-cat" data-i="${i}" title="削除">✕</button>`
+        }
+      `;
+      catList.appendChild(item);
+    });
+
+    // 名前編集イベント
+    catList.querySelectorAll('input.cat-name-input').forEach(inp => {
+      inp.addEventListener('change', e => {
+        const i = parseInt(e.target.dataset.i);
+        const val = e.target.value.trim();
+        if (!val) { e.target.value = tempCategoryList[i]; return; }
+        if (tempCategoryList.some((c, ci) => c === val && ci !== i)) {
+          alert('同じ名前のカテゴリがすでに存在します。');
+          e.target.value = tempCategoryList[i];
+          return;
+        }
+        tempCategoryList[i] = val;
+      });
+    });
+
+    // 削除ボタン
+    catList.querySelectorAll('.btn-del-cat').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.i);
+        tempCategoryList.splice(i, 1);
+        renderCatList();
+      });
+    });
+
+    // ドラッグ＆ドロップで並べ替え
+    let dragSrc = null;
+    catList.querySelectorAll('.cat-item[draggable="true"]').forEach(item => {
+      item.addEventListener('dragstart', e => {
+        dragSrc = parseInt(item.dataset.index);
+        item.style.opacity = '0.5';
+      });
+      item.addEventListener('dragend', () => { item.style.opacity = ''; });
+      item.addEventListener('dragover', e => { e.preventDefault(); item.style.background = '#EEEDFE'; });
+      item.addEventListener('dragleave', () => { item.style.background = ''; });
+      item.addEventListener('drop', e => {
+        e.preventDefault();
+        item.style.background = '';
+        const dropIdx = parseInt(item.dataset.index);
+        if (dragSrc === null || dragSrc === dropIdx) return;
+        const moved = tempCategoryList.splice(dragSrc, 1)[0];
+        tempCategoryList.splice(dropIdx, 0, moved);
+        dragSrc = null;
+        renderCatList();
+      });
+    });
+  }
+
+  // カテゴリ追加
+  document.getElementById('addCatBtn').addEventListener('click', addNewCategory);
+  newCatInput.addEventListener('keydown', e => { if (e.key === 'Enter') addNewCategory(); });
+
+  function addNewCategory() {
+    const val = newCatInput.value.trim();
+    if (!val) return;
+    if (tempCategoryList.includes(val)) {
+      alert('同じ名前のカテゴリがすでに存在します。');
+      return;
+    }
+    // 「その他」の直前に挿入（その他は常に末尾）
+    const otherIdx = tempCategoryList.indexOf('その他');
+    if (otherIdx >= 0) {
+      tempCategoryList.splice(otherIdx, 0, val);
+    } else {
+      tempCategoryList.push(val);
+    }
+    newCatInput.value = '';
+    renderCatList();
+  }
+
+  // 適用する
+  document.getElementById('catModalApply').addEventListener('click', () => {
+    // 入力中の値を確定
+    catList.querySelectorAll('input.cat-name-input:not(:disabled)').forEach(inp => {
+      const i = parseInt(inp.dataset.i);
+      const val = inp.value.trim();
+      if (val) tempCategoryList[i] = val;
+    });
+
+    CATEGORY_MASTER = [...tempCategoryList];
+
+    // 既存rowsのcurrentCategoryをマスタに合わせて補正
+    rows.forEach(r => {
+      if (!r.isFixed && !CATEGORY_MASTER.includes(r.currentCategory)) {
+        r.currentCategory = 'その他';
+      }
+    });
+
+    // テーブルを再描画（アップロード済みの場合）
+    if (rows.length > 0) renderProductTable();
+
+    closeCatModal();
+  });
+
+</script>
+</body>
+</html>
