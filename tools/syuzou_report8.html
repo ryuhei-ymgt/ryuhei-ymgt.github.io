@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>酒造月次報告（8掛け換算）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f5f7fa;color:#1a1a1a;font-size:16px}
+.page-wrap{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+
+/* ヘッダー */
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px}
+.hdr-l{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ttl{font-size:24px;font-weight:700;color:#1a1a1a}
+.m-inp{font-size:16px;padding:7px 10px;border:1.5px solid #b0c4de;border-radius:8px;background:#fff}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.run-btn{font-size:16px;font-weight:600;padding:10px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;cursor:pointer}
+.run-btn:hover{background:#333}
+.pdf-btn{font-size:16px;font-weight:600;padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;cursor:pointer}
+.pdf-btn:hover{background:#0c447c}
+
+/* サマリーカード */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.8rem}
+.mc{background:#fff;border-radius:10px;padding:16px;border:1.5px solid #dde6f0}
+.ml{font-size:13px;color:#666;margin-bottom:6px}
+.mv{font-size:26px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums}
+.ms{font-size:12px;color:#888;margin-top:5px;line-height:1.5}
+
+/* セクション */
+.sec{font-size:13px;font-weight:700;letter-spacing:.06em;color:#555;padding:14px 0 6px;border-bottom:2px solid #b0c4de;margin-bottom:6px}
+.hint{font-size:13px;color:#888;margin-bottom:10px}
+
+/* テーブル */
+.tbl{width:100%;border-collapse:collapse;font-size:17px;table-layout:fixed;margin-bottom:1.6rem;border:1.5px solid #b0c4de;border-radius:10px;overflow:hidden}
+.tbl thead tr{background:#185FA5}
+.tbl th{text-align:center;font-weight:700;font-size:14px;color:#fff;padding:12px 8px;border-bottom:2px solid #0c447c}
+.tbl th.th-l{text-align:left}
+.tbl tbody tr:nth-child(odd){background:#E6F1FB}
+.tbl tbody tr:nth-child(even){background:#fff}
+.tbl tbody tr:hover{background:#B5D4F4}
+.tbl td{padding:11px 8px;border-bottom:1px solid #c8daf0;vertical-align:middle;text-align:center;color:#1a1a1a}
+.tbl td.nc{text-align:left;font-size:15px;line-height:1.5;padding-left:12px}
+.tbl input[type=number]{width:100%;font-size:17px;padding:6px 8px;height:40px;text-align:center;border:1.5px solid #b0c4de;border-radius:6px;background:#fff;font-family:inherit}
+.tbl input[type=number]:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px #378ADD44}
+
+/* 自動セル */
+.ac{font-size:17px;color:#aaa;font-variant-numeric:tabular-nums}
+.ac.v{color:#1a1a1a;font-weight:700}
+.ac.computed{color:#185FA5;font-weight:700}
+
+/* バッジ */
+.bs{display:inline-block;font-size:13px;padding:4px 10px;border-radius:6px;background:#EEEDFE;color:#3C3489;font-weight:700}
+.bh{display:inline-block;font-size:13px;padding:4px 10px;border-radius:6px;background:#E1F5EE;color:#085041;font-weight:700}
+.br{font-size:13px;color:#888}
+.sub-note{font-size:12px;color:#185FA5;display:block;margin-top:3px}
+.auto-td{background:#f0f4f8 !important;font-size:14px;color:#888;text-align:center;vertical-align:middle}
+
+/* 調整行 */
+.adj-tr td{background:#FAEEDA !important;font-weight:700}
+.adj-tr:hover td{background:#FAC77566 !important}
+.adj-tr .ac{color:#633806;font-weight:700}
+
+/* 列幅 */
+.cn{width:42%}.cl{width:22%}.cs{width:18%}.cb{width:18%}
+
+/* 印刷スタイル */
+@media print{
+  body{background:#fff;font-size:13px}
+  .page-wrap{max-width:100%;padding:0.5rem 1rem}
+  .btn-row{display:none}
+  .hdr{margin-bottom:1rem}
+  .sg{gap:8px;margin-bottom:1rem}
+  .mc{padding:10px;border:1px solid #ccc}
+  .mv{font-size:18px}
+  .tbl{font-size:13px;margin-bottom:1rem}
+  .tbl th{font-size:12px;padding:8px 6px}
+  .tbl td{padding:7px 6px}
+  .tbl td.nc{font-size:13px}
+  .tbl input[type=number]{font-size:13px;height:30px;border:none;background:transparent;font-weight:700}
+  .ac{font-size:13px}
+  .hint{display:none}
+  .sec{font-size:12px;padding:8px 0 4px}
+  @page{margin:15mm;size:A4}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<div class="hdr">
+  <div class="hdr-l">
+    <span class="ttl">酒造月次報告（8掛け換算）</span>
+    <input type="month" id="rm" class="m-inp" value="2025-07">
+  </div>
+  <div class="btn-row">
+    <button class="run-btn" onclick="calc()">集計・調整を実行</button>
+    <button class="pdf-btn" onclick="printPDF()">PDF 出力</button>
+  </div>
+</div>
+
+<div class="sg">
+  <div class="mc"><div class="ml">★ 前半合計</div><div class="mv" id="ss">—</div><div class="ms">L（提出用整数）</div></div>
+  <div class="mc"><div class="ml">☆ 後半合計</div><div class="mv" id="sh">—</div><div class="ms">L（⑭調整後）</div></div>
+  <div class="mc"><div class="ml">⑭ 欠減（調整後）</div><div class="mv" id="sk">—</div><div class="ms" id="sks">入力値 → 提出用Lで補正</div></div>
+  <div class="mc"><div class="ml">整合性</div><div class="mv" id="sm" style="font-size:18px;margin-top:4px">未計算</div><div class="ms" id="se"></div></div>
+</div>
+
+<!-- 前半 ★ -->
+<div class="sec">在庫・製造（★ 前半集計）</div>
+<p class="hint">入力単位：L（小数第2位まで）　提出用L = 入力値 × 0.8（四捨五入）　③のみ純アルコール量を入力</p>
+<table class="tbl">
+<thead><tr>
+  <th class="cn th-l">項目</th>
+  <th class="cl">L 入力</th>
+  <th class="cs">提出用 L</th>
+  <th class="cb">区分</th>
+</tr></thead>
+<tbody>
+<tr><td class="nc">① 前月末在庫（庫内）</td><td><input type="number" id="i01a" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r01a')"></td><td class="ac" id="r01a">—</td><td><span class="bs">★</span></td></tr>
+<tr><td class="nc">① 前月末在庫（売場）</td><td><input type="number" id="i01b" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r01b')"></td><td class="ac" id="r01b">—</td><td><span class="bs">★</span></td></tr>
+<tr><td class="nc">② 本月製成数量</td><td><input type="number" id="i02" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r02')"></td><td class="ac" id="r02">—</td><td><span class="bs">★</span></td></tr>
+<tr><td class="nc">③ 本月製成（20度換算）<span class="sub-note">純アルコール量を入力 → ×5 → ×0.8 四捨五入</span></td><td><input type="number" id="i03" placeholder="純アルコールL" min="0" step="0.01" oninput="la(this,'r03')"></td><td class="ac" id="r03">—</td><td><span class="br">参考</span></td></tr>
+<tr><td class="nc">④ 未納税移入（県内）</td><td><input type="number" id="i04a" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r04a')"></td><td class="ac" id="r04a">—</td><td><span class="bs">★</span></td></tr>
+<tr><td class="nc">④ 未納税移入（県外）</td><td><input type="number" id="i04b" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r04b')"></td><td class="ac" id="r04b">—</td><td><span class="bs">★</span></td></tr>
+<tr><td class="nc">⑤ 戻入数量</td><td><input type="number" id="i05" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r05');u10()"></td><td class="ac" id="r05">—</td><td><span class="bs">★</span></td></tr>
+<tr><td class="nc">⑦ 売場への庫出数量</td><td><input type="number" id="i07" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r07')"></td><td class="ac" id="r07">—</td><td><span class="br">参考</span></td></tr>
+<tr><td class="nc">⑧ 割水数量</td><td><input type="number" id="i08" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r08')"></td><td class="ac" id="r08">—</td><td><span class="bs">★</span></td></tr>
+</tbody>
+</table>
+
+<!-- 後半 ☆ -->
+<div class="sec">移出・在庫・欠減（☆ 後半集計）</div>
+<p class="hint">入力単位：L（小数第2位まで）　提出用L = 入力値 × 0.8（四捨五入）　⑭欠減はマイナス値も可</p>
+<table class="tbl">
+<thead><tr>
+  <th class="cn th-l">項目</th>
+  <th class="cl">L 入力</th>
+  <th class="cs">提出用 L</th>
+  <th class="cb">区分</th>
+</tr></thead>
+<tbody>
+<tr><td class="nc">⑥ 未納税移出（県内）</td><td><input type="number" id="i06a" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r06a')"></td><td class="ac" id="r06a">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑥ 未納税移出（県外）</td><td><input type="number" id="i06b" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r06b')"></td><td class="ac" id="r06b">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑥ 未納税移出（輸出）</td><td><input type="number" id="i06c" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r06c')"></td><td class="ac" id="r06c">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑨ 課税移出数量</td><td><input type="number" id="i09" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r09');u10()"></td><td class="ac" id="r09">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑩ 純課税移出数量<span class="sub-note">⑨ − ⑤ で自動計算</span></td><td class="auto-td">自動</td><td class="ac computed" id="r10">—</td><td><span class="br">参考</span></td></tr>
+<tr><td class="nc">⑪ 直売数量（純課税移出の内数）</td><td><input type="number" id="i11" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r11')"></td><td class="ac" id="r11">—</td><td><span class="br">参考</span></td></tr>
+<tr><td class="nc">⑫ 用途変更数量</td><td><input type="number" id="i12" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r12')"></td><td class="ac" id="r12">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑬ 月末在庫（庫内）</td><td><input type="number" id="i13a" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r13a')"></td><td class="ac" id="r13a">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑬ 月末在庫（売場）</td><td><input type="number" id="i13b" placeholder="0.00" min="0" step="0.01" oninput="lr(this,'r13b')"></td><td class="ac" id="r13b">—</td><td><span class="bh">☆</span></td></tr>
+<tr><td class="nc">⑭ 欠減（入力値）</td><td><input type="number" id="i14" placeholder="0.00" step="0.01" oninput="lr(this,'r14')"></td><td class="ac" id="r14">—</td><td><span class="bh">☆</span></td></tr>
+<tr class="adj-tr"><td class="nc">⑭ 欠減（提出用L・誤差補正後）</td><td class="auto-td">自動計算</td><td class="ac" id="r14adj">—</td><td><span class="bh">☆</span></td></tr>
+</tbody>
+</table>
+
+</div><!-- /page-wrap -->
+
+<script>
+function gv(id){var el=document.getElementById(id);if(!el||el.value==='')return null;var n=parseFloat(el.value);return isNaN(n)?null:n}
+function rl(l){return Math.round(l)}
+
+function lr(inp,rid){
+  var v=parseFloat(inp.value),el=document.getElementById(rid);
+  if(!el)return;
+  if(isNaN(v)||inp.value===''){el.textContent='—';el.className='ac';return}
+  el.textContent=rl(v*0.8).toLocaleString();el.className='ac v';
+}
+
+function la(inp,rid){
+  var v=parseFloat(inp.value),el=document.getElementById(rid);
+  if(!el)return;
+  if(isNaN(v)||inp.value===''){el.textContent='—';el.className='ac';return}
+  el.textContent=rl(v*5*0.8).toLocaleString();el.className='ac v';
+}
+
+function u10(){
+  var v9=gv('i09'),v5=gv('i05'),el=document.getElementById('r10');
+  if(v9===null&&v5===null){el.textContent='—';el.className='ac computed';return}
+  el.textContent=rl(((v9||0)-(v5||0))*0.8).toLocaleString();el.className='ac computed';
+}
+
+function rn(id){var v=gv(id);return v===null?0:rl(v*0.8)}
+
+function calc(){
+  var star=rn('i01a')+rn('i01b')+rn('i02')+rn('i04a')+rn('i04b')+rn('i05')+rn('i08');
+  var h14=rn('i06a')+rn('i06b')+rn('i06c')+rn('i09')+rn('i12')+rn('i13a')+rn('i13b');
+  var kr=gv('i14'),krnd=kr===null?0:rl(kr);
+  var diff=star-h14-krnd,kadj=krnd+diff,hf=h14+kadj;
+
+  document.getElementById('ss').textContent=star.toLocaleString();
+  document.getElementById('sh').textContent=hf.toLocaleString();
+  document.getElementById('sk').textContent=(kadj>=0?'':'')+kadj.toLocaleString();
+  document.getElementById('sks').textContent='入力 '+(kr!==null?kr.toFixed(2):'0.00')+'L → 提出 '+krnd+' 補正 '+(diff>=0?'+':'')+diff;
+
+  var r14a=document.getElementById('r14adj');
+  r14a.textContent=(kadj>=0?'':'')+kadj.toLocaleString();r14a.className='ac v';
+
+  var mel=document.getElementById('sm'),eel=document.getElementById('se');
+  if(star===hf){mel.textContent='★ = ☆';mel.style.color='#0F6E56';eel.textContent='整合性 OK'}
+  else{mel.textContent='不一致';mel.style.color='#A32D2D';eel.textContent='差分：'+(star-hf)+' L'}
+}
+
+function printPDF(){
+  var month=document.getElementById('rm').value||'report';
+  document.title='酒造月次報告（8掛け）_'+month.replace('-','年')+'月';
+  window.print();
+}
+</script>
+</body>
+</html>
