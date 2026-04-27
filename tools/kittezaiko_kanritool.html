@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在庫表とりまとめツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f5f4f0;--sur:#fff;--sur2:#faf9f6;--bdr:#e2e0d8;--bdr2:#ccc9be;--tx:#1a1916;--tx2:#6b6860;--tx3:#9e9c95;--gr:#2b5c3f;--grl:#e8f2ec;--grb:#b0d4bc;--am:#8a6200;--aml:#fdf6e3;--amb:#d4b860;--rd:#c0392b;--bl:#1a4e8a;--bll:#e8f0fc;--or:#b85c00;--orl:#fef0e0;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.6}
+header{background:var(--gr);color:#fff;padding:0 2rem;height:52px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+header .logo{width:26px;height:26px;background:rgba(255,255,255,.2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+header h1{font-size:14px;font-weight:600}
+header .sub{font-size:11px;opacity:.7;margin-left:4px}
+.wrap{max-width:980px;margin:0 auto;padding:1.5rem}
+.steps{display:flex;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:1.25rem}
+.step{flex:1;padding:12px 14px;display:flex;gap:8px;align-items:center;border-right:1px solid var(--bdr);font-size:12px;color:var(--tx2)}
+.step:last-child{border-right:none}
+.step.active{background:var(--grl);color:var(--gr)}
+.step.done{background:var(--sur2);color:var(--tx)}
+.sn{width:20px;height:20px;border-radius:50%;flex-shrink:0;background:var(--bdr);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.step.active .sn{background:var(--gr);color:#fff}
+.step.done .sn{background:var(--tx2);color:#fff}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--rl);box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:1.25rem;overflow:hidden}
+.ch{padding:12px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:9px;background:var(--sur2)}
+.ch h2{font-size:13px;font-weight:600}
+.ic{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ig{background:var(--grl)}.ia{background:var(--aml)}.ib{background:var(--bll)}.io{background:var(--orl)}
+.cb{padding:18px}
+.dz{border:2px dashed var(--bdr2);border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.dz:hover,.dz.over{border-color:var(--gr);background:var(--grl)}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uok{display:none;align-items:center;gap:10px;background:var(--grl);border:1px solid var(--grb);border-radius:var(--r);padding:12px 16px;margin-top:10px}
+.uok.show{display:flex}
+.fn{font-weight:600;font-size:13px;color:var(--gr)}
+.fm{font-size:11px;color:var(--tx3);margin-top:2px}
+.frow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.03em}
+input[type=date],input[type=number]{height:36px;padding:0 10px;border:1px solid var(--bdr2);border-radius:var(--r);font-size:13px;color:var(--tx);background:var(--sur);outline:none;transition:border-color .15s;font-family:inherit}
+input:focus{border-color:var(--gr);box-shadow:0 0 0 3px rgba(43,92,63,.1)}
+.btn{height:36px;padding:0 16px;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+.bp{background:var(--gr);color:#fff}
+.bp:hover{background:#234e35;transform:translateY(-1px);box-shadow:0 3px 8px rgba(43,92,63,.3)}
+.bs{background:var(--sur);color:var(--tx);border:1px solid var(--bdr2)}
+.bs:hover{background:var(--sur2);border-color:var(--gr)}
+.btn-lg{height:42px;padding:0 22px;font-size:14px}
+.ptbl{width:100%;border-collapse:collapse;font-size:12px}
+.ptbl th{background:var(--sur2);padding:8px 12px;text-align:left;font-weight:600;font-size:11px;border-bottom:2px solid var(--bdr);color:var(--tx2)}
+.ptbl td{padding:7px 12px;border-bottom:1px solid var(--bdr);vertical-align:middle}
+.ptbl tr:last-child td{border-bottom:none}
+.ptbl tr:hover td{background:var(--sur2)}
+.ptbl input[type=number]{width:80px;height:28px;padding:0 6px;border:1px solid var(--bdr2);border-radius:5px;font-size:12px;font-family:inherit}
+.rtbl{width:100%;border-collapse:collapse;font-size:13px}
+.rtbl th{background:var(--gr);color:#fff;padding:9px 13px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.04em}
+.rtbl td{padding:9px 13px;border-bottom:1px solid var(--bdr);vertical-align:middle}
+.rtbl tr:last-child td{border-bottom:none}
+.rtbl tr:nth-child(even) td{background:var(--sur2)}
+.rtbl tr:hover td{background:var(--grl)}
+.rtbl tfoot td{background:var(--sur2)!important;font-weight:700;border-top:2px solid var(--bdr2)}
+.rr{text-align:right}
+.amt{font-variant-numeric:tabular-nums;font-weight:600}
+.zero td{color:var(--tx3)}
+.ei{width:76px;height:28px;padding:0 6px;border:1px solid var(--bdr2);border-radius:5px;font-size:12px;font-family:inherit;text-align:right;background:var(--aml)}
+.ei:focus{border-color:var(--am);box-shadow:0 0 0 2px rgba(138,98,0,.15);outline:none}
+.mod td{background:var(--orl)!important}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.bt{background:var(--grl);color:var(--gr)}
+.bz{background:var(--aml);color:var(--am)}
+.atag{font-size:10px;background:var(--aml);color:var(--am);border:1px solid var(--amb);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600;display:inline}
+.mtag{font-size:10px;background:var(--orl);color:var(--or);border:1px solid #e0b870;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600;display:inline}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.sc{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:14px}
+.sc .sl{font-size:10px;color:var(--tx2);font-weight:600;margin-bottom:5px;letter-spacing:.04em}
+.sc .sv{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.sc .ss{font-size:10px;color:var(--tx3);margin-top:2px}
+.sgr .sv{color:var(--gr)}.sam .sv{color:var(--am)}.srd .sv{color:var(--rd)}
+.cs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.cb2{border-radius:var(--r);padding:14px 18px;border:1px solid}
+.ts{background:var(--grl);border-color:var(--grb)}
+.zk{background:var(--aml);border-color:var(--amb)}
+.cbl{font-size:10px;font-weight:700;letter-spacing:.06em;margin-bottom:6px}
+.ts .cbl{color:var(--gr)}.zk .cbl{color:var(--am)}
+.cbt{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.ts .cbt{color:var(--gr)}.zk .cbt{color:var(--am)}
+.cbi{font-size:10px;color:var(--tx2);margin-top:4px}
+.notice{padding:10px 14px;border-radius:var(--r);font-size:12px;display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.ni{background:var(--bll);border:1px solid #c0d0f0;color:var(--bl)}
+.nw{background:var(--orl);border:1px solid #e0b870;color:var(--or)}
+.na{background:var(--aml);border:1px solid var(--amb);color:var(--am)}
+.abar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--bdr);background:var(--sur2)}
+.sp{flex:1}
+.slbl{font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.05em;margin:0 0 8px}
+#loading{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff}
+#loading.show{display:flex}
+.spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+@media(max-width:600px){.steps{flex-direction:column}.step{border-right:none;border-bottom:1px solid var(--bdr)}.cs{grid-template-columns:1fr}header{padding:0 1rem}.wrap{padding:1rem}}
+</style>
+</head>
+<body>
+<div id="loading"><div class="spin"></div><span id="lmsg">処理中…</span></div>
+<header>
+  <div class="logo">📋</div>
+  <h1>在庫表とりまとめツール</h1>
+  <span class="sub">切手・葉書・収入印紙</span>
+</header>
+<div class="wrap">
+  <div class="steps">
+    <div class="step active" id="s1"><div class="sn">1</div>ファイル読込</div>
+    <div class="step" id="s2"><div class="sn">2</div>日付・単価設定</div>
+    <div class="step" id="s3"><div class="sn">3</div>集計・修正・出力</div>
+  </div>
+
+  <div class="card" id="cup">
+    <div class="ch"><div class="ic ig">📂</div><h2>Excelファイルの読み込み</h2></div>
+    <div class="cb">
+      <div class="dz" id="dz">
+        <input type="file" id="fi" accept=".xlsx,.xls">
+        <div style="font-size:32px;margin-bottom:10px">📊</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">Excelファイルをドロップ、またはクリックして選択</div>
+        <div style="font-size:11px;color:var(--tx3)">.xlsx / .xls 形式　受払簿（シート別構成）対応</div>
+      </div>
+      <div class="uok" id="uok">
+        <span style="font-size:20px">✅</span>
+        <div style="flex:1"><div class="fn" id="fname">—</div><div class="fm" id="fmeta">—</div></div>
+        <button class="btn bs" style="font-size:11px;height:28px;padding:0 10px" onclick="resetAll()">やり直す</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="cset">
+    <div class="ch"><div class="ic ia">⚙️</div><h2>集計日付と単価の確認</h2></div>
+    <div class="cb">
+      <div class="frow" style="margin-bottom:14px">
+        <div class="fg"><label>集計基準日</label><input type="date" id="tdate"></div>
+        <button class="btn bp" onclick="calcAll()">🔍 集計する</button>
+      </div>
+      <div class="notice ni">ℹ️ シート名から単価を自動抽出しています。誤りがあれば下表で修正してから「集計する」を押してください。</div>
+      <div style="overflow-x:auto;margin-top:12px">
+        <table class="ptbl"><thead><tr><th>品目（シート名）</th><th>カテゴリ</th><th>単価（円）</th></tr></thead><tbody id="ptbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="cres">
+    <div class="ch"><div class="ic ib">📊</div><h2>集計結果</h2><span id="dlbl" style="font-size:11px;color:var(--tx2);margin-left:auto"></span></div>
+    <div style="padding:14px 18px 8px">
+      <div class="sg" id="sgrid"></div>
+      <div class="cs" id="catsum"></div>
+      <div class="notice na hidden" id="adjn"><div id="adjtxt"></div></div>
+      <div class="notice nw">✏️ <div>Excelの内容と突合して誤りがあれば「修正数量」欄に正しい枚数を入力してください。空欄に戻すと修正が解除されます。金額・合計は即時更新されます。</div></div>
+    </div>
+    <div style="padding:0 18px 6px"><div class="slbl">■ 明細一覧（修正可能）</div></div>
+    <div style="overflow-x:auto">
+      <table class="rtbl" id="rtbl">
+        <thead><tr>
+          <th>品目</th><th>カテゴリ</th>
+          <th class="rr">在庫数量</th>
+          <th class="rr">修正数量</th>
+          <th class="rr">単価（円）</th>
+          <th class="rr">残高金額（円）</th>
+        </tr></thead>
+        <tbody id="rtbody"></tbody>
+        <tfoot id="rtfoot"></tfoot>
+      </table>
+    </div>
+    <div class="abar">
+      <button class="btn bs" onclick="document.getElementById('cset').scrollIntoView({behavior:'smooth'})">← 設定に戻る</button>
+      <div class="sp"></div>
+      <button class="btn bp btn-lg" onclick="exportPDF()">📄 PDF 出力</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var wb=null,si=[],ri=[];
+
+document.getElementById('fi').addEventListener('change',function(e){if(e.target.files[0])loadFile(e.target.files[0]);});
+var dz=document.getElementById('dz');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+
+function loadFile(file){
+  showL('Excelを読み込み中…');
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      var skip=['2025決算／計算用','Sheet1','シート1'];
+      si=wb.SheetNames.filter(function(n){return skip.indexOf(n)<0;}).map(function(name){
+        return{name:name,unitPrice:exPrice(name),category:name.indexOf('印紙')>=0?'租税公課':'通信費'};
+      });
+      document.getElementById('fname').textContent=file.name;
+      document.getElementById('fmeta').textContent=si.length+' 品目を検出　/ '+(file.size/1024).toFixed(1)+' KB';
+      document.getElementById('uok').classList.add('show');
+      setStep(2);showSettings();
+    }catch(err){alert('読込失敗: '+err.message);}
+    hideL();
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function exPrice(name){var m=name.match(/(\d+)/);return m?parseInt(m[1]):0;}
+
+function showSettings(){
+  document.getElementById('cset').classList.remove('hidden');
+  var t=new Date();document.getElementById('tdate').value=t.toISOString().slice(0,10);
+  var tb=document.getElementById('ptbody');tb.innerHTML='';
+  si.forEach(function(it,i){
+    var bc=it.category==='通信費'?'bt':'bz';
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+it.name+'</td><td><span class="badge '+bc+'">'+it.category+'</span></td><td><input type="number" min="0" step="1" value="'+it.unitPrice+'" id="p'+i+'" onchange="si['+i+'].unitPrice=+this.value"></td>';
+    tb.appendChild(tr);
+  });
+}
+
+function calcAll(){
+  var ds=document.getElementById('tdate').value;
+  if(!ds){alert('集計基準日を入力してください');return;}
+  var target=new Date(ds+'T23:59:59');
+  showL('集計中…');
+  si.forEach(function(it,i){var el=document.getElementById('p'+i);if(el)it.unitPrice=+el.value;});
+  setTimeout(function(){
+    try{
+      ri=[];
+      si.forEach(function(it){
+        var ws=wb.Sheets[it.name];
+        if(!ws)return;
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'yyyy/mm/dd'});
+
+        // ヘッダー行特定
+        var hi=-1;
+        for(var r=0;r<rows.length;r++){
+          if(rows[r]&&rows[r].some(function(c){return c&&String(c).indexOf('年月日')>=0;})){hi=r;break;}
+        }
+        if(hi<0)return;
+        var hdr=rows[hi];
+        var cd=hdr.findIndex(function(c){return c&&String(c).indexOf('年月日')>=0;});
+        var cr=hdr.findIndex(function(c){return c&&String(c).indexOf('残枚')>=0;});
+        var cp=hdr.findIndex(function(c){return c&&String(c).indexOf('使用目的')>=0;});
+
+        var td=new Date(ds+'T23:59:59');
+        var tPlus3=new Date(td.getTime()+3*24*3600*1000);
+
+        // ── メインロジック：残枚数列の最終値を採用 ──
+        var lastQty=null, lastAdjQty=null, adjNote='';
+
+        // 全行をパース
+        var allRows=[];
+        for(var r2=hi+1;r2<rows.length;r2++){
+          var row=rows[r2];
+          if(!row||!row[cd])continue;
+          var dt=parseDate(row[cd]);
+          if(!dt)continue;
+          allRows.push({dt:dt,row:row});
+        }
+
+        // 基準日以前: 残枚数列の最終値
+        for(var i=0;i<allRows.length;i++){
+          var x=allRows[i];
+          if(x.dt>td)break;
+          var rem=cr>=0?x.row[cr]:null;
+          if(rem!==null&&rem!==undefined&&rem!==''){
+            var v=parseInt(String(rem).replace(/,/g,''));
+            if(!isNaN(v))lastQty=v;
+          }
+        }
+
+        // ① 在庫調整チェック: 基準日の翌3日以内の「在庫調整」行
+        for(var j=0;j<allRows.length;j++){
+          var xa=allRows[j];
+          if(xa.dt<=td)continue;
+          if(xa.dt>tPlus3)break;
+          var purpose=cp>=0&&xa.row[cp]?String(xa.row[cp]).trim():'';
+          if(purpose.indexOf('在庫調整')>=0){
+            var rem2=cr>=0?xa.row[cr]:null;
+            if(rem2!==null&&rem2!==undefined&&rem2!==''){
+              var v2=parseInt(String(rem2).replace(/,/g,''));
+              if(!isNaN(v2)){
+                lastAdjQty=v2;
+                var fd=xa.dt;
+                adjNote=fd.getFullYear()+'/'+(fd.getMonth()+1)+'/'+fd.getDate()+'の在庫調整行（残'+v2+'枚）を採用';
+                break;
+              }
+            }
+          }
+        }
+
+        var baseQty=lastQty!==null?lastQty:0;
+        ri.push({
+          name:it.name,category:it.category,
+          baseQty:baseQty,       // 基準日時点の残枚数（残枚数列直接読み）
+          adjQty:lastAdjQty,     // 在庫調整後の値（nullなら調整なし）
+          adjNote:adjNote,
+          manualQty:null,
+          unitPrice:it.unitPrice,
+          getQty:function(){return this.manualQty!==null?this.manualQty:(this.adjQty!==null?this.adjQty:this.baseQty);},
+          getAmt:function(){return this.getQty()*this.unitPrice;}
+        });
+      });
+      renderResult(ds);setStep(3);
+      document.getElementById('cres').classList.remove('hidden');
+      document.getElementById('cres').scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(err){alert('集計エラー: '+err.message);console.error(err);}
+    hideL();
+  },50);
+}
+
+function parseDate(v){
+  if(!v||v==='')return null;
+  if(v instanceof Date)return isNaN(v.getTime())?null:v;
+  if(typeof v==='number')return new Date((v-25569)*86400000);
+  var s=String(v).trim();
+  // 誤入力（0224-02-09など）を弾く：4桁年でない場合null
+  if(!/^\d{4}[-\/]/.test(s))return null;
+  var d=new Date(s.replace(/\//g,'-'));
+  return isNaN(d.getTime())?null:d;
+}
+function fmt(n){return Math.round(n).toLocaleString('ja-JP');}
+
+function renderResult(ds){
+  var d=new Date(ds);
+  document.getElementById('dlbl').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 時点';
+  var adj=ri.filter(function(r){return r.adjQty!==null;});
+  var an=document.getElementById('adjn');
+  if(adj.length>0){
+    an.classList.remove('hidden');
+    document.getElementById('adjtxt').innerHTML='<strong>⚠️ 在庫調整を検出（'+adj.length+'品目）</strong><br>'+
+      adj.map(function(r){return '・'+r.name+'：基準日残 '+fmt(r.baseQty)+'枚 → 調整後 '+fmt(r.adjQty)+'枚（'+r.adjNote+'）';}).join('<br>');
+  }else{an.classList.add('hidden');}
+  renderSummary();renderTable();
+}
+
+function renderSummary(){
+  var tot=ri.reduce(function(s,r){return s+r.getAmt();},0);
+  var ts=ri.filter(function(r){return r.category==='通信費';}).reduce(function(s,r){return s+r.getAmt();},0);
+  var zk=ri.filter(function(r){return r.category==='租税公課';}).reduce(function(s,r){return s+r.getAmt();},0);
+  var cnt=ri.filter(function(r){return r.getQty()>0;}).length;
+  var mod=ri.filter(function(r){return r.manualQty!==null;}).length;
+  document.getElementById('sgrid').innerHTML=
+    '<div class="sc srd"><div class="sl">合計残高金額</div><div class="sv">¥'+fmt(tot)+'</div><div class="ss">'+cnt+'品目に在庫あり'+(mod>0?' / '+mod+'品目修正済':'')+'</div></div>'+
+    '<div class="sc sgr"><div class="sl">通信費 合計</div><div class="sv">¥'+fmt(ts)+'</div><div class="ss">切手・葉書・封筒等</div></div>'+
+    '<div class="sc sam"><div class="sl">租税公課 合計</div><div class="sv">¥'+fmt(zk)+'</div><div class="ss">収入印紙</div></div>';
+  var tsi=ri.filter(function(r){return r.category==='通信費'&&r.getQty()>0;}).map(function(r){return r.name;}).join('　');
+  var zki=ri.filter(function(r){return r.category==='租税公課'&&r.getQty()>0;}).map(function(r){return r.name;}).join('　');
+  document.getElementById('catsum').innerHTML=
+    '<div class="cb2 ts"><div class="cbl">通信費</div><div class="cbt">¥'+fmt(ts)+'</div><div class="cbi">'+(tsi||'（在庫なし）')+'</div></div>'+
+    '<div class="cb2 zk"><div class="cbl">租税公課</div><div class="cbt">¥'+fmt(zk)+'</div><div class="cbi">'+(zki||'（在庫なし）')+'</div></div>';
+}
+
+function renderTable(){
+  var tb=document.getElementById('rtbody');tb.innerHTML='';
+  ri.forEach(function(r,i){
+    var bc=r.category==='通信費'?'bt':'bz';
+    var qty=r.getQty(),amt=r.getAmt();
+    var isZ=qty===0,isM=r.manualQty!==null,isA=r.adjQty!==null&&!isM;
+    var tr=document.createElement('tr');
+    if(isM)tr.classList.add('mod');else if(isZ)tr.classList.add('zero');
+    // 在庫数量列：調整があれば矢印表示
+    var qtyCell;
+    if(isA){
+      qtyCell='<span style="color:var(--tx3);text-decoration:line-through">'+fmt(r.baseQty)+'</span> → '+fmt(r.adjQty)+'<span class="atag">在庫調整</span>';
+    }else{
+      qtyCell=fmt(r.baseQty);
+    }
+    tr.innerHTML=
+      '<td>'+r.name+(isM?'<span class="mtag">手動修正</span>':'')+'</td>'+
+      '<td><span class="badge '+bc+'">'+r.category+'</span></td>'+
+      '<td class="rr amt">'+qtyCell+'</td>'+
+      '<td class="rr"><input type="number" class="ei" id="ei'+i+'" min="0" step="1" value="'+(r.manualQty!==null?r.manualQty:'')+'" placeholder="'+qty+'" onchange="onEdit('+i+',this.value)"></td>'+
+      '<td class="rr">¥'+fmt(r.unitPrice)+'</td>'+
+      '<td class="rr amt" id="ea'+i+'" '+(isM?'style="color:var(--or)"':'')+'>'+(isZ&&!isM?'—':'¥'+fmt(amt))+'</td>';
+    tb.appendChild(tr);
+  });
+  renderFoot();
+}
+
+function renderFoot(){
+  var tot=ri.reduce(function(s,r){return s+r.getAmt();},0);
+  document.getElementById('rtfoot').innerHTML='<tr><td colspan="5" style="padding:9px 13px;font-size:13px">合　計</td><td class="rr amt" style="padding:9px 13px;color:var(--rd)">¥'+fmt(tot)+'</td></tr>';
+}
+
+function onEdit(i,val){
+  var r=ri[i];
+  r.manualQty=(val===''||val===null)?null:(!isNaN(parseInt(val))?parseInt(val):null);
+  var rows=document.getElementById('rtbody').querySelectorAll('tr');
+  var tr=rows[i];
+  var qty=r.getQty(),amt=r.getAmt();
+  var isM=r.manualQty!==null,isZ=qty===0;
+  tr.className=isM?'mod':(isZ?'zero':'');
+  tr.cells[0].innerHTML=r.name+(isM?'<span class="mtag">手動修正</span>':'');
+  var ea=document.getElementById('ea'+i);
+  ea.style.color=isM?'var(--or)':'';
+  ea.textContent=(isZ&&!isM)?'—':'¥'+fmt(amt);
+  renderFoot();renderSummary();
+}
+
+// ── PDF出力（window.print()方式 ── 文字化けなし） ──
+function exportPDF(){
+  var ds=document.getElementById('tdate').value;
+  var d=new Date(ds);
+  var dl=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
+  var tot=ri.reduce(function(s,r){return s+r.getAmt();},0);
+  var ts=ri.filter(function(r){return r.category==='通信費';}).reduce(function(s,r){return s+r.getAmt();},0);
+  var zk=ri.filter(function(r){return r.category==='租税公課';}).reduce(function(s,r){return s+r.getAmt();},0);
+  var modCnt=ri.filter(function(r){return r.manualQty!==null;}).length;
+  var adjCnt=ri.filter(function(r){return r.adjQty!==null&&r.manualQty===null;}).length;
+
+  // 明細行HTML生成
+  var rowsHtml='';
+  ri.forEach(function(r){
+    var qty=r.getQty(),amt=r.getAmt();
+    var catColor=r.category==='通信費'?'#2b5c3f':'#8a6200';
+    var nameStr=r.name+(r.manualQty!==null?'　<span style="font-size:9px;background:#fef0e0;color:#b85c00;border:1px solid #e0b870;border-radius:3px;padding:0 4px">手動修正</span>':(r.adjQty!==null?'　<span style="font-size:9px;background:#fdf6e3;color:#8a6200;border:1px solid #d4b860;border-radius:3px;padding:0 4px">在庫調整</span>':''));
+    var qtyStr=qty===0&&r.manualQty===null?'—':qty.toLocaleString('ja-JP');
+    rowsHtml+=
+      '<tr>'
+      +'<td>'+nameStr+'</td>'
+      +'<td style="text-align:center"><span style="background:'+(r.category==='通信費'?'#e8f2ec':'#fdf6e3')+';color:'+catColor+';font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600">'+r.category+'</span></td>'
+      +'<td style="text-align:right">'+qtyStr+'</td>'
+      +'<td style="text-align:right">'+r.unitPrice.toLocaleString('ja-JP')+'</td>'
+      +'<td style="text-align:right;font-weight:600">'+(amt===0&&r.manualQty===null?'—':'¥'+amt.toLocaleString('ja-JP'))+'</td>'
+      +'</tr>';
+  });
+
+  // 注記
+  var notes='';
+  if(adjCnt>0)notes+='<li>† 在庫調整行の残枚数を採用した品目があります（'+adjCnt+'品目）</li>';
+  if(modCnt>0)notes+='<li>* 手動修正済みの品目があります（'+modCnt+'品目）</li>';
+
+  var printHtml=
+    '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'
+    +'<title>在庫残高一覧_'+dl+'</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic","MS Gothic",sans-serif;font-size:10.5pt;color:#1a1916;background:#fff}'
+    +'.page{padding:15mm 12mm;max-width:210mm}'
+    +'.hdr{border-bottom:2px solid #2b5c3f;padding-bottom:8px;margin-bottom:14px}'
+    +'.hdr h1{font-size:16pt;color:#2b5c3f;font-weight:700;margin-bottom:4px}'
+    +'.hdr .meta{font-size:9pt;color:#6b6860;display:flex;justify-content:space-between}'
+    +'.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}'
+    +'.sum-card{border:1px solid #e2e0d8;border-radius:6px;padding:8px 10px}'
+    +'.sum-card .lbl{font-size:8pt;color:#6b6860;margin-bottom:3px}'
+    +'.sum-card .val{font-size:14pt;font-weight:700}'
+    +'.s-red .val{color:#c0392b}.s-green .val{color:#2b5c3f}.s-amber .val{color:#8a6200}'
+    +'.cat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}'
+    +'.cat-card{border-radius:6px;padding:10px 12px;border:1px solid}'
+    +'.cat-ts{background:#e8f2ec;border-color:#b0d4bc}'
+    +'.cat-zk{background:#fdf6e3;border-color:#d4b860}'
+    +'.cat-card .cl{font-size:8pt;font-weight:700;margin-bottom:4px}'
+    +'.cat-ts .cl{color:#2b5c3f}.cat-zk .cl{color:#8a6200}'
+    +'.cat-card .ct{font-size:16pt;font-weight:700}'
+    +'.cat-ts .ct{color:#2b5c3f}.cat-zk .ct{color:#8a6200}'
+    +'.sec-title{font-size:9pt;font-weight:700;color:#6b6860;letter-spacing:.05em;margin-bottom:6px}'
+    +'table{width:100%;border-collapse:collapse;font-size:9.5pt}'
+    +'thead th{background:#2b5c3f;color:#fff;padding:6px 8px;text-align:left;font-weight:600;font-size:9pt}'
+    +'thead th:nth-child(3),thead th:nth-child(4),thead th:nth-child(5){text-align:right}'
+    +'tbody td{padding:6px 8px;border-bottom:1px solid #e2e0d8;vertical-align:middle}'
+    +'tbody tr:nth-child(even) td{background:#f8f7f3}'
+    +'tfoot td{padding:7px 8px;font-weight:700;border-top:2px solid #ccc9be;background:#faf9f6}'
+    +'.notes{margin-top:10px;font-size:8.5pt;color:#6b6860;padding:6px 10px;background:#f5f4f0;border-radius:4px}'
+    +'.notes ul{padding-left:14px}'
+    +'@media print{'
+    +'  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'  .page{padding:10mm 8mm}'
+    +'}'
+    +'</style></head><body>'
+    +'<div class="page">'
+    +'<div class="hdr">'
+    +'  <h1>切手・葉書・収入印紙　在庫残高一覧表</h1>'
+    +'  <div class="meta"><span>基準日：'+dl+'</span><span>作成日：'+new Date().toLocaleDateString('ja-JP')+'</span></div>'
+    +'</div>'
+    +'<div class="summary">'
+    +'  <div class="sum-card s-red"><div class="lbl">合計残高金額</div><div class="val">¥'+tot.toLocaleString('ja-JP')+'</div></div>'
+    +'  <div class="sum-card s-green"><div class="lbl">通信費 合計</div><div class="val">¥'+ts.toLocaleString('ja-JP')+'</div></div>'
+    +'  <div class="sum-card s-amber"><div class="lbl">租税公課 合計</div><div class="val">¥'+zk.toLocaleString('ja-JP')+'</div></div>'
+    +'</div>'
+    +'<div class="cat-row">'
+    +'  <div class="cat-card cat-ts"><div class="cl">通信費</div><div class="ct">¥'+ts.toLocaleString('ja-JP')+'</div></div>'
+    +'  <div class="cat-card cat-zk"><div class="cl">租税公課</div><div class="ct">¥'+zk.toLocaleString('ja-JP')+'</div></div>'
+    +'</div>'
+    +'<div class="sec-title">■ 明細一覧</div>'
+    +'<table>'
+    +'<thead><tr><th>品目</th><th style="text-align:center">カテゴリ</th><th style="text-align:right">在庫数量</th><th style="text-align:right">単価（円）</th><th style="text-align:right">残高金額（円）</th></tr></thead>'
+    +'<tbody>'+rowsHtml+'</tbody>'
+    +'<tfoot><tr><td colspan="4" style="text-align:left">合　計</td><td style="text-align:right;color:#c0392b">¥'+tot.toLocaleString('ja-JP')+'</td></tr></tfoot>'
+    +'</table>'
+    +(notes?'<div class="notes"><ul>'+notes+'</ul></div>':'')
+    +'</div></body></html>';
+
+  // 新しいウィンドウで印刷
+  var w=window.open('','_blank','width=900,height=700');
+  w.document.write(printHtml);
+  w.document.close();
+  w.focus();
+  setTimeout(function(){
+    w.print();
+  }, 600);
+}
+function setStep(n){[1,2,3].forEach(function(i){var el=document.getElementById('s'+i);el.className='step'+(i<n?' done':i===n?' active':'');});}
+function resetAll(){wb=null;si=[];ri=[];document.getElementById('uok').classList.remove('show');document.getElementById('fi').value='';document.getElementById('cset').classList.add('hidden');document.getElementById('cres').classList.add('hidden');setStep(1);window.scrollTo({top:0,behavior:'smooth'});}
+function showL(msg){document.getElementById('lmsg').textContent=msg||'処理中…';document.getElementById('loading').classList.add('show');}
+function hideL(){document.getElementById('loading').classList.remove('show');}
+</script>
+</body>
+</html>
