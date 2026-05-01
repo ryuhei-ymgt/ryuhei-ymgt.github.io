@@ -72,17 +72,11 @@ textarea{resize:vertical;line-height:1.6}
 .login-wrap{background:#fff;border:1px solid #C3D2EE;border-radius:12px;padding:1.5rem;max-width:360px;margin:2rem auto}
 .login-title{font-size:16px;font-weight:500;color:#1D3557;margin-bottom:4px}
 .login-sub{font-size:13px;color:#6E89B4;margin-bottom:1.25rem}
-.role-option{border:1.5px solid #C3D2EE;border-radius:8px;padding:10px 14px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:10px;transition:all 0.15s;background:#F7FAFF}
-.role-option:hover{border-color:#378ADD;background:#EEF5FF}
-.role-option.selected{border-color:#1D6FCA;background:#E6F1FB}
-.role-dot{width:14px;height:14px;border-radius:50%;border:2px solid #C3D2EE;flex-shrink:0;transition:all 0.15s}
-.role-label{font-size:13px;font-weight:500;color:#1A2B45}
-.role-desc{font-size:11px;color:#6E89B4}
 .notice-bar{border-radius:8px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px}
 .notice-green{background:#E1F5EE;border:1px solid #9FE1CB;color:#085041}
 .notice-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .toast-wrap{position:fixed;top:16px;right:16px;z-index:9999}
-.toast{font-size:12px;font-weight:500;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.2s;background:#EAF3DE;color:#27500A;border:1px solid #B0CF80;margin-bottom:6px;pointer-events:none}
+.toast{font-size:12px;font-weight:500;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.2s;background:#EAF3DE;color:#27500A;border:1px solid #B0CF80;pointer-events:none}
 .toast.err{background:#FEF0EF;color:#A32D2D;border-color:#F0A0A0}
 .toast.show{opacity:1}
 .kw-highlight{background:#FFF3C0;border-radius:2px;padding:0 1px}
@@ -100,56 +94,53 @@ textarea{resize:vertical;line-height:1.6}
 .pw-strength{height:4px;border-radius:2px;margin-top:6px;background:#E0E8F5}
 .pw-strength-bar{height:100%;border-radius:2px;transition:all 0.3s;width:0}
 .pw-hint{font-size:11px;color:#6E89B4;margin-top:4px}
-.pw-status-badge,.sheets-status-badge,.oauth-badge{font-size:11px;padding:2px 9px;border-radius:50px;font-weight:500}
-.pw-status-demo{background:#FAEEDA;color:#633806}
-.pw-status-custom{background:#EAF3DE;color:#27500A}
+.status-badge{font-size:11px;padding:2px 9px;border-radius:50px;font-weight:500}
 .badge-off{background:#EEF2F7;color:#5A78A0}
-.badge-on{background:#E1F5EE;color:#085041}
-.badge-warn{background:#FAEEDA;color:#633806}
+.badge-on{background:#EAF3DE;color:#27500A}
+.badge-demo{background:#FAEEDA;color:#633806}
+.badge-custom{background:#EAF3DE;color:#27500A}
+.write-badge{font-size:10px;padding:1px 6px;border-radius:50px;font-weight:600;background:#FAEEDA;color:#633806;border:1px solid #FAC775;margin-left:4px}
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:5px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .sync-result{border-radius:8px;padding:10px 14px;font-size:12px;display:none;margin-top:8px;line-height:1.6}
 .sync-result.ok{background:#E1F5EE;border:1px solid #9FE1CB;color:#085041}
 .sync-result.ng{background:#FEF0EF;border:1px solid #F0A0A0;color:#A32D2D}
 .sync-result.info{background:#E6F1FB;border:1px solid #90BFEF;color:#0C447C}
-.sheet-schema{width:100%;border-collapse:collapse;margin-bottom:10px}
-.sheet-schema th{background:#E6F1FB;padding:4px 10px;text-align:left;font-size:11px;font-weight:600;color:#0C447C}
-.sheet-schema td{padding:4px 10px;font-size:11px;border-bottom:0.5px solid #E6F1FB;color:#1A2B45}
-.oauth-section{background:#F0F5FF;border:1.5px solid #C3D2EE;border-radius:8px;padding:12px 14px;margin-bottom:12px}
-.oauth-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;font-size:12px;color:#3A5080}
-.oauth-step-num{background:#1D6FCA;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.write-badge{font-size:10px;padding:1px 6px;border-radius:50px;font-weight:600;background:#FAEEDA;color:#633806;border:1px solid #FAC775;margin-left:4px}
-#sync-indicator{font-size:11px;color:#6E89B4;display:none}
+.loading-box{text-align:center;padding:3rem 1rem}
+.loading-spin{width:24px;height:24px;border:2.5px solid #C3D2EE;border-top-color:#1D6FCA;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
 </style>
 </head>
 <body>
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
 <div class="wrap">
 
-<!-- ログイン -->
-<div id="screen-login">
+<!-- 読み込み中 -->
+<div id="screen-loading">
+  <div class="loading-box">
+    <div class="loading-spin"></div>
+    <div style="font-size:14px;color:#3A5080;margin-bottom:4px">データを読み込んでいます...</div>
+    <div style="font-size:12px;color:#6E89B4" id="loading-status">スプレッドシートに接続中</div>
+  </div>
+</div>
+
+<!-- ログイン（管理者のみ） -->
+<div id="screen-login" style="display:none">
   <div style="text-align:center;margin-bottom:1.5rem;margin-top:0.5rem">
     <div style="font-size:20px;font-weight:500;color:#1D3557">プロンプト管理</div>
-    <div style="font-size:13px;color:#6E89B4;margin-top:4px">ロールを選んでログインしてください</div>
+    <div style="font-size:13px;color:#6E89B4;margin-top:4px">管理者パスワードでログイン、またはユーザーとして閲覧</div>
   </div>
   <div class="login-wrap">
     <div class="login-title">ログイン</div>
-    <div class="login-sub">アクセス方法を選択してください</div>
-    <div class="role-option selected" id="role-user" onclick="selectRole('user')">
-      <div class="role-dot" id="dot-user" style="background:#1D6FCA;border-color:#1D6FCA"></div>
-      <div><div class="role-label">ユーザー</div><div class="role-desc">テンプレートの閲覧・コピー</div></div>
-    </div>
-    <div class="role-option" id="role-admin" onclick="selectRole('admin')">
-      <div class="role-dot" id="dot-admin"></div>
-      <div><div class="role-label">管理者</div><div class="role-desc">テンプレート・カテゴリ・設定の管理</div></div>
-    </div>
-    <div class="field" id="pw-field" style="display:none;margin-top:12px">
+    <div class="login-sub">管理者の方はパスワードを入力してください</div>
+    <div class="field">
       <label>管理者パスワード</label>
       <input type="password" id="pw-input" placeholder="パスワードを入力">
       <div id="login-error" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none">パスワードが違います</div>
     </div>
-    <button class="btn btn-blue btn-full" style="margin-top:14px" id="login-btn">ログイン</button>
-    <div id="demo-hint" style="font-size:11px;color:#A0B4CC;text-align:center;margin-top:10px">デモ用パスワード: admin123</div>
+    <button class="btn btn-blue btn-full" id="login-btn">管理者としてログイン</button>
+    <div style="margin-top:12px;text-align:center">
+      <button class="btn btn-ghost btn-full" id="user-direct-btn">ユーザーとして閲覧する</button>
+    </div>
   </div>
 </div>
 
@@ -201,7 +192,6 @@ textarea{resize:vertical;line-height:1.6}
     <button class="tab-btn" id="tab-setting" onclick="switchTab('setting')">設定</button>
   </div>
 
-  <!-- テンプレートペイン -->
   <div id="pane-tmpl">
     <div class="modal-overlay" id="edit-modal">
       <div class="modal-box">
@@ -223,13 +213,12 @@ textarea{resize:vertical;line-height:1.6}
     <div id="write-all-area" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #D3DDED">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-green" id="write-all-btn">📤 全テンプレートをスプシに書き出す</button>
-        <div style="font-size:11px;color:#6E89B4">アプリ上の全テンプレートをスプシに上書き保存します</div>
+        <div style="font-size:11px;color:#6E89B4">全データをスプシに上書き保存します</div>
       </div>
       <div class="sync-result" id="write-all-result"></div>
     </div>
   </div>
 
-  <!-- カテゴリペイン -->
   <div id="pane-cat" style="display:none">
     <div class="add-cat-area">
       <label style="color:#3C3489;margin-bottom:8px;display:block">新しいカテゴリを追加</label>
@@ -241,80 +230,42 @@ textarea{resize:vertical;line-height:1.6}
     <div id="cat-list"></div>
   </div>
 
-  <!-- 設定ペイン -->
   <div id="pane-setting" style="display:none">
     <div class="setting-section">
       <div class="setting-section-title">
-        Google スプレッドシート連携
-        <span class="sheets-status-badge badge-off" id="sheets-status-badge">未設定</span>
+        スプレッドシート接続
+        <span class="status-badge badge-on" id="sheets-conn-badge">接続済み</span>
       </div>
-      <div class="setting-section-sub">スプレッドシートIDとAPIキーを設定すると読み取りができます。書き込みには追加でOAuth認証が必要です。</div>
-      <div class="field">
-        <label>スプレッドシートID</label>
-        <input type="text" id="sheets-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
-        <div class="pw-hint">URLの /d/ と /edit の間の文字列</div>
+      <div class="setting-section-sub">接続情報はファイルにプリセット済みです。</div>
+      <div class="info-row"><span class="info-label">スプレッドシートID</span><span class="info-val" style="font-size:11px;font-family:monospace">1M0QM5nGvA9u...</span></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-blue" id="reload-tmpl-btn">🔄 テンプレートを再読み込み</button>
+        <button class="btn btn-orange" id="reload-pw-btn">🔑 パスワードを同期</button>
       </div>
-      <div class="field">
-        <label>Google API キー（読み取り用）</label>
-        <input type="text" id="sheets-api-key" placeholder="AIza...">
-      </div>
-      <div class="btn-row" style="margin-bottom:10px">
-        <button class="btn btn-green" id="sheets-save-btn">設定を保存</button>
-        <button class="btn btn-blue" id="sheets-test-btn">接続テスト</button>
-        <button class="btn btn-ghost" id="sheets-clear-btn">クリア</button>
-      </div>
-      <div class="sync-result" id="sheets-test-result"></div>
-      <div class="divider"></div>
-      <div class="setting-section-title" style="font-size:13px;margin-bottom:6px">
+      <div class="sync-result" id="reload-result"></div>
+    </div>
+
+    <div class="setting-section">
+      <div class="setting-section-title">
         書き込み認証（OAuth）
-        <span class="oauth-badge badge-off" id="oauth-badge">未認証</span>
+        <span class="status-badge badge-off" id="oauth-badge">未認証</span>
         <span class="write-badge">書き込みに必要</span>
       </div>
-      <div class="setting-section-sub" style="margin-bottom:8px">書き込みにはGoogleアカウントでのOAuth認証が必要です。</div>
-      <div class="field">
-        <label>OAuth クライアントID</label>
-        <input type="text" id="oauth-client-id" placeholder="xxxx.apps.googleusercontent.com">
-        <div class="pw-hint">Google Cloud Console → 認証情報 → OAuthクライアントID（Webアプリ）</div>
-      </div>
-      <div class="oauth-section">
-        <div class="oauth-step"><div class="oauth-step-num">1</div><div>上記にクライアントIDを入力して「Googleでサインイン」をクリック</div></div>
-        <div class="oauth-step"><div class="oauth-step-num">2</div><div>Googleのポップアップで認証を許可（スプレッドシートへの書き込み権限）</div></div>
-        <div class="oauth-step"><div class="oauth-step-num">3</div><div>認証成功後、テンプレートタブの「書き出す」ボタンが有効になります</div></div>
-      </div>
-      <div class="btn-row" style="margin-bottom:10px">
+      <div class="setting-section-sub">テンプレートの書き出し・PW変更にはOAuth認証が必要です。</div>
+      <div id="oauth-user-info" style="font-size:12px;color:#1D9E75;display:none;margin-bottom:8px"></div>
+      <div class="btn-row" style="margin-bottom:8px">
         <button class="btn btn-blue" id="oauth-btn">Googleでサインイン</button>
         <button class="btn btn-ghost" id="oauth-signout-btn" style="display:none">サインアウト</button>
       </div>
-      <div id="oauth-user-info" style="font-size:12px;color:#1D9E75;display:none;margin-bottom:8px"></div>
       <div class="sync-result" id="oauth-result"></div>
-      <div class="divider"></div>
-      <div class="setting-section-title" style="font-size:13px;margin-bottom:8px">データ同期</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-blue" id="sync-tmpl-btn">📥 テンプレートを読み込む</button>
-        <button class="btn btn-orange" id="sync-pw-btn">🔑 パスワードを同期</button>
-      </div>
-      <div class="sync-result" id="sync-tmpl-result"></div>
-      <div class="sync-result" id="sync-pw-result"></div>
-      <div class="divider"></div>
-      <div class="setting-section-title" style="font-size:13px;margin-bottom:6px">📋 スプレッドシート構造ガイド</div>
-      <div style="font-size:12px;font-weight:500;color:#3A5080;margin-bottom:4px">シート1: <code style="background:#E6F1FB;padding:1px 5px;border-radius:3px">templates</code></div>
-      <table class="sheet-schema" style="margin-bottom:10px">
-        <thead><tr><th>A: id</th><th>B: category</th><th>C: title</th><th>D: prompt</th></tr></thead>
-        <tbody><tr><td>nda</td><td>契約書</td><td>秘密保持契約（NDA）</td><td>プロンプト本文...</td></tr></tbody>
-      </table>
-      <div style="font-size:12px;font-weight:500;color:#3A5080;margin-bottom:4px">シート2: <code style="background:#E6F1FB;padding:1px 5px;border-radius:3px">config</code></div>
-      <table class="sheet-schema">
-        <thead><tr><th>A: key</th><th>B: value</th></tr></thead>
-        <tbody><tr><td>admin_password</td><td>（管理者パスワード）</td></tr></tbody>
-      </table>
     </div>
+
     <div class="setting-section">
       <div class="setting-section-title">
         管理者パスワードの変更
-        <span class="pw-status-badge pw-status-demo" id="pw-status-badge">デモPW使用中</span>
+        <span class="status-badge" id="pw-status-badge">確認中</span>
       </div>
-      <div class="setting-section-sub" id="pw-status-desc">現在はデモパスワード（admin123）が有効です。</div>
-      <div class="info-row"><span class="info-label">状態</span><span class="info-val" id="pw-current-label">デフォルト（変更なし）</span></div>
+      <div class="setting-section-sub" id="pw-status-desc">スプレッドシートのconfigシートで管理されています。</div>
       <div class="divider"></div>
       <div class="field"><label>現在のパスワード</label><input type="password" id="pw-current" placeholder="現在のパスワードを入力"></div>
       <div class="field">
@@ -330,6 +281,7 @@ textarea{resize:vertical;line-height:1.6}
       </div>
       <div id="pw-change-error" style="font-size:12px;color:#A32D2D;margin-bottom:8px;display:none"></div>
       <button class="btn btn-orange btn-full" id="pw-save-btn">パスワードを変更する</button>
+      <div class="sync-result" id="pw-save-result"></div>
     </div>
   </div>
 </div>
@@ -337,71 +289,99 @@ textarea{resize:vertical;line-height:1.6}
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const DEMO_PASSWORD="admin123";
-const SHEETS_BASE="https://sheets.googleapis.com/v4/spreadsheets";
-const OAUTH_SCOPE="https://www.googleapis.com/auth/spreadsheets";
+// ============================================================
+// プリセット設定（変更不要）
+// ============================================================
+const SHEETS_ID    = "1M0QM5nGvA9uC1tUJvyytJF3GMK1Vr6IuUOo1vMFyCWw";
+const API_KEY      = "AIzaSyB6m1IK75rkisZIQqbhi028ojFYUJwyWdo";
+const OAUTH_CLIENT = "221456106939-r59d4fsitlmie1khagki2o16k3sfbg17.apps.googleusercontent.com";
+const SHEETS_BASE  = "https://sheets.googleapis.com/v4/spreadsheets";
+const OAUTH_SCOPE  = "https://www.googleapis.com/auth/spreadsheets";
+const DEMO_PW      = "admin123";
 
-let templates=[
-  {id:"nda",title:"秘密保持契約（NDA）",category:"契約書",prompt:"以下の秘密保持契約書をレビューしてください。\n\n【確認ポイント】\n1. 秘密情報の定義範囲は適切か\n2. 目的外使用の禁止規定は明確か\n3. 情報漏洩時の損害賠償条項の有無\n4. 有効期間と契約終了後の義務\n\n問題点・リスク・修正提案を箇条書きで出力してください。\n\n---契約書本文をここに貼り付け---"},
-  {id:"outsourcing",title:"業務委託契約書",category:"契約書",prompt:"以下の業務委託契約書をレビューしてください。\n\n【確認ポイント】\n1. 業務範囲の明確性\n2. 成果物の定義と検収基準\n3. 報酬・支払条件\n4. 著作権・知的財産権の帰属\n5. 再委託の可否\n\n---契約書本文をここに貼り付け---"},
-  {id:"meeting-minutes",title:"議事録 作成",category:"議事録・報告",prompt:"以下の会議メモから正式な議事録を作成してください。\n\n日時：\n参加者：\n議題：\n\n■ 討議内容\n■ 決定事項\n■ 次回アクション\n\n---会議メモをここに貼り付け---"},
-  {id:"email-reply",title:"メール返信文 作成",category:"メール・文書",prompt:"以下のメールに対する返信文を作成してください。\n\n条件：丁寧かつ簡潔に / 200〜300字程度 / 結論を先に\n\nA案・B案で出力してください。\n\n---受信メールをここに貼り付け---"}
-];
+// ============================================================
+// 状態
+// ============================================================
+let templates = [];
+let currentAdminPassword = DEMO_PW;
+let isAdminSession = false;
+let oauthToken = null;
+window._editingId = null;
 
-let editingId=null,selectedRole='user',isAdminSession=false;
-let currentAdminPassword=DEMO_PASSWORD,isUsingDemoPassword=true;
-let sheetsConfig={id:'',apiKey:'',connected:false};
-let oauthToken=null,oauthUserName='';
+const $ = id => document.getElementById(id);
 
-const $=id=>document.getElementById(id);
+// ============================================================
+// 起動：スプシからPW・テンプレートを自動読み込み
+// ============================================================
+async function initApp() {
+  showScreen('loading');
 
-function showToast(msg,ok=true){
-  const t=$('toast');t.textContent=msg;
-  t.className='toast show'+(ok?'':' err');
-  setTimeout(()=>{t.className='toast'+(ok?'':' err');},2500);
+  // PWをconfigシートから取得
+  $('loading-status').textContent = 'パスワードを確認中...';
+  try {
+    const cfg = await sheetsGet('config!A2:B100');
+    const pwRow = (cfg.values||[]).find(r => r[0]?.trim() === 'admin_password');
+    if (pwRow && pwRow[1]) currentAdminPassword = pwRow[1].trim();
+  } catch(e) { /* configシート未設定はフォールバック */ }
+
+  // テンプレートをtemplatesシートから取得
+  $('loading-status').textContent = 'テンプレートを読み込み中...';
+  try {
+    const data = await sheetsGet('templates!A2:D1000');
+    const rows = (data.values||[]).filter(r=>r[0]&&r[2]&&r[3]);
+    templates = rows.map(r=>({id:r[0].trim(),category:(r[1]||'未分類').trim(),title:r[2].trim(),prompt:r[3].trim()}));
+  } catch(e) { templates = []; }
+
+  if (templates.length === 0) {
+    templates = [
+      {id:"nda",title:"秘密保持契約（NDA）",category:"契約書",prompt:"以下の秘密保持契約書をレビューしてください。\n\n【確認ポイント】\n1. 秘密情報の定義範囲\n2. 目的外使用の禁止規定\n3. 損害賠償条項の有無\n4. 有効期間と終了後の義務\n\n---契約書本文をここに貼り付け---"},
+      {id:"outsourcing",title:"業務委託契約書",category:"契約書",prompt:"以下の業務委託契約書をレビューしてください。\n\n【確認ポイント】\n1. 業務範囲の明確性\n2. 成果物の定義と検収基準\n3. 報酬・支払条件\n4. 著作権の帰属\n\n---契約書本文をここに貼り付け---"},
+      {id:"meeting",title:"議事録 作成",category:"議事録・報告",prompt:"以下の会議メモから正式な議事録を作成してください。\n\n■ 討議内容\n■ 決定事項\n■ 次回アクション\n\n---会議メモをここに貼り付け---"}
+    ];
+  }
+
+  showScreen('login');
 }
-function getCategories(){return[...new Set(templates.map(t=>t.category))];}
+
+// ============================================================
+// Sheets API
+// ============================================================
+async function sheetsGet(range) {
+  const url = `${SHEETS_BASE}/${SHEETS_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message||`HTTP ${res.status}`); }
+  return res.json();
+}
+
+async function sheetsWrite(range, values) {
+  if (!oauthToken) throw new Error('OAuth認証が必要です。設定タブで「Googleでサインイン」してください。');
+  const clearRes = await fetch(`${SHEETS_BASE}/${SHEETS_ID}/values/${encodeURIComponent(range)}:clear`, {method:'POST',headers:{'Authorization':'Bearer '+oauthToken,'Content-Type':'application/json'}});
+  if (!clearRes.ok) { const e=await clearRes.json().catch(()=>({})); throw new Error('クリア失敗: '+(e.error?.message||clearRes.status)); }
+  const writeRes = await fetch(`${SHEETS_BASE}/${SHEETS_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {method:'PUT',headers:{'Authorization':'Bearer '+oauthToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values})});
+  if (!writeRes.ok) { const e=await writeRes.json().catch(()=>({})); throw new Error('書き込み失敗: '+(e.error?.message||writeRes.status)); }
+  return writeRes.json();
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function showToast(msg,ok=true){const t=$('toast');t.textContent=msg;t.className='toast show'+(ok?'':' err');setTimeout(()=>{t.className='toast'+(ok?'':' err');},2500);}
+function getCategories(){return[...new Set(templates.filter(t=>!t._placeholder).map(t=>t.category))];}
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function checkLogin(pw){return pw===currentAdminPassword;}
 function setSyncResult(id,msg,type='ok'){const e=$(id);e.className='sync-result '+type;e.textContent=msg;e.style.display='block';}
-function setLoading(btn,label,loading){btn.innerHTML=loading?`<span class="spinner"></span>${label}`:label;btn.disabled=loading;}
+function setLoading(btn,label,on){btn.innerHTML=on?`<span class="spinner"></span>${label}`:label;btn.disabled=on;}
 
-function selectRole(r){
-  selectedRole=r;
-  ['user','admin'].forEach(x=>{
-    $('role-'+x).className='role-option'+(x===r?' selected':'');
-    $('dot-'+x).style.background=x===r?'#1D6FCA':'';
-    $('dot-'+x).style.borderColor=x===r?'#1D6FCA':'#C3D2EE';
-  });
-  $('pw-field').style.display=r==='admin'?'block':'none';
-  $('pw-input').value='';$('login-error').style.display='none';
-  $('demo-hint').style.display=(r==='admin'&&isUsingDemoPassword)?'block':'none';
-}
-$('login-btn').addEventListener('click',()=>{
-  if(selectedRole==='admin'){
-    if(checkLogin($('pw-input').value)){$('login-error').style.display='none';showScreen('admin');}
-    else $('login-error').style.display='block';
-  } else {
-    $('user-mode-pill').textContent='ユーザー';$('user-mode-pill').className='pill pill-user';
-    $('user-mode-sub').textContent='テンプレを選んでコピーしましょう';
-    $('switch-to-admin-btn').style.display='none';$('admin-as-user-notice').style.display='none';
-    $('user-header').style.background='#0F6E56';showScreen('user');
-  }
-});
-$('pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('login-btn').click();});
-$('logout-user').addEventListener('click',()=>{isAdminSession=false;showScreen('login');});
-$('logout-admin').addEventListener('click',()=>showScreen('login'));
-
+// ============================================================
+// 画面切替
+// ============================================================
 function showScreen(name){
-  ['login','user','admin'].forEach(s=>$('screen-'+s).style.display=s===name?'block':'none');
+  ['loading','login','user','admin'].forEach(s=>$('screen-'+s).style.display=s===name?'block':'none');
   if(name==='user')initUser();
   if(name==='admin'){switchTab('tmpl');renderAdminList();}
 }
 function switchTab(tab){
-  ['tmpl','cat','setting'].forEach(t=>{
-    $('tab-'+t).className='tab-btn'+(t===tab?' active':'');
-    $('pane-'+t).style.display=t===tab?'block':'none';
-  });
+  ['tmpl','cat','setting'].forEach(t=>{$('tab-'+t).className='tab-btn'+(t===tab?' active':'');$('pane-'+t).style.display=t===tab?'block':'none';});
   if(tab==='cat')renderCatList();
   if(tab==='setting')renderSettingPane();
 }
@@ -414,369 +394,235 @@ function switchToUser(){
 }
 function switchToAdmin(){isAdminSession=false;showScreen('admin');showToast('管理画面に戻りました');}
 
-async function sheetsGet(range){
-  const{id,apiKey}=sheetsConfig;
-  const url=`${SHEETS_BASE}/${id}/values/${encodeURIComponent(range)}?key=${apiKey}`;
-  const res=await fetch(url);
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${res.status}`);}
-  return res.json();
-}
-async function sheetsWrite(range,values){
-  if(!oauthToken)throw new Error('OAuth認証が必要です。設定タブでGoogleサインインをしてください。');
-  const{id}=sheetsConfig;
-  if(!id)throw new Error('スプレッドシートIDが設定されていません。');
-  const clearUrl=`${SHEETS_BASE}/${id}/values/${encodeURIComponent(range)}:clear`;
-  const clearRes=await fetch(clearUrl,{method:'POST',headers:{'Authorization':'Bearer '+oauthToken,'Content-Type':'application/json'}});
-  if(!clearRes.ok){const e=await clearRes.json().catch(()=>({}));throw new Error('クリア失敗: '+(e.error?.message||clearRes.status));}
-  const writeUrl=`${SHEETS_BASE}/${id}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
-  const writeRes=await fetch(writeUrl,{method:'PUT',headers:{'Authorization':'Bearer '+oauthToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values})});
-  if(!writeRes.ok){const e=await writeRes.json().catch(()=>({}));throw new Error('書き込み失敗: '+(e.error?.message||writeRes.status));}
-  return writeRes.json();
-}
+// ============================================================
+// ログイン
+// ============================================================
+$('login-btn').addEventListener('click',()=>{
+  if(checkLogin($('pw-input').value)){$('login-error').style.display='none';showScreen('admin');}
+  else{$('login-error').style.display='block';$('pw-input').focus();}
+});
+$('pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('login-btn').click();});
+$('user-direct-btn').addEventListener('click',()=>{
+  isAdminSession=false;
+  $('user-mode-pill').textContent='ユーザー';$('user-mode-pill').className='pill pill-user';
+  $('user-mode-sub').textContent='テンプレを選んでコピーしましょう';
+  $('switch-to-admin-btn').style.display='none';$('admin-as-user-notice').style.display='none';
+  $('user-header').style.background='#0F6E56';showScreen('user');
+});
+$('logout-user').addEventListener('click',()=>{isAdminSession=false;showScreen('login');});
+$('logout-admin').addEventListener('click',()=>showScreen('login'));
 
+// ============================================================
+// OAuth
+// ============================================================
 function doOAuthSignIn(){
-  const clientId=$('oauth-client-id').value.trim();
-  if(!clientId){showToast('クライアントIDを入力してください',false);return;}
   if(!window.google?.accounts?.oauth2){setSyncResult('oauth-result','Google認証ライブラリを読み込み中です。少し待ってから再試行してください。','info');return;}
-  const client=google.accounts.oauth2.initTokenClient({
-    client_id:clientId,scope:OAUTH_SCOPE,
+  google.accounts.oauth2.initTokenClient({
+    client_id:OAUTH_CLIENT,scope:OAUTH_SCOPE,
     callback:(resp)=>{
       if(resp.error){setSyncResult('oauth-result','✗ 認証失敗: '+resp.error,'ng');showToast('認証に失敗しました',false);return;}
       oauthToken=resp.access_token;
       fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+oauthToken}})
-        .then(r=>r.json()).then(info=>{
-          oauthUserName=info.name||info.email||'Googleアカウント';
-          $('oauth-user-info').textContent='✓ '+oauthUserName+' としてサインイン済み';
-          $('oauth-user-info').style.display='block';
-        }).catch(()=>{$('oauth-user-info').textContent='✓ サインイン済み';$('oauth-user-info').style.display='block';});
-      $('oauth-badge').textContent='認証済み';$('oauth-badge').className='oauth-badge badge-on';
+        .then(r=>r.json()).then(info=>{$('oauth-user-info').textContent='✓ '+(info.name||info.email||'Googleアカウント')+' としてサインイン済み';$('oauth-user-info').style.display='block';}).catch(()=>{});
+      $('oauth-badge').textContent='認証済み';$('oauth-badge').className='status-badge badge-on';
       $('oauth-btn').style.display='none';$('oauth-signout-btn').style.display='block';
-      setSyncResult('oauth-result','✓ OAuth認証が完了しました。テンプレートの書き出しが可能になりました。','ok');
+      setSyncResult('oauth-result','✓ OAuth認証が完了しました。テンプレートの書き出し・PW変更が可能です。','ok');
       updateWriteAllArea();showToast('Googleアカウントで認証しました');
     }
-  });
-  client.requestAccessToken();
+  }).requestAccessToken();
 }
 function doOAuthSignOut(){
   if(oauthToken&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(oauthToken,()=>{});
-  oauthToken=null;oauthUserName='';
-  $('oauth-badge').textContent='未認証';$('oauth-badge').className='oauth-badge badge-off';
-  $('oauth-btn').style.display='block';$('oauth-signout-btn').style.display='none';
-  $('oauth-user-info').style.display='none';
-  setSyncResult('oauth-result','サインアウトしました。','info');
-  updateWriteAllArea();showToast('サインアウトしました');
+  oauthToken=null;$('oauth-badge').textContent='未認証';$('oauth-badge').className='status-badge badge-off';
+  $('oauth-btn').style.display='block';$('oauth-signout-btn').style.display='none';$('oauth-user-info').style.display='none';
+  setSyncResult('oauth-result','サインアウトしました。','info');updateWriteAllArea();showToast('サインアウトしました');
 }
 $('oauth-btn').addEventListener('click',doOAuthSignIn);
 $('oauth-signout-btn').addEventListener('click',doOAuthSignOut);
-function updateWriteAllArea(){$('write-all-area').style.display=(sheetsConfig.id&&oauthToken)?'block':'none';}
+function updateWriteAllArea(){$('write-all-area').style.display=oauthToken?'block':'none';}
 
-async function writeAllTemplatesToSheets(){
-  const btn=$('write-all-btn'),result=$('write-all-result');
-  setLoading(btn,'📤 書き出し中...',true);result.style.display='none';
-  try{
-    const header=['id','category','title','prompt'];
-    const rows=templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt]);
-    await sheetsWrite('templates!A1:D'+(rows.length+1),[header,...rows]);
-    setSyncResult('write-all-result',`✓ ${rows.length}件のテンプレートをスプレッドシートに書き出しました`,'ok');
-    showToast(`${rows.length}件を書き出しました`);
-  }catch(e){setSyncResult('write-all-result','✗ 書き出し失敗: '+e.message,'ng');showToast('書き出しに失敗しました',false);}
-  finally{setLoading(btn,'📤 全テンプレートをスプシに書き出す',false);}
-}
-$('write-all-btn').addEventListener('click',writeAllTemplatesToSheets);
-
-async function writeOneTemplateToSheets(){
-  if(!sheetsConfig.id||!oauthToken)return;
-  const ind=$('sync-indicator');
-  ind.textContent='⟳ スプシに同期中...';ind.style.display='block';ind.style.color='#6E89B4';
-  try{
-    const header=['id','category','title','prompt'];
-    const rows=templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt]);
-    await sheetsWrite('templates!A1:D'+(rows.length+1),[header,...rows]);
-    ind.textContent='✓ スプシに同期済み';ind.style.color='#1D9E75';
-    setTimeout(()=>{ind.style.display='none';ind.style.color='';},3000);
-  }catch(e){ind.textContent='⚠ スプシ同期失敗';ind.style.color='#A32D2D';setTimeout(()=>{ind.style.display='none';ind.style.color='';},4000);}
-}
-
-async function writePasswordToSheets(newPw){
-  if(!sheetsConfig.id||!oauthToken)return;
-  try{
-    const data=await sheetsGet('config!A2:B100').catch(()=>({values:[]}));
-    const rows=data.values||[];
-    const rowIdx=rows.findIndex(r=>r[0]?.trim()==='admin_password');
-    const sheetRow=rowIdx>=0?rowIdx+2:rows.length+2;
-    await sheetsWrite(`config!A${sheetRow}:B${sheetRow}`,[['admin_password',newPw]]);
-  }catch(e){console.warn('PW書き込み失敗:',e.message);}
-}
-
-function updateSheetsStatusBadge(){
-  const b=$('sheets-status-badge');
-  if(sheetsConfig.connected){b.textContent='接続済み';b.className='sheets-status-badge badge-on';}
-  else if(sheetsConfig.id&&sheetsConfig.apiKey){b.textContent='設定済み';b.className='sheets-status-badge badge-warn';}
-  else{b.textContent='未設定';b.className='sheets-status-badge badge-off';}
-}
+// ============================================================
+// 設定ペイン
+// ============================================================
 function renderSettingPane(){
-  $('sheets-id').value=sheetsConfig.id;$('sheets-api-key').value=sheetsConfig.apiKey;
-  updateSheetsStatusBadge();updateWriteAllArea();
-  if(isUsingDemoPassword){
-    $('pw-status-badge').textContent='デモPW使用中';$('pw-status-badge').className='pw-status-badge pw-status-demo';
-    $('pw-status-desc').textContent='現在はデモパスワード（admin123）が有効です。';$('pw-current-label').textContent='デフォルト（変更なし）';
-    $('demo-hint').style.display='block';
-  }else{
-    $('pw-status-badge').textContent='カスタムPW設定済み';$('pw-status-badge').className='pw-status-badge pw-status-custom';
-    $('pw-status-desc').textContent='カスタムパスワードが設定されています。';$('pw-current-label').textContent='カスタム設定済み';
-    $('demo-hint').style.display='none';
-  }
+  updateWriteAllArea();
+  const b=$('pw-status-badge');
+  if(currentAdminPassword===DEMO_PW){b.textContent='デモPW使用中';b.className='status-badge badge-demo';}
+  else{b.textContent='カスタムPW設定済み';b.className='status-badge badge-custom';}
   $('pw-current').value='';$('pw-new').value='';$('pw-confirm').value='';
-  $('pw-change-error').style.display='none';
+  $('pw-change-error').style.display='none';$('pw-save-result').style.display='none';
   $('pw-strength-bar').style.width='0';$('pw-strength-label').textContent='パスワードを入力してください';$('pw-match-hint').textContent='';
 }
 
-$('sheets-save-btn').addEventListener('click',()=>{
-  const id=$('sheets-id').value.trim(),key=$('sheets-api-key').value.trim();
-  if(!id||!key){showToast('IDとAPIキーを両方入力してください',false);return;}
-  sheetsConfig.id=id;sheetsConfig.apiKey=key;sheetsConfig.connected=false;
-  updateSheetsStatusBadge();updateWriteAllArea();showToast('設定を保存しました。接続テストを実行してください。');
-});
-$('sheets-clear-btn').addEventListener('click',()=>{
-  if(!confirm('スプレッドシート設定をクリアしますか？'))return;
-  sheetsConfig={id:'',apiKey:'',connected:false};
-  $('sheets-id').value='';$('sheets-api-key').value='';
-  updateSheetsStatusBadge();updateWriteAllArea();$('sheets-test-result').style.display='none';showToast('設定をクリアしました');
-});
-$('sheets-test-btn').addEventListener('click',async()=>{
-  const btn=$('sheets-test-btn'),result=$('sheets-test-result');
-  setLoading(btn,'接続中...',true);result.style.display='none';
-  try{
-    const data=await sheetsGet('templates!A1:D1');
-    const h=data.values?.[0]||[];
-    setSyncResult('sheets-test-result',`✓ 接続成功！ヘッダー: [${h.join(', ')}]`,'ok');
-    sheetsConfig.connected=true;updateSheetsStatusBadge();showToast('スプレッドシートに接続しました');
-  }catch(e){setSyncResult('sheets-test-result','✗ 接続失敗: '+e.message,'ng');sheetsConfig.connected=false;updateSheetsStatusBadge();showToast('接続に失敗しました',false);}
-  finally{setLoading(btn,'接続テスト',false);}
-});
-$('sync-tmpl-btn').addEventListener('click',async()=>{
-  if(!sheetsConfig.id||!sheetsConfig.apiKey){showToast('先に設定を保存してください',false);return;}
-  const btn=$('sync-tmpl-btn'),result=$('sync-tmpl-result');
+$('reload-tmpl-btn').addEventListener('click',async()=>{
+  const btn=$('reload-tmpl-btn'),result=$('reload-result');
   setLoading(btn,'読み込み中...',true);result.style.display='none';
   try{
     const data=await sheetsGet('templates!A2:D1000');
-    const rows=data.values||[];
-    if(!rows.length){setSyncResult('sync-tmpl-result','✗ テンプレートが0件です','ng');return;}
-    const loaded=rows.filter(r=>r[0]&&r[2]&&r[3]).map(r=>({id:r[0].trim(),category:(r[1]||'未分類').trim(),title:r[2].trim(),prompt:r[3].trim()}));
-    templates=loaded;
-    setSyncResult('sync-tmpl-result',`✓ ${loaded.length}件のテンプレートを読み込みました`,'ok');
-    renderAdminList();showToast(`${loaded.length}件を読み込みました`);
-  }catch(e){setSyncResult('sync-tmpl-result','✗ 読み込み失敗: '+e.message,'ng');showToast('読み込みに失敗しました',false);}
-  finally{setLoading(btn,'📥 テンプレートを読み込む',false);}
+    const rows=(data.values||[]).filter(r=>r[0]&&r[2]&&r[3]);
+    templates=rows.map(r=>({id:r[0].trim(),category:(r[1]||'未分類').trim(),title:r[2].trim(),prompt:r[3].trim()}));
+    setSyncResult('reload-result',`✓ ${templates.length}件のテンプレートを読み込みました`,'ok');
+    renderAdminList();showToast(`${templates.length}件を読み込みました`);
+  }catch(e){setSyncResult('reload-result','✗ 読み込み失敗: '+e.message,'ng');showToast('読み込みに失敗しました',false);}
+  finally{setLoading(btn,'🔄 テンプレートを再読み込み',false);}
 });
-$('sync-pw-btn').addEventListener('click',async()=>{
-  if(!sheetsConfig.id||!sheetsConfig.apiKey){showToast('先に設定を保存してください',false);return;}
-  const btn=$('sync-pw-btn'),result=$('sync-pw-result');
+
+$('reload-pw-btn').addEventListener('click',async()=>{
+  const btn=$('reload-pw-btn'),result=$('reload-result');
   setLoading(btn,'同期中...',true);result.style.display='none';
   try{
     const data=await sheetsGet('config!A2:B100');
-    const rows=data.values||[];
-    const pwRow=rows.find(r=>r[0]?.trim()==='admin_password');
-    if(!pwRow||!pwRow[1]){setSyncResult('sync-pw-result','✗ configシートにadmin_passwordが見つかりません','ng');return;}
-    currentAdminPassword=pwRow[1].trim();isUsingDemoPassword=false;
-    $('demo-hint').style.display='none';
-    setSyncResult('sync-pw-result','✓ パスワードをスプシから同期しました','ok');
+    const pwRow=(data.values||[]).find(r=>r[0]?.trim()==='admin_password');
+    if(!pwRow||!pwRow[1]){setSyncResult('reload-result','✗ configシートにadmin_passwordが見つかりません','ng');return;}
+    currentAdminPassword=pwRow[1].trim();
+    setSyncResult('reload-result','✓ パスワードをスプシから同期しました','ok');
     renderSettingPane();showToast('パスワードを同期しました');
-  }catch(e){setSyncResult('sync-pw-result','✗ 同期失敗: '+e.message,'ng');showToast('同期に失敗しました',false);}
+  }catch(e){setSyncResult('reload-result','✗ 同期失敗: '+e.message,'ng');showToast('同期に失敗しました',false);}
   finally{setLoading(btn,'🔑 パスワードを同期',false);}
 });
 
+$('write-all-btn').addEventListener('click',async()=>{
+  const btn=$('write-all-btn'),result=$('write-all-result');
+  setLoading(btn,'書き出し中...',true);result.style.display='none';
+  try{
+    const rows=templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt]);
+    await sheetsWrite('templates!A1:D'+(rows.length+1),[['id','category','title','prompt'],...rows]);
+    setSyncResult('write-all-result',`✓ ${rows.length}件をスプレッドシートに書き出しました`,'ok');
+    showToast(`${rows.length}件を書き出しました`);
+  }catch(e){setSyncResult('write-all-result','✗ 書き出し失敗: '+e.message,'ng');showToast('書き出しに失敗しました',false);}
+  finally{setLoading(btn,'📤 全テンプレートをスプシに書き出す',false);}
+});
+
+async function autoSyncToSheets(){
+  if(!oauthToken)return;
+  const ind=$('sync-indicator');ind.textContent='⟳ スプシに同期中...';ind.style.display='block';ind.style.color='#6E89B4';
+  try{
+    const rows=templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt]);
+    await sheetsWrite('templates!A1:D'+(rows.length+1),[['id','category','title','prompt'],...rows]);
+    ind.textContent='✓ スプシに同期済み';ind.style.color='#1D9E75';
+  }catch(e){ind.textContent='⚠ スプシ同期失敗';ind.style.color='#A32D2D';}
+  setTimeout(()=>{ind.style.display='none';ind.style.color='';},3000);
+}
+
+// ============================================================
+// パスワード変更
+// ============================================================
 function pwStrength(pw){
   if(!pw)return{score:0,label:'',color:''};
-  let s=0;
-  if(pw.length>=6)s++;if(pw.length>=10)s++;
-  if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
-  if(s<=1)return{score:20,label:'弱い',color:'#E24B4A'};
-  if(s===2)return{score:45,label:'普通',color:'#EF9F27'};
-  if(s===3)return{score:70,label:'強い',color:'#1D9E75'};
+  let s=0;if(pw.length>=6)s++;if(pw.length>=10)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
+  if(s<=1)return{score:20,label:'弱い',color:'#E24B4A'};if(s===2)return{score:45,label:'普通',color:'#EF9F27'};if(s===3)return{score:70,label:'強い',color:'#1D9E75'};
   return{score:100,label:'非常に強い',color:'#185FA5'};
 }
 $('pw-new').addEventListener('input',function(){
-  const s=pwStrength(this.value);
-  $('pw-strength-bar').style.width=s.score+'%';$('pw-strength-bar').style.background=s.color||'#E0E8F5';
-  $('pw-strength-label').textContent=this.value?(s.label+'　— '+this.value.length+'文字'):'パスワードを入力してください';
-  checkPwMatch();
+  const s=pwStrength(this.value);$('pw-strength-bar').style.width=s.score+'%';$('pw-strength-bar').style.background=s.color||'#E0E8F5';
+  $('pw-strength-label').textContent=this.value?(s.label+'　— '+this.value.length+'文字'):'パスワードを入力してください';checkPwMatch();
 });
 $('pw-confirm').addEventListener('input',checkPwMatch);
-function checkPwMatch(){
-  const nv=$('pw-new').value,cv=$('pw-confirm').value,h=$('pw-match-hint');
-  if(!cv){h.textContent='';return;}
-  if(nv===cv){h.textContent='一致しています';h.style.color='#1D9E75';}
-  else{h.textContent='一致していません';h.style.color='#A32D2D';}
-}
+function checkPwMatch(){const nv=$('pw-new').value,cv=$('pw-confirm').value,h=$('pw-match-hint');if(!cv){h.textContent='';return;}if(nv===cv){h.textContent='一致しています';h.style.color='#1D9E75';}else{h.textContent='一致していません';h.style.color='#A32D2D';}}
 $('pw-save-btn').addEventListener('click',async()=>{
   const curr=$('pw-current').value,nw=$('pw-new').value,conf=$('pw-confirm').value;
-  const errEl=$('pw-change-error');errEl.style.display='none';
+  const errEl=$('pw-change-error');errEl.style.display='none';$('pw-save-result').style.display='none';
   if(!checkLogin(curr)){errEl.textContent='現在のパスワードが違います';errEl.style.display='block';return;}
   if(nw.length<6){errEl.textContent='6文字以上にしてください';errEl.style.display='block';return;}
   if(nw!==conf){errEl.textContent='新しいパスワードが一致していません';errEl.style.display='block';return;}
-  if(nw===DEMO_PASSWORD){errEl.textContent='デモパスワードと同じパスワードは設定できません';errEl.style.display='block';return;}
-  currentAdminPassword=nw;isUsingDemoPassword=false;
-  await writePasswordToSheets(nw);
-  $('demo-hint').style.display='none';showToast('パスワードを変更しました');renderSettingPane();
+  if(nw===DEMO_PW){errEl.textContent='デモパスワードと同じパスワードは設定できません';errEl.style.display='block';return;}
+  if(!oauthToken){errEl.textContent='PW変更にはOAuth認証が必要です。設定タブで「Googleでサインイン」してください。';errEl.style.display='block';return;}
+  const btn=$('pw-save-btn');setLoading(btn,'保存中...',true);
+  try{
+    const data=await sheetsGet('config!A2:B100').catch(()=>({values:[]}));
+    const rows=data.values||[];const rowIdx=rows.findIndex(r=>r[0]?.trim()==='admin_password');
+    const sheetRow=rowIdx>=0?rowIdx+2:rows.length+2;
+    await sheetsWrite(`config!A${sheetRow}:B${sheetRow}`,[['admin_password',nw]]);
+    currentAdminPassword=nw;
+    setSyncResult('pw-save-result','✓ パスワードをスプレッドシートに保存しました。次回ログインから新しいパスワードが有効です。','ok');
+    renderSettingPane();showToast('パスワードを変更しました');
+  }catch(e){errEl.textContent='スプシへの保存に失敗しました: '+e.message;errEl.style.display='block';}
+  finally{setLoading(btn,'パスワードを変更する',false);}
 });
 
-function initUser(){
-  buildUserCats();$('u-search').value='';$('u-cat').value='';
-  showDropdownMode();buildDropdownList();showUserPrompt(null);
-}
-function buildUserCats(){
-  const sel=$('u-cat');sel.innerHTML='<option value="">すべてのカテゴリ</option>';
-  getCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
-}
+// ============================================================
+// ユーザー画面
+// ============================================================
+function initUser(){buildUserCats();$('u-search').value='';$('u-cat').value='';showDropdownMode();buildDropdownList();showUserPrompt(null);}
+function buildUserCats(){const sel=$('u-cat');sel.innerHTML='<option value="">すべてのカテゴリ</option>';getCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});}
 function showDropdownMode(){$('u-search-results').style.display='none';$('u-dropdown-area').style.display='block';}
 function showSearchMode(){$('u-dropdown-area').style.display='none';$('u-search-results').style.display='block';}
-function buildDropdownList(){
-  const cat=$('u-cat').value,sel=$('u-tmpl');
-  sel.innerHTML='<option value="">テンプレートを選択してください...</option>';
-  templates.filter(t=>(!cat||t.category===cat)&&!t._placeholder).forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.title;sel.appendChild(o);});
-}
+function buildDropdownList(){const cat=$('u-cat').value,sel=$('u-tmpl');sel.innerHTML='<option value="">テンプレートを選択してください...</option>';templates.filter(t=>(!cat||t.category===cat)&&!t._placeholder).forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.title;sel.appendChild(o);});}
 function buildSearchResults(kw){
   const cat=$('u-cat').value,kwl=kw.toLowerCase();
   const list=templates.filter(t=>!t._placeholder&&(!cat||t.category===cat)&&(t.title.toLowerCase().includes(kwl)||t.prompt.toLowerCase().includes(kwl)));
-  $('u-count').textContent=list.length+'件ヒット';
-  const div=$('u-result-list');
+  $('u-count').textContent=list.length+'件ヒット';const div=$('u-result-list');
   if(!list.length){div.innerHTML='<div class="empty-state">「'+escHtml(kw)+'」に一致するテンプレートが見つかりません</div>';return;}
-  div.innerHTML=list.map(t=>{
-    const hl=escHtml(t.title).replace(new RegExp(escHtml(kw).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<span class="kw-highlight">${m}</span>`);
-    return`<div class="search-result-item" data-id="${t.id}"><div class="search-item-title">${hl}</div><div class="search-item-cat">${escHtml(t.category)}</div></div>`;
-  }).join('');
-  div.querySelectorAll('.search-result-item').forEach(el=>{
-    el.addEventListener('click',()=>{
-      div.querySelectorAll('.search-result-item').forEach(x=>x.classList.remove('active'));
-      el.classList.add('active');showUserPrompt(templates.find(x=>x.id===el.dataset.id));
-    });
-  });
+  div.innerHTML=list.map(t=>{const hl=escHtml(t.title).replace(new RegExp(escHtml(kw).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<span class="kw-highlight">${m}</span>`);return`<div class="search-result-item" data-id="${t.id}"><div class="search-item-title">${hl}</div><div class="search-item-cat">${escHtml(t.category)}</div></div>`;}).join('');
+  div.querySelectorAll('.search-result-item').forEach(el=>{el.addEventListener('click',()=>{div.querySelectorAll('.search-result-item').forEach(x=>x.classList.remove('active'));el.classList.add('active');showUserPrompt(templates.find(x=>x.id===el.dataset.id));});});
 }
-$('u-search').addEventListener('input',function(){
-  const kw=this.value.trim();
-  if(!kw){showDropdownMode();buildDropdownList();showUserPrompt(null);}
-  else{showSearchMode();buildSearchResults(kw);showUserPrompt(null);}
-});
-$('u-cat').addEventListener('change',()=>{
-  const kw=$('u-search').value.trim();
-  if(kw)buildSearchResults(kw);else buildDropdownList();
-  showUserPrompt(null);
-});
+$('u-search').addEventListener('input',function(){const kw=this.value.trim();if(!kw){showDropdownMode();buildDropdownList();showUserPrompt(null);}else{showSearchMode();buildSearchResults(kw);showUserPrompt(null);}});
+$('u-cat').addEventListener('change',()=>{const kw=$('u-search').value.trim();if(kw)buildSearchResults(kw);else buildDropdownList();showUserPrompt(null);});
 $('u-tmpl').addEventListener('change',function(){showUserPrompt(templates.find(x=>x.id===this.value)||null);});
 function showUserPrompt(tmpl){
   const card=$('u-card');
   if(!tmpl){card.className='empty-state';card.innerHTML='テンプレートを選択してください';return;}
   card.className='card';
-  card.innerHTML=`<div style="font-size:16px;font-weight:500;color:#1D3557;margin-bottom:6px">${escHtml(tmpl.title)}</div>
-    <div style="margin-bottom:10px"><span class="cat-tag">${escHtml(tmpl.category)}</span></div>
-    <div class="prompt-display">${escHtml(tmpl.prompt)}</div>
-    <div class="btn-row">
-      <button class="btn btn-teal" id="copy-btn">コピー</button>
-      <button class="btn btn-ghost" id="open-btn">Claudeで開く ↗</button>
-    </div>`;
-  $('copy-btn').onclick=()=>{
-    navigator.clipboard.writeText(tmpl.prompt).catch(()=>{const ta=document.createElement('textarea');ta.value=tmpl.prompt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
-    showToast('コピーしました');
-  };
+  card.innerHTML=`<div style="font-size:16px;font-weight:500;color:#1D3557;margin-bottom:6px">${escHtml(tmpl.title)}</div><div style="margin-bottom:10px"><span class="cat-tag">${escHtml(tmpl.category)}</span></div><div class="prompt-display">${escHtml(tmpl.prompt)}</div><div class="btn-row"><button class="btn btn-teal" id="copy-btn">コピー</button><button class="btn btn-ghost" id="open-btn">Claudeで開く ↗</button></div>`;
+  $('copy-btn').onclick=()=>{navigator.clipboard.writeText(tmpl.prompt).catch(()=>{const ta=document.createElement('textarea');ta.value=tmpl.prompt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});showToast('コピーしました');};
   $('open-btn').onclick=()=>window.open('https://claude.ai/new?prompt='+encodeURIComponent(tmpl.prompt),'_blank');
 }
 
+// ============================================================
+// 管理者 テンプレート
+// ============================================================
 function renderAdminList(){
-  const div=$('admin-list');
-  const list=templates.filter(t=>!t._placeholder);
+  const div=$('admin-list'),list=templates.filter(t=>!t._placeholder);
   if(!list.length){div.innerHTML='<div class="empty-state">テンプレートがありません</div>';return;}
   let html='';
   getCategories().forEach(cat=>{
     const items=list.filter(t=>t.category===cat);if(!items.length)return;
     html+=`<div class="section-header"><span style="font-size:13px;font-weight:500;color:#1D3557">${escHtml(cat)}</span><span class="section-count">${items.length}件</span></div>`;
-    items.forEach(t=>{
-      html+=`<div class="tmpl-item"><div style="min-width:0"><div class="tmpl-item-title">${escHtml(t.title)}</div><div class="tmpl-item-preview">${escHtml(t.prompt.slice(0,45).replace(/\n/g,' '))}...</div></div>
-        <div class="tmpl-item-btns">
-          <button class="btn btn-success btn-sm" onclick="openEdit('${t.id}')">編集</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('${t.id}')">削除</button>
-        </div></div>`;
-    });
+    items.forEach(t=>{html+=`<div class="tmpl-item"><div style="min-width:0"><div class="tmpl-item-title">${escHtml(t.title)}</div><div class="tmpl-item-preview">${escHtml(t.prompt.slice(0,45).replace(/\n/g,' '))}...</div></div><div class="tmpl-item-btns"><button class="btn btn-success btn-sm" onclick="openEdit('${t.id}')">編集</button><button class="btn btn-danger btn-sm" onclick="deleteItem('${t.id}')">削除</button></div></div>`;});
   });
   div.innerHTML=html;
 }
-function buildEditCatSel(){
-  const sel=$('edit-cat-sel');sel.innerHTML='';
-  getCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
-}
+function buildEditCatSel(){const sel=$('edit-cat-sel');sel.innerHTML='';getCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});}
 function openEdit(id=null){
-  editingId=id;buildEditCatSel();
-  if(id){
-    const t=templates.find(x=>x.id===id);
-    $('modal-title-label').textContent='テンプレートを編集';
-    $('edit-cat-sel').value=t.category;$('edit-title').value=t.title;$('edit-prompt').value=t.prompt;
-  }else{$('modal-title-label').textContent='テンプレートを追加';$('edit-title').value='';$('edit-prompt').value='';}
+  window._editingId=id;buildEditCatSel();
+  if(id){const t=templates.find(x=>x.id===id);$('modal-title-label').textContent='テンプレートを編集';$('edit-cat-sel').value=t.category;$('edit-title').value=t.title;$('edit-prompt').value=t.prompt;}
+  else{$('modal-title-label').textContent='テンプレートを追加';$('edit-title').value='';$('edit-prompt').value='';}
   $('edit-modal').classList.add('open');$('edit-modal').scrollIntoView({behavior:'smooth',block:'start'});
 }
-function closeEdit(){$('edit-modal').classList.remove('open');editingId=null;}
+function closeEdit(){$('edit-modal').classList.remove('open');window._editingId=null;}
 $('add-btn').addEventListener('click',()=>openEdit(null));
 $('cancel-btn').addEventListener('click',closeEdit);
 $('save-btn').addEventListener('click',async()=>{
   const cat=$('edit-cat-sel').value,title=$('edit-title').value.trim(),prompt=$('edit-prompt').value.trim();
   if(!cat||!title||!prompt){showToast('すべての項目を入力してください',false);return;}
-  if(editingId){const idx=templates.findIndex(t=>t.id===editingId);templates[idx]={...templates[idx],category:cat,title,prompt};showToast('更新しました');}
+  const id=window._editingId;
+  if(id){const idx=templates.findIndex(t=>t.id===id);templates[idx]={...templates[idx],category:cat,title,prompt};showToast('更新しました');}
   else{templates.push({id:'tmpl_'+Date.now(),category:cat,title,prompt});showToast('追加しました');}
-  closeEdit();renderAdminList();await writeOneTemplateToSheets();
+  closeEdit();renderAdminList();await autoSyncToSheets();
 });
-function deleteItem(id){
-  if(!confirm(`「${templates.find(x=>x.id===id).title}」を削除しますか？`))return;
-  templates=templates.filter(x=>x.id!==id);showToast('削除しました');renderAdminList();writeOneTemplateToSheets();
-}
+function deleteItem(id){if(!confirm(`「${templates.find(x=>x.id===id).title}」を削除しますか？`))return;templates=templates.filter(x=>x.id!==id);showToast('削除しました');renderAdminList();autoSyncToSheets();}
 
+// ============================================================
+// 管理者 カテゴリ
+// ============================================================
 function renderCatList(){
   const div=$('cat-list'),cats=getCategories();
   if(!cats.length){div.innerHTML='<div class="empty-state">カテゴリがありません</div>';return;}
   div.innerHTML=cats.map(cat=>{
     const count=templates.filter(t=>t.category===cat&&!t._placeholder).length;
-    return`<div class="cat-item"><div><div class="cat-item-name">${escHtml(cat)}</div><div class="cat-item-count">テンプレート ${count}件</div></div>
-      <div class="cat-item-btns">
-        <button class="btn btn-warning btn-sm" onclick="startCatEdit('${encodeURIComponent(cat)}')">名前変更</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCat('${encodeURIComponent(cat)}')">削除</button>
-      </div></div>
-    <div id="catedit-${btoa(encodeURIComponent(cat))}" style="display:none;margin:-4px 0 8px;padding:10px 14px;background:#F5F4FF;border:1.5px solid #AFA9EC;border-radius:8px">
-      <label style="color:#3C3489;margin-bottom:6px">新しいカテゴリ名</label>
-      <div class="cat-edit-row">
-        <input type="text" id="catinput-${btoa(encodeURIComponent(cat))}" value="${escHtml(cat)}">
-        <button class="btn btn-purple btn-sm" onclick="saveCatRename('${encodeURIComponent(cat)}')">保存</button>
-        <button class="btn btn-ghost btn-sm" onclick="cancelCatEdit('${encodeURIComponent(cat)}')">取消</button>
-      </div>
-    </div>`;
+    return`<div class="cat-item"><div><div class="cat-item-name">${escHtml(cat)}</div><div class="cat-item-count">テンプレート ${count}件</div></div><div class="cat-item-btns"><button class="btn btn-warning btn-sm" onclick="startCatEdit('${encodeURIComponent(cat)}')">名前変更</button><button class="btn btn-danger btn-sm" onclick="deleteCat('${encodeURIComponent(cat)}')">削除</button></div></div>
+    <div id="catedit-${btoa(encodeURIComponent(cat))}" style="display:none;margin:-4px 0 8px;padding:10px 14px;background:#F5F4FF;border:1.5px solid #AFA9EC;border-radius:8px"><label style="color:#3C3489;margin-bottom:6px">新しいカテゴリ名</label><div class="cat-edit-row"><input type="text" id="catinput-${btoa(encodeURIComponent(cat))}" value="${escHtml(cat)}"><button class="btn btn-purple btn-sm" onclick="saveCatRename('${encodeURIComponent(cat)}')">保存</button><button class="btn btn-ghost btn-sm" onclick="cancelCatEdit('${encodeURIComponent(cat)}')">取消</button></div></div>`;
   }).join('');
 }
-function startCatEdit(enc){
-  const key=btoa(enc);
-  document.querySelectorAll('[id^="catedit-"]').forEach(el=>el.style.display='none');
-  $('catedit-'+key).style.display='block';$('catinput-'+key).focus();$('catinput-'+key).select();
-}
+function startCatEdit(enc){const key=btoa(enc);document.querySelectorAll('[id^="catedit-"]').forEach(el=>el.style.display='none');$('catedit-'+key).style.display='block';$('catinput-'+key).focus();$('catinput-'+key).select();}
 function cancelCatEdit(enc){$('catedit-'+btoa(enc)).style.display='none';}
-function saveCatRename(enc){
-  const old=decodeURIComponent(enc),nw=$('catinput-'+btoa(enc)).value.trim();
-  if(!nw){showToast('カテゴリ名を入力してください',false);return;}
-  if(nw===old){$('catedit-'+btoa(enc)).style.display='none';return;}
-  if(getCategories().includes(nw)){showToast('同じ名前のカテゴリが既に存在します',false);return;}
-  templates=templates.map(t=>t.category===old?{...t,category:nw}:t);
-  showToast(`「${old}」→「${nw}」に変更しました`);renderCatList();renderAdminList();writeOneTemplateToSheets();
-}
-function deleteCat(enc){
-  const name=decodeURIComponent(enc),count=templates.filter(t=>t.category===name&&!t._placeholder).length;
-  if(!confirm(count>0?`「${name}」を削除すると、このカテゴリのテンプレート${count}件もすべて削除されます。\n本当に削除しますか？`:`「${name}」を削除しますか？`))return;
-  templates=templates.filter(t=>t.category!==name);showToast(`「${name}」を削除しました`);renderCatList();renderAdminList();writeOneTemplateToSheets();
-}
-$('add-cat-btn').addEventListener('click',()=>{
-  const name=$('new-cat-input').value.trim();
-  if(!name){showToast('カテゴリ名を入力してください',false);return;}
-  if(getCategories().includes(name)){showToast('同じ名前のカテゴリが既に存在します',false);return;}
-  templates.push({id:'placeholder_'+Date.now(),title:'（テンプレートを追加してください）',category:name,prompt:'',_placeholder:true});
-  $('new-cat-input').value='';showToast(`「${name}」を追加しました`);renderCatList();renderAdminList();
-});
+function saveCatRename(enc){const old=decodeURIComponent(enc),nw=$('catinput-'+btoa(enc)).value.trim();if(!nw){showToast('カテゴリ名を入力してください',false);return;}if(nw===old){$('catedit-'+btoa(enc)).style.display='none';return;}if(getCategories().includes(nw)){showToast('同じ名前のカテゴリが既に存在します',false);return;}templates=templates.map(t=>t.category===old?{...t,category:nw}:t);showToast(`「${old}」→「${nw}」に変更しました`);renderCatList();renderAdminList();autoSyncToSheets();}
+function deleteCat(enc){const name=decodeURIComponent(enc),count=templates.filter(t=>t.category===name&&!t._placeholder).length;if(!confirm(count>0?`「${name}」を削除すると、このカテゴリのテンプレート${count}件もすべて削除されます。\n本当に削除しますか？`:`「${name}」を削除しますか？`))return;templates=templates.filter(t=>t.category!==name);showToast(`「${name}」を削除しました`);renderCatList();renderAdminList();autoSyncToSheets();}
+$('add-cat-btn').addEventListener('click',()=>{const name=$('new-cat-input').value.trim();if(!name){showToast('カテゴリ名を入力してください',false);return;}if(getCategories().includes(name)){showToast('同じ名前のカテゴリが既に存在します',false);return;}templates.push({id:'placeholder_'+Date.now(),title:'（テンプレートを追加してください）',category:name,prompt:'',_placeholder:true});$('new-cat-input').value='';showToast(`「${name}」を追加しました`);renderCatList();renderAdminList();});
 $('new-cat-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('add-cat-btn').click();});
 
-showScreen('login');
+// 起動
+initApp();
 </script>
 </body>
 </html>
