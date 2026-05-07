@@ -105,6 +105,23 @@ textarea{resize:vertical;line-height:1.6}
 .sync-result.info{background:#E6F1FB;border:1px solid #90BFEF;color:#0C447C}
 .loading-box{text-align:center;padding:4rem 1rem}
 .loading-spin{width:24px;height:24px;border:2.5px solid #C3D2EE;border-top-color:#1D6FCA;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+
+.user-cat-section{margin-bottom:1.25rem}
+.user-cat-header{font-size:13px;font-weight:500;color:#1D3557;padding:6px 0;margin-bottom:8px;border-bottom:2px solid #C3D2EE;display:flex;align-items:center;justify-content:space-between}
+.user-tmpl-card{background:#fff;border:1.5px solid #C3D2EE;border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color 0.15s}
+.user-tmpl-card:hover{border-color:#378ADD}
+.user-tmpl-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none}
+.user-tmpl-title{font-size:13px;font-weight:500;color:#1A2B45}
+.user-tmpl-arrow{font-size:11px;color:#6E89B4;transition:transform 0.2s;flex-shrink:0;margin-left:8px}
+.user-tmpl-arrow.open{transform:rotate(180deg)}
+.user-tmpl-body{display:none;padding:0 14px 12px;border-top:1px solid #EEF2F7}
+.user-tmpl-body.open{display:block}
+.hidden-badge{font-size:10px;padding:1px 6px;border-radius:50px;background:#FEF0EF;color:#A32D2D;border:1px solid #F0A0A0;margin-left:6px;font-weight:500}
+.tmpl-vis-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:#6E89B4;cursor:pointer;padding:3px 0}
+.vis-switch{width:32px;height:18px;background:#C3D2EE;border-radius:50px;position:relative;transition:background 0.2s;flex-shrink:0}
+.vis-switch.on{background:#1D9E75}
+.vis-switch::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left 0.2s}
+.vis-switch.on::after{left:16px}
 </style>
 </head>
 <body>
@@ -159,14 +176,10 @@ textarea{resize:vertical;line-height:1.6}
   <div id="admin-as-user-notice" style="display:none">
     <div class="notice-bar notice-green"><div class="notice-dot" style="background:#1D9E75"></div><span>管理者として閲覧中です。「管理画面へ」で戻れます。</span></div>
   </div>
-  <div class="select-group">
-    <label>テンプレートを絞り込む</label>
-    <div class="field" style="margin-bottom:8px"><select id="u-cat"></select></div>
-    <div class="field" style="margin-bottom:0"><input type="text" id="u-search" placeholder="キーワードで検索（タイトル・本文）" autocomplete="off"></div>
+  <div class="select-group" style="margin-bottom:12px">
+    <input type="text" id="u-search" placeholder="キーワードで検索（タイトル・本文）" autocomplete="off">
   </div>
-  <div id="u-search-results" style="display:none"><div class="count-label" id="u-count"></div><div id="u-result-list"></div></div>
-  <div id="u-dropdown-area" style="display:none"><div class="field"><select id="u-tmpl"></select></div></div>
-  <div id="u-card" class="empty-state">テンプレートを選択してください</div>
+  <div id="u-list"></div>
 </div>
 
 <!-- 管理者画面 -->
@@ -329,14 +342,15 @@ async function initApp() {
   // templatesシートからテンプレートを取得
   $('loading-status').textContent = 'テンプレートを読み込み中...';
   try {
-    const data = await sheetsGet('templates!A2:D1000');
+    const data = await sheetsGet('templates!A2:E1000');
     const rows = (data.values||[]).filter(r => r[0]&&r[2]&&r[3]);
     if (rows.length > 0) {
       templates = rows.map(r => ({
         id: r[0].trim(),
         category: (r[1]||'未分類').trim(),
         title: r[2].trim(),
-        prompt: r[3].trim()
+        prompt: r[3].trim(),
+        visible: r[4]?.trim()==='false' ? false : true
       }));
     }
   } catch(e) { /* スプシ未設定時はサンプルデータ */ }
@@ -517,10 +531,10 @@ $('reload-tmpl-btn').addEventListener('click', async () => {
   const btn=$('reload-tmpl-btn'), result=$('reload-result');
   setLoading(btn,'読み込み中...',true); result.style.display='none';
   try {
-    const data = await sheetsGet('templates!A2:D1000');
+    const data = await sheetsGet('templates!A2:E1000');
     const rows = (data.values||[]).filter(r=>r[0]&&r[2]&&r[3]);
     if (!rows.length) { setSyncResult('reload-result','✗ テンプレートが0件です','ng'); return; }
-    templates = rows.map(r=>({id:r[0].trim(),category:(r[1]||'未分類').trim(),title:r[2].trim(),prompt:r[3].trim()}));
+    templates = rows.map(r=>({id:r[0].trim(),category:(r[1]||'未分類').trim(),title:r[2].trim(),prompt:r[3].trim(),visible:r[4]?.trim()==='false'?false:true}));
     setSyncResult('reload-result',`✓ ${templates.length}件のテンプレートを読み込みました`,'ok');
     renderAdminList(); showToast(`${templates.length}件を読み込みました`);
   } catch(e) { setSyncResult('reload-result','✗ 読み込み失敗: '+e.message,'ng'); showToast('読み込みに失敗しました',false); }
@@ -547,8 +561,8 @@ $('write-all-btn').addEventListener('click', async () => {
   const btn=$('write-all-btn'), result=$('write-all-result');
   setLoading(btn,'書き出し中...',true); result.style.display='none';
   try {
-    const rows = templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt]);
-    await sheetsWrite('templates!A1:D'+(rows.length+1), [['id','category','title','prompt'],...rows]);
+    const rows = templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt,t.visible===false?'false':'true']);
+    await sheetsWrite('templates!A1:E'+(rows.length+1), [['id','category','title','prompt','visible'],...rows]);
     setSyncResult('write-all-result',`✓ ${rows.length}件をスプレッドシートに書き出しました`,'ok');
     showToast(`${rows.length}件を書き出しました`);
   } catch(e) { setSyncResult('write-all-result','✗ 書き出し失敗: '+e.message,'ng'); showToast('書き出しに失敗しました',false); }
@@ -561,8 +575,8 @@ async function autoSyncToSheets() {
   const ind=$('sync-indicator');
   ind.textContent='⟳ スプシに同期中...'; ind.style.display='block'; ind.style.color='#6E89B4';
   try {
-    const rows = templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt]);
-    await sheetsWrite('templates!A1:D'+(rows.length+1), [['id','category','title','prompt'],...rows]);
+    const rows = templates.filter(t=>!t._placeholder&&t.prompt).map(t=>[t.id,t.category,t.title,t.prompt,t.visible===false?'false':'true']);
+    await sheetsWrite('templates!A1:E'+(rows.length+1), [['id','category','title','prompt','visible'],...rows]);
     ind.textContent='✓ スプシに同期済み'; ind.style.color='#1D9E75';
   } catch(e) { ind.textContent='⚠ スプシ同期失敗'; ind.style.color='#A32D2D'; }
   setTimeout(()=>{ ind.style.display='none'; ind.style.color=''; }, 3000);
@@ -619,61 +633,77 @@ $('pw-save-btn').addEventListener('click', async () => {
 // ユーザー画面
 // ============================================================
 function initUser() {
-  buildUserCats(); $('u-search').value=''; $('u-cat').value='';
-  showDropdownMode(); buildDropdownList(); showUserPrompt(null);
+  $('u-search').value='';
+  renderUserList('');
 }
-function buildUserCats() {
-  const sel=$('u-cat'); sel.innerHTML='<option value="">すべてのカテゴリ</option>';
-  getCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
-}
-function showDropdownMode(){$('u-search-results').style.display='none';$('u-dropdown-area').style.display='block';}
-function showSearchMode(){$('u-dropdown-area').style.display='none';$('u-search-results').style.display='block';}
-function buildDropdownList() {
-  const cat=$('u-cat').value, sel=$('u-tmpl');
-  sel.innerHTML='<option value="">テンプレートを選択してください...</option>';
-  templates.filter(t=>(!cat||t.category===cat)&&!t._placeholder).forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.title;sel.appendChild(o);});
-}
-function buildSearchResults(kw) {
-  const cat=$('u-cat').value, kwl=kw.toLowerCase();
-  const list=templates.filter(t=>!t._placeholder&&(!cat||t.category===cat)&&(t.title.toLowerCase().includes(kwl)||t.prompt.toLowerCase().includes(kwl)));
-  $('u-count').textContent=list.length+'件ヒット';
-  const div=$('u-result-list');
-  if(!list.length){div.innerHTML='<div class="empty-state">「'+escHtml(kw)+'」に一致するテンプレートが見つかりません</div>';return;}
-  div.innerHTML=list.map(t=>{
-    const hl=escHtml(t.title).replace(new RegExp(escHtml(kw).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<span class="kw-highlight">${m}</span>`);
-    return`<div class="search-result-item" data-id="${t.id}"><div class="search-item-title">${hl}</div><div class="search-item-cat">${escHtml(t.category)}</div></div>`;
-  }).join('');
-  div.querySelectorAll('.search-result-item').forEach(el=>{
-    el.addEventListener('click',()=>{
-      div.querySelectorAll('.search-result-item').forEach(x=>x.classList.remove('active'));
-      el.classList.add('active'); showUserPrompt(templates.find(x=>x.id===el.dataset.id));
+
+function renderUserList(kw) {
+  const div=$('u-list');
+  const kwl=kw.toLowerCase();
+  // 表示対象（visible!==falseかつキーワードマッチ）
+  const visible=templates.filter(t=>!t._placeholder&&t.visible!==false);
+  const filtered=kw ? visible.filter(t=>t.title.toLowerCase().includes(kwl)||t.prompt.toLowerCase().includes(kwl)) : visible;
+
+  if(!filtered.length){
+    div.innerHTML='<div class="empty-state">'+(kw?`「${escHtml(kw)}」に一致するテンプレートが見つかりません`:'表示できるテンプレートがありません')+'</div>';
+    return;
+  }
+
+  // カテゴリ順に整理
+  const cats=[...new Set(getCategories().filter(c=>filtered.some(t=>t.category===c)))];
+  let html='';
+  cats.forEach(cat=>{
+    const items=filtered.filter(t=>t.category===cat);
+    if(!items.length)return;
+    html+=`<div class="user-cat-section">
+      <div class="user-cat-header">
+        <span>${escHtml(cat)}</span>
+        <span style="font-size:11px;color:#6E89B4">${items.length}件</span>
+      </div>`;
+    items.forEach(t=>{
+      const titleHl = kw
+        ? escHtml(t.title).replace(new RegExp(escHtml(kw).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<span class="kw-highlight">${m}</span>`)
+        : escHtml(t.title);
+      html+=`<div class="user-tmpl-card" id="ucard-${t.id}">
+        <div class="user-tmpl-header" onclick="toggleUserCard('${t.id}')">
+          <span class="user-tmpl-title">${titleHl}</span>
+          <span class="user-tmpl-arrow" id="arrow-${t.id}">▼</span>
+        </div>
+        <div class="user-tmpl-body" id="ubody-${t.id}">
+          <div class="prompt-display" style="margin-top:10px">${escHtml(t.prompt)}</div>
+          <div class="btn-row">
+            <button class="btn btn-teal btn-sm" onclick="copyPrompt('${t.id}')">コピー</button>
+            <button class="btn btn-ghost btn-sm" onclick="openInClaude('${t.id}')">Claudeで開く ↗</button>
+          </div>
+        </div>
+      </div>`;
     });
+    html+='</div>';
   });
+  div.innerHTML=html;
 }
-$('u-search').addEventListener('input', function() {
-  const kw=this.value.trim();
-  if(!kw){showDropdownMode();buildDropdownList();showUserPrompt(null);}
-  else{showSearchMode();buildSearchResults(kw);showUserPrompt(null);}
+
+function toggleUserCard(id){
+  const body=$('ubody-'+id), arrow=$('arrow-'+id);
+  if(!body)return;
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  arrow.classList.toggle('open',!isOpen);
+}
+
+function copyPrompt(id){
+  const t=templates.find(x=>x.id===id); if(!t)return;
+  navigator.clipboard.writeText(t.prompt).catch(()=>{const ta=document.createElement('textarea');ta.value=t.prompt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
+  showToast('コピーしました');
+}
+function openInClaude(id){
+  const t=templates.find(x=>x.id===id); if(!t)return;
+  window.open('https://claude.ai/new?prompt='+encodeURIComponent(t.prompt),'_blank');
+}
+
+$('u-search').addEventListener('input', function(){
+  renderUserList(this.value.trim());
 });
-$('u-cat').addEventListener('change', ()=>{const kw=$('u-search').value.trim();if(kw)buildSearchResults(kw);else buildDropdownList();showUserPrompt(null);});
-$('u-tmpl').addEventListener('change', function(){showUserPrompt(templates.find(x=>x.id===this.value)||null);});
-function showUserPrompt(tmpl) {
-  const card=$('u-card');
-  if(!tmpl){card.className='empty-state';card.innerHTML='テンプレートを選択してください';return;}
-  card.className='card';
-  card.innerHTML=`<div style="font-size:16px;font-weight:500;color:#1D3557;margin-bottom:6px">${escHtml(tmpl.title)}</div>
-    <div style="margin-bottom:10px"><span class="cat-tag">${escHtml(tmpl.category)}</span></div>
-    <div class="prompt-display">${escHtml(tmpl.prompt)}</div>
-    <div class="btn-row">
-      <button class="btn btn-teal" id="copy-btn">コピー</button>
-      <button class="btn btn-ghost" id="open-btn">Claudeで開く ↗</button>
-    </div>`;
-  $('copy-btn').onclick=()=>{
-    navigator.clipboard.writeText(tmpl.prompt).catch(()=>{const ta=document.createElement('textarea');ta.value=tmpl.prompt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
-    showToast('コピーしました');
-  };
-  $('open-btn').onclick=()=>window.open('https://claude.ai/new?prompt='+encodeURIComponent(tmpl.prompt),'_blank');
-}
 
 // ============================================================
 // 管理者 テンプレート
@@ -686,11 +716,34 @@ function renderAdminList() {
     const items=list.filter(t=>t.category===cat); if(!items.length) return;
     html+=`<div class="section-header"><span style="font-size:13px;font-weight:500;color:#1D3557">${escHtml(cat)}</span><span class="section-count">${items.length}件</span></div>`;
     items.forEach(t=>{
-      html+=`<div class="tmpl-item"><div style="min-width:0"><div class="tmpl-item-title">${escHtml(t.title)}</div><div class="tmpl-item-preview">${escHtml(t.prompt.slice(0,45).replace(/\n/g,' '))}...</div></div>
-        <div class="tmpl-item-btns"><button class="btn btn-success btn-sm" onclick="openEdit('${t.id}')">編集</button><button class="btn btn-danger btn-sm" onclick="deleteItem('${t.id}')">削除</button></div></div>`;
+      const vis = t.visible !== false;
+      html+=`<div class="tmpl-item" style="${vis?'':'opacity:0.6'}">
+        <div style="min-width:0;flex:1">
+          <div style="display:flex;align-items:center">
+            <div class="tmpl-item-title">${escHtml(t.title)}</div>
+            ${vis?'':'<span class="hidden-badge">非表示</span>'}
+          </div>
+          <div class="tmpl-item-preview">${escHtml(t.prompt.slice(0,45).replace(/\n/g,' '))}...</div>
+          <label class="tmpl-vis-toggle" onclick="toggleVisible('${t.id}')">
+            <div class="vis-switch ${vis?'on':''}"></div>
+            <span>${vis?'ユーザーに表示中':'ユーザーに非表示'}</span>
+          </label>
+        </div>
+        <div class="tmpl-item-btns">
+          <button class="btn btn-success btn-sm" onclick="openEdit('${t.id}')">編集</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('${t.id}')">削除</button>
+        </div></div>`;
     });
   });
   div.innerHTML=html;
+}
+
+function toggleVisible(id){
+  const idx=templates.findIndex(t=>t.id===id);
+  if(idx<0)return;
+  templates[idx].visible = templates[idx].visible===false ? true : false;
+  renderAdminList(); autoSyncToSheets();
+  showToast(templates[idx].visible!==false ? '表示に変更しました' : '非表示に変更しました');
 }
 function buildEditCatSel() {
   const sel=$('edit-cat-sel'); sel.innerHTML='';
