@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>セットアップガイド｜プロンプト管理アプリ（GAS版）</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --navy: #1D3557;
+  --blue: #1D6FCA;
+  --teal: #0F6E56;
+  --bg: #F0F4FA;
+  --surface: #fff;
+  --border: #D3DDED;
+  --text: #1A2B45;
+  --muted: #6E89B4;
+  --accent: #E6F1FB;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ヘッダー */
+.hero {
+  background: var(--navy);
+  color: #fff;
+  padding: 3rem 1.5rem 2.5rem;
+  text-align: center;
+}
+.hero-label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: #A8C4E0;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.hero h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.hero p {
+  font-size: 13px;
+  color: #A8C4E0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* 構成図 */
+.arch-wrap {
+  max-width: 680px;
+  margin: 2rem auto;
+  padding: 0 1.25rem;
+}
+.arch-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.arch-node {
+  text-align: center;
+  padding: 12px 18px;
+  background: var(--accent);
+  border: 1.5px solid #90BFEF;
+  border-radius: 10px;
+  min-width: 120px;
+}
+.arch-node.green { background: #E1F5EE; border-color: #9FE1CB; }
+.arch-node.orange { background: #FAEEDA; border-color: #FAC775; }
+.arch-node-icon { font-size: 22px; margin-bottom: 4px; }
+.arch-node-label { font-size: 12px; font-weight: 500; color: var(--navy); }
+.arch-node-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.arch-arrow {
+  font-size: 20px;
+  color: var(--muted);
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+/* コンテンツ */
+.content {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+/* フェーズヘッダー */
+.phase {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2.5rem 0 1rem;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+}
+.phase-num {
+  background: var(--navy);
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+.phase-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+.phase-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ステップ */
+.step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.step-header:hover { background: #F7FAFF; }
+.step-num {
+  background: var(--blue);
+  color: #fff;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-title { font-size: 13px; font-weight: 500; flex: 1; }
+.step-arrow { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+.step-arrow.open { transform: rotate(180deg); }
+.step-body { display: none; padding: 0 16px 14px; border-top: 1px solid #EEF2F7; }
+.step-body.open { display: block; }
+.step-body p { font-size: 13px; color: #3A5080; margin-top: 10px; line-height: 1.8; }
+.step-body ul { margin: 8px 0 0 1rem; }
+.step-body li { font-size: 13px; color: #3A5080; margin-bottom: 4px; line-height: 1.7; }
+
+/* コードブロック */
+.code-block {
+  background: #1A2B45;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #A8C4E0;
+  line-height: 1.8;
+  overflow-x: auto;
+  position: relative;
+}
+.code-block .hl { color: #FFF3C0; }
+.code-block .cm { color: #6E89B4; }
+
+/* ノート */
+.note {
+  background: #E6F1FB;
+  border: 1px solid #90BFEF;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #0C447C;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.note-warn {
+  background: #FAEEDA;
+  border-color: #FAC775;
+  color: #633806;
+}
+.note-ok {
+  background: #E1F5EE;
+  border-color: #9FE1CB;
+  color: #085041;
+}
+.note-icon { flex-shrink: 0; font-size: 14px; }
+
+/* 画像ガイド */
+.ui-hint {
+  background: var(--bg);
+  border: 1.5px dashed #C3D2EE;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ui-hint strong { color: var(--navy); }
+
+/* テーブル */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.tbl th {
+  background: #E6F1FB;
+  color: #0C447C;
+  padding: 6px 12px;
+  text-align: left;
+  font-weight: 600;
+}
+.tbl td {
+  padding: 7px 12px;
+  border-bottom: 1px solid #EEF2F7;
+  color: #3A5080;
+}
+.tbl tr:last-child td { border-bottom: none; }
+
+/* バッジ */
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 50px;
+  font-weight: 600;
+}
+.badge-blue { background: #E6F1FB; color: #0C447C; }
+.badge-green { background: #E1F5EE; color: #085041; }
+.badge-orange { background: #FAEEDA; color: #633806; }
+
+/* チェックリスト */
+.checklist {
+  margin-top: 10px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EEF2F7;
+  cursor: pointer;
+}
+.check-item:last-child { border-bottom: none; }
+.check-box {
+  width: 18px; height: 18px;
+  border: 1.5px solid #C3D2EE;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  font-size: 12px;
+}
+.check-box.checked { background: #1D9E75; border-color: #1D9E75; color: #fff; }
+.check-label { font-size: 13px; color: #3A5080; flex: 1; }
+.check-label.checked { text-decoration: line-through; color: var(--muted); }
+
+/* 完了バナー */
+.done-banner {
+  background: linear-gradient(135deg, #0F6E56, #1D6FCA);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  color: #fff;
+  margin-top: 2rem;
+}
+.done-banner h3 { font-size: 18px; margin-bottom: 6px; }
+.done-banner p { font-size: 13px; opacity: 0.85; }
+
+/* アコーディオン全開ボタン */
+.toggle-all {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.toggle-all button {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  color: var(--blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.toggle-all button:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-label">Setup Guide</div>
+  <h1>プロンプト管理アプリ（GAS版）<br>セットアップガイド</h1>
+  <p>GitHub Pages + Google Apps Script + スプレッドシートの3ステップ構成</p>
+</div>
+
+<!-- 構成図 -->
+<div class="arch-wrap">
+  <div class="arch-box">
+    <div class="arch-node">
+      <div class="arch-node-icon">🌐</div>
+      <div class="arch-node-label">GitHub Pages</div>
+      <div class="arch-node-sub">index.html</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node orange">
+      <div class="arch-node-icon">⚙️</div>
+      <div class="arch-node-label">Google Apps Script</div>
+      <div class="arch-node-sub">APIの窓口</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node green">
+      <div class="arch-node-icon">📊</div>
+      <div class="arch-node-label">スプレッドシート</div>
+      <div class="arch-node-sub">データベース</div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:10px">
+    <span class="note-icon">💡</span>
+    <span>OAuthもAPIキーも不要。GASがAPIの窓口になるのでシンプルに設定できます。</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- チェックリスト -->
+  <div class="phase">
+    <div class="phase-num">✓</div>
+    <div>
+      <div class="phase-title">セットアップ チェックリスト</div>
+      <div class="phase-sub">完了したらクリックしてチェックを入れてください</div>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px">
+    <div class="checklist" id="checklist">
+      <div class="check-item" onclick="toggleCheck(0)"><div class="check-box" id="chk0"></div><div class="check-label" id="lbl0">スプレッドシートを新規作成した</div></div>
+      <div class="check-item" onclick="toggleCheck(1)"><div class="check-box" id="chk1"></div><div class="check-label" id="lbl1">GAS（Apps Script）を開いた</div></div>
+      <div class="check-item" onclick="toggleCheck(2)"><div class="check-box" id="chk2"></div><div class="check-label" id="lbl2">gas_code.gs を貼り付け・スプシIDを設定した</div></div>
+      <div class="check-item" onclick="toggleCheck(3)"><div class="check-box" id="chk3"></div><div class="check-label" id="lbl3">GASをWebアプリとしてデプロイしたURLを取得した</div></div>
+      <div class="check-item" onclick="toggleCheck(4)"><div class="check-box" id="chk4"></div><div class="check-label" id="lbl4">GitHubにindex.htmlをアップした</div></div>
+      <div class="check-item" onclick="toggleCheck(5)"><div class="check-box" id="chk5"></div><div class="check-label" id="lbl5">GitHub PagesのURLでアプリを開いた</div></div>
+      <div class="check-item" onclick="toggleCheck(6)"><div class="check-box" id="chk6"></div><div class="check-label" id="lbl6">設定タブでGAS URLを入力・接続確認した</div></div>
+    </div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase">
+    <div class="phase-num">1</div>
+    <div>
+      <div class="phase-title">スプレッドシートの準備</div>
+      <div class="phase-sub">データベースとなるスプシを作成します</div>
+    </div>
+  </div>
+
+  <div class="toggle-all"><button onclick="toggleAll(1)">すべて開く / 閉じる</button></div>
+
+  <div class="step" data-phase="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">1</div>
+      <div class="step-title">Google スプレッドシートを新規作成する</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>Google ドライブを開き、「新規」→「Google スプレッドシート」で新しいスプシを作成してください。</p>
+      <p style="margin-top:8px">シート構成は以下の2シートを作成します（GASが自動作成するので手動作成は不要です）。</p>
+      <table class="tbl">
+        <thead><tr><th>シート名</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-blue">templates</span></td><td>テンプレートデータ（id / category / title / prompt / visible）</td></tr>
+          <tr><td><span class="badge badge-orange">config</span></td><td>管理者パスワード（admin_password）</td></tr>
+        </tbody>
+      </table>
+      <div class="note" style="margin-top:10px">
+        <span class="note-icon">📋</span>
+        <span>シートはGASが初回アクセス時に自動作成します。手動で作る必要はありません。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">2</div>
+      <div class="step-title">スプレッドシートIDを確認する</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>スプレッドシートのURLから <strong>/d/</strong> と <strong>/edit</strong> の間の文字列がIDです。</p>
+      <div class="code-block">https://docs.google.com/spreadsheets/d/<span class="hl">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span>/edit
+<span class="cm">↑ この部分がスプレッドシートID</span></div>
+      <p style="margin-top:10px">このIDは次のGAS設定で使います。メモしておいてください。</p>
+    </div>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase">
+    <div class="phase-num">2</div>
+    <div>
+      <div class="phase-title">Google Apps Script の設定</div>
+      <div class="phase-sub">GASをWebアプリとしてデプロイします</div>
+    </div>
+  </div>
+
+  <div class="toggle-all"><button onclick="toggleAll(2)">すべて開く / 閉じる</button></div>
+
+  <div class="step" data-phase="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">1</div>
+      <div class="step-title">Apps Script を開く</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>スプレッドシートのメニューから「拡張機能」→「Apps Script」をクリックしてください。</p>
+      <div class="ui-hint">📌 メニューバー：<strong>拡張機能</strong> → <strong>Apps Script</strong></div>
+      <p style="margin-top:8px">新しいタブでApps Scriptエディタが開きます。</p>
+    </div>
+  </div>
+
+  <div class="step" data-phase="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">2</div>
+      <div class="step-title">コードを貼り付ける</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>エディタに最初から書かれているコードを<strong>すべて削除</strong>して、<strong>gas_code.gs</strong> の内容をそのまま貼り付けてください。</p>
+      <div class="note note-warn">
+        <span class="note-icon">⚠️</span>
+        <span>既存の <code>function myFunction(){}</code> は必ず削除してから貼り付けてください。</span>
+      </div>
+      <p style="margin-top:10px">貼り付けたら、1行目の <code>SPREADSHEET_ID</code> を自分のスプシIDに書き換えます。</p>
+      <div class="code-block"><span class="cm">// 変更前</span>
+const SPREADSHEET_ID = <span class="hl">"ここにスプレッドシートIDを入力"</span>;
+
+<span class="cm">// 変更後（例）</span>
+const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"</span>;</div>
+      <p style="margin-top:10px">変更したら 💾（保存）ボタンまたは <code>Ctrl+S</code> で保存してください。</p>
+    </div>
+  </div>
+
+  <div class="step" data-phase="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">3</div>
+      <div class="step-title">Webアプリとしてデプロイする</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>右上の「デプロイ」→「新しいデプロイ」をクリックしてください。</p>
+      <div class="ui-hint">📌 <strong>デプロイ</strong>（右上青ボタン）→ <strong>新しいデプロイ</strong></div>
+      <p style="margin-top:10px">設定項目を以下のように設定してください。</p>
+      <table class="tbl">
+        <thead><tr><th>項目</th><th>設定値</th></tr></thead>
+        <tbody>
+          <tr><td>種類の選択</td><td><span class="badge badge-blue">ウェブアプリ</span></td></tr>
+          <tr><td>説明</td><td>任意（例：プロンプト管理API）</td></tr>
+          <tr><td>次のユーザーとして実行</td><td><span class="badge badge-orange">自分</span></td></tr>
+          <tr><td>アクセスできるユーザー</td><td><span class="badge badge-orange">全員</span></td></tr>
+        </tbody>
+      </table>
+      <div class="note note-warn" style="margin-top:10px">
+        <span class="note-icon">⚠️</span>
+        <span>「アクセスできるユーザー」は<strong>「全員」</strong>に設定してください。「自分のみ」だとHTMLからアクセスできません。</span>
+      </div>
+      <p style="margin-top:10px">「デプロイ」ボタンをクリックするとGoogleアカウントの認証が求められます。「権限を確認」→「許可」を選択してください。</p>
+      <div class="note note-ok" style="margin-top:10px">
+        <span class="note-icon">✓</span>
+        <span>デプロイが完了すると <strong>WebアプリのURL</strong>（https://script.google.com/macros/s/.../exec）が表示されます。必ずコピーしておいてください。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">4</div>
+      <div class="step-title">コード変更後の再デプロイについて</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>GASのコードを変更した場合、「新しいデプロイ」ではなく「デプロイを管理」→ 既存のデプロイを<strong>編集（鉛筆アイコン）</strong>→「バージョン：新しいバージョン」で更新してください。</p>
+      <div class="note note-warn">
+        <span class="note-icon">⚠️</span>
+        <span>「新しいデプロイ」を毎回実行するとURLが変わってしまいます。既存デプロイの更新を使うとURLは変わりません。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase">
+    <div class="phase-num">3</div>
+    <div>
+      <div class="phase-title">GitHub Pages の設定</div>
+      <div class="phase-sub">index.htmlをアップしてアプリを公開します</div>
+    </div>
+  </div>
+
+  <div class="toggle-all"><button onclick="toggleAll(3)">すべて開く / 閉じる</button></div>
+
+  <div class="step" data-phase="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">1</div>
+      <div class="step-title">GitHubに新しいリポジトリを作成する</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>github.com にログインし、右上「＋」→「New repository」で新しいリポジトリを作成してください。</p>
+      <table class="tbl">
+        <thead><tr><th>項目</th><th>設定値</th></tr></thead>
+        <tbody>
+          <tr><td>Repository name</td><td>例：<code>prompt-manager-gas</code></td></tr>
+          <tr><td>公開設定</td><td><span class="badge badge-blue">Public</span></td></tr>
+        </tbody>
+      </table>
+      <div class="note" style="margin-top:10px">
+        <span class="note-icon">💡</span>
+        <span>GitHub Pagesを使うにはPublicリポジトリが必要です。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">2</div>
+      <div class="step-title">index.htmlをアップロードする</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>作成したリポジトリページで「Add file」→「Upload files」をクリックし、<strong>index.html</strong> をドラッグ＆ドロップしてアップロードしてください。</p>
+      <div class="ui-hint">📌 <strong>Add file</strong> → <strong>Upload files</strong> → index.html をドロップ → <strong>Commit changes</strong></div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">3</div>
+      <div class="step-title">GitHub Pages を有効化する</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>リポジトリの「Settings」タブ → 左メニュー「Pages」を開いてください。</p>
+      <table class="tbl">
+        <thead><tr><th>項目</th><th>設定値</th></tr></thead>
+        <tbody>
+          <tr><td>Source</td><td>Deploy from a branch</td></tr>
+          <tr><td>Branch</td><td>main / (root)</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:10px">「Save」をクリックすると数分後にURLが発行されます。</p>
+      <div class="code-block">https://<span class="hl">ユーザー名</span>.github.io/<span class="hl">リポジトリ名</span>/</div>
+    </div>
+  </div>
+
+  <!-- PHASE 4 -->
+  <div class="phase">
+    <div class="phase-num">4</div>
+    <div>
+      <div class="phase-title">アプリの初期設定</div>
+      <div class="phase-sub">GAS URLを登録して動作確認します</div>
+    </div>
+  </div>
+
+  <div class="toggle-all"><button onclick="toggleAll(4)">すべて開く / 閉じる</button></div>
+
+  <div class="step" data-phase="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">1</div>
+      <div class="step-title">アプリを開いてログインする</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>GitHub PagesのURLをブラウザで開いてください。初回はGAS URLが未設定のためログイン画面が表示されます。</p>
+      <p style="margin-top:8px">初期パスワードは <strong>admin123</strong> です。ログイン後すぐに変更することを推奨します。</p>
+      <div class="note note-warn">
+        <span class="note-icon">⚠️</span>
+        <span>ローカルの index.html をダブルクリックで開いても動作しません。必ずGitHub PagesのURL（https://...）からアクセスしてください。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">2</div>
+      <div class="step-title">設定タブでGAS URLを登録する</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>管理者でログイン後、右上の「設定」タブを開いてください。</p>
+      <div class="ui-hint">📌 管理者画面 → <strong>設定タブ</strong> → 「GAS WebアプリURL」欄</div>
+      <p style="margin-top:10px">PHASE 2 でコピーしたGAS URLを貼り付けて「URLを保存して再接続」をクリックしてください。</p>
+      <div class="note note-ok" style="margin-top:10px">
+        <span class="note-icon">✓</span>
+        <span>「接続成功！テンプレート〇件を読み込みました」と表示されれば設定完了です。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">3</div>
+      <div class="step-title">パスワードを変更する</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <p>設定タブの「管理者パスワードの変更」セクションでパスワードを変更してください。変更するとスプレッドシートの <code>config</code> シートに保存され、次回アクセス時から新しいパスワードが有効になります。</p>
+      <div class="note note-warn">
+        <span class="note-icon">⚠️</span>
+        <span>初期パスワード（admin123）のままにしておくとセキュリティ上危険です。必ず変更してください。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-phase="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">4</div>
+      <div class="step-title">トラブルシューティング</div>
+      <div class="step-arrow">▼</div>
+    </div>
+    <div class="step-body">
+      <table class="tbl">
+        <thead><tr><th>症状</th><th>原因・対処</th></tr></thead>
+        <tbody>
+          <tr><td>接続失敗と表示される</td><td>GAS URLが正しいか確認。デプロイ時の「アクセスできるユーザー」が「全員」になっているか確認</td></tr>
+          <tr><td>データが反映されない</td><td>GASコードを変更した場合は「デプロイを管理」→既存デプロイを更新（新しいバージョン）する</td></tr>
+          <tr><td>ログインできない</td><td>2回目以降はスプシのconfigシートのパスワードが使われる。スプシを直接確認して確認</td></tr>
+          <tr><td>前回のデータが出ない</td><td>GAS URLはlocalStorageに保存される。別ブラウザ・別PCでは再設定が必要</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 完了 -->
+  <div class="done-banner">
+    <h3>🎉 セットアップ完了！</h3>
+    <p>管理者画面でテンプレートを追加・編集し、<br>「ユーザー画面へ」ボタンで利用者向け画面を確認してください。</p>
+  </div>
+
+</div>
+
+<script>
+function toggleStep(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.step-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+}
+
+function toggleAll(phase) {
+  const steps = document.querySelectorAll(`.step[data-phase="${phase}"]`);
+  const allOpen = [...steps].every(s => s.querySelector('.step-body').classList.contains('open'));
+  steps.forEach(s => {
+    s.querySelector('.step-body').classList.toggle('open', !allOpen);
+    s.querySelector('.step-arrow').classList.toggle('open', !allOpen);
+  });
+}
+
+function toggleCheck(idx) {
+  const box = document.getElementById('chk'+idx);
+  const lbl = document.getElementById('lbl'+idx);
+  const isChecked = box.classList.contains('checked');
+  box.classList.toggle('checked', !isChecked);
+  box.textContent = isChecked ? '' : '✓';
+  lbl.classList.toggle('checked', !isChecked);
+}
+
+// 最初のステップを開いておく
+document.querySelectorAll('.step').forEach((step, i) => {
+  if (i === 0) {
+    step.querySelector('.step-body').classList.add('open');
+    step.querySelector('.step-arrow').classList.add('open');
+  }
+});
+</script>
+</body>
+</html>
