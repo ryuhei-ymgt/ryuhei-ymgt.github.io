@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社保費用計上ツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --primary: #1e1b4b;
+  --accent: #7c3aed;
+  --accent-light: #ede9fe;
+  --accent-mid: #a78bfa;
+  --surface: #ffffff;
+  --surface2: #f9f8ff;
+  --surface3: #f0effe;
+  --border: #e2e0f0;
+  --border2: #c4bfea;
+  --text: #1e1b4b;
+  --text-muted: #6b6894;
+  --text-light: #a5a3c0;
+  --success: #059669;
+  --success-bg: #ecfdf5;
+  --warning: #d97706;
+  --warning-bg: #fffbeb;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --info-bg: #eff6ff;
+  --info: #1d4ed8;
+  --r: 10px;
+  --r-lg: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',Meiryo,sans-serif;background:#f4f2ff;color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+
+.hdr{background:var(--primary);color:#fff;position:sticky;top:0;z-index:200;box-shadow:0 4px 20px rgba(30,27,75,0.25);}
+.hdr-inner{max-width:1000px;margin:0 auto;padding:0 24px;height:52px;display:flex;align-items:center;gap:14px;}
+.hdr-logo{font-size:17px;font-weight:800;letter-spacing:-0.5px;}
+.hdr-logo em{color:var(--accent-mid);font-style:normal;}
+
+.stepper{background:#16134a;overflow-x:auto;scrollbar-width:none;}
+.stepper::-webkit-scrollbar{display:none;}
+.stepper-inner{max-width:1000px;margin:0 auto;padding:0 20px;display:flex;}
+.s-item{display:flex;align-items:center;gap:7px;padding:9px 14px;white-space:nowrap;color:rgba(255,255,255,0.4);font-size:12px;font-weight:600;border-bottom:2px solid transparent;cursor:pointer;transition:.15s;flex-shrink:0;}
+.s-item.active{color:#fff;border-bottom-color:var(--accent-mid);}
+.s-item.done{color:rgba(255,255,255,0.65);}
+.s-num{width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
+.s-item.active .s-num{background:var(--accent-mid);color:#fff;}
+.s-item.done .s-num{background:var(--success);color:#fff;}
+
+.gas-wrap{background:var(--surface);border-bottom:1px solid var(--border);}
+.gas-summary{max-width:1000px;margin:0 auto;padding:0 20px;height:42px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.gas-summary:hover{background:var(--surface2);}
+.gas-dot{width:7px;height:7px;border-radius:50%;background:#cbd5e1;flex-shrink:0;}
+.gas-dot.ok{background:var(--success);}
+.gas-label{font-size:12px;font-weight:700;color:var(--text-muted);flex:1;}
+.gas-chevron{font-size:11px;color:var(--text-light);transition:transform .2s;display:inline-block;}
+.gas-chevron.open{transform:rotate(180deg);}
+.gas-body{display:none;border-top:1px solid var(--border);}
+.gas-body.open{display:block;}
+.gas-body-inner{max-width:1000px;margin:0 auto;padding:18px 20px 20px;}
+.gas-steps{display:flex;flex-direction:column;gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.gas-step-item{border-bottom:1px solid var(--border);}
+.gas-step-item:last-child{border-bottom:none;}
+.gas-step-hd{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;background:var(--surface);}
+.gas-step-hd:hover{background:var(--surface2);}
+.gas-step-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gas-step-ttl{font-size:13px;font-weight:700;flex:1;}
+.gas-step-chev{font-size:11px;color:var(--text-light);transition:transform .2s;}
+.gas-step-chev.open{transform:rotate(180deg);}
+.gas-step-body{display:none;padding:12px 14px 14px 44px;background:var(--surface2);font-size:13px;color:var(--text-muted);line-height:1.7;border-top:1px solid var(--border);}
+.gas-step-body.open{display:block;}
+.gas-step-body code{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:1px 6px;font-size:12px;font-family:monospace;color:var(--accent);}
+.gas-connect-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#gas-url-input{flex:1;min-width:200px;max-width:420px;padding:7px 11px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;outline:none;font-family:inherit;}
+#gas-url-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,58,237,.1);}
+
+.main{max-width:1000px;margin:0 auto;padding:22px 20px 80px;}
+.screen{display:none;}
+.screen.active{display:block;}
+
+.card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--border);padding:24px;margin-bottom:18px;box-shadow:0 2px 8px rgba(30,27,75,0.06);}
+.card-ttl{font-size:15px;font-weight:800;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.card-ttl::before{content:'';width:3px;height:17px;background:var(--accent);border-radius:2px;display:inline-block;flex-shrink:0;}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#6d28d9;}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border2);}
+.btn-ghost:hover{background:var(--surface2);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{background:#047857;}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:7px;}
+.btn-lg{padding:11px 26px;font-size:14px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn-row.between{justify-content:space-between;}
+
+input[type=text],input[type=number],select{width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface);color:var(--text);font-size:13px;outline:none;transition:.15s;font-family:inherit;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.12);}
+.fgroup{margin-bottom:14px;}
+.flabel{font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;letter-spacing:.04em;}
+
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--surface3);padding:9px 12px;text-align:left;font-weight:700;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid #f3f2fb;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--surface2);}
+.tr-total td{font-weight:800;background:var(--surface3) !important;border-top:2px solid var(--border2);}
+.num{text-align:right;font-variant-numeric:tabular-nums;}
+
+.chips{display:flex;gap:4px;flex-wrap:wrap;}
+.chips input[type=radio]{display:none;}
+.chips label{padding:4px 11px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text-muted);background:var(--surface);transition:.12s;user-select:none;white-space:nowrap;}
+.chips input[value="原価"]:checked+label{background:#2563eb;border-color:#2563eb;color:#fff;}
+.chips input[value="販管"]:checked+label{background:#9333ea;border-color:#9333ea;color:#fff;}
+.chips input[value="会社負担"]:checked+label{background:#059669;border-color:#059669;color:#fff;}
+.chips input[value="本人負担"]:checked+label{background:#d97706;border-color:#d97706;color:#fff;}
+.chips input[value="集計対象外"]:checked+label{background:#94a3b8;border-color:#94a3b8;color:#fff;}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;}
+.b-genka{background:#dbeafe;color:#1e40af;}
+.b-hankan{background:#f3e8ff;color:#7e22ce;}
+.b-kaisha{background:#d1fae5;color:#065f46;}
+.b-honnin{background:#fef3c7;color:#92400e;}
+.b-jokyo{background:#f1f5f9;color:#64748b;}
+
+.alert{padding:11px 14px;border-radius:var(--r);font-size:13px;margin-bottom:14px;line-height:1.55;}
+.a-info{background:var(--info-bg);border:1px solid #bfdbfe;color:var(--info);}
+.a-warn{background:var(--warning-bg);border:1px solid #fde68a;color:var(--warning);}
+.a-ok{background:var(--success-bg);border:1px solid #6ee7b7;color:var(--success);}
+.a-err{background:var(--danger-bg);border:1px solid #fca5a5;color:var(--danger);}
+
+.dropzone{border:2px dashed var(--border2);border-radius:var(--r-lg);padding:44px 24px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface2);}
+.dropzone:hover,.dropzone.over{border-color:var(--accent);background:var(--accent-light);}
+.dz-icon{font-size:44px;margin-bottom:10px;}
+.dz-ttl{font-size:15px;font-weight:700;margin-bottom:5px;}
+.dz-hint{font-size:12px;color:var(--text-muted);}
+
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;}
+.sc-label{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;margin-bottom:5px;}
+.sc-val{font-size:20px;font-weight:800;color:var(--text);}
+.sc.ok{border-color:#6ee7b7;background:var(--success-bg);}
+.sc.ok .sc-val{color:var(--success);}
+.sc.ng{border-color:#fca5a5;background:var(--danger-bg);}
+.sc.ng .sc-val{color:var(--danger);}
+
+.prev-wrap{max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:var(--r);margin-top:14px;}
+
+.agg-mode-group{display:flex;gap:12px;flex-wrap:wrap;}
+.agg-mode-opt{flex:1;min-width:200px;cursor:pointer;}
+.agg-mode-opt input[type=radio]{display:none;}
+.agg-mode-box{border:2px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;transition:.15s;background:var(--surface);}
+.agg-mode-opt:hover .agg-mode-box{border-color:var(--accent-mid);background:var(--surface2);}
+.agg-mode-opt input[type=radio]:checked+.agg-mode-box{border-color:var(--accent);background:var(--accent-light);}
+.agg-mode-icon{font-size:22px;margin-bottom:6px;}
+.agg-mode-ttl{font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px;}
+.agg-mode-desc{font-size:12px;color:var(--text-muted);line-height:1.5;}
+
+/* 集約モード時に部門列を非表示 */
+.hide-dept .th-dept,
+.hide-dept .td-dept-total,
+.hide-dept td.dept-cell { display:none; }
+.hide-dept6 .th-dept6,
+.hide-dept6 .td-dept6-total,
+.hide-dept6 td.dept-cell6 { display:none; }
+
+.corr-input{width:120px;text-align:right;padding:5px 8px;}
+
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .6s linear infinite;}
+@keyframes rot{to{transform:rotate(360deg);}}
+
+/* PDF */
+#pdf-el{position:absolute;left:-9999px;top:0;width:720px;background:#fff;color:#1e1b4b;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;padding:36px;}
+#pdf-el .ptitle{font-size:20px;font-weight:800;border-bottom:3px solid #7c3aed;padding-bottom:8px;margin-bottom:16px;}
+#pdf-el .pmeta{font-size:12px;color:#6b6894;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;}
+#pdf-el .pinfo table{width:100%;font-size:12px;border-collapse:collapse;margin-bottom:18px;}
+#pdf-el .pinfo td{padding:6px 10px;border:1px solid #e2e0f0;}
+#pdf-el .pinfo td:first-child{font-weight:700;width:200px;background:#f0effe;}
+#pdf-el .pmain table{width:100%;border-collapse:collapse;font-size:12px;}
+#pdf-el .pmain th{background:#f0effe;padding:7px 10px;border:1px solid #e2e0f0;font-weight:700;}
+#pdf-el .pmain td{padding:7px 10px;border:1px solid #e2e0f0;}
+#pdf-el .pmain tr:nth-child(even) td{background:#f9f8ff;}
+#pdf-el .pmain .ptfoot td{font-weight:800;background:#ede9fe;}
+#pdf-el .pnotes{margin-top:20px;font-size:11px;color:#9898b0;}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-logo">社保費用計上<em>ツール</em></div>
+  </div>
+  <div class="stepper">
+    <div class="stepper-inner">
+      <div class="s-item active" id="st1" onclick="tryGoStep(1)"><div class="s-num">1</div>CSVアップロード</div>
+      <div class="s-item" id="st2" onclick="tryGoStep(2)"><div class="s-num">2</div>部門設定</div>
+      <div class="s-item" id="st3" onclick="tryGoStep(3)"><div class="s-num">3</div>集計項目設定</div>
+      <div class="s-item" id="st4" onclick="tryGoStep(4)"><div class="s-num">4</div>会社負担額入力</div>
+      <div class="s-item" id="st5" onclick="tryGoStep(5)"><div class="s-num">5</div>集計確認・補正</div>
+      <div class="s-item" id="st6" onclick="tryGoStep(6)"><div class="s-num">6</div>PDF出力</div>
+    </div>
+  </div>
+</header>
+
+<div class="gas-wrap">
+  <!-- 常時表示バー（クリックで開閉） -->
+  <div class="gas-summary" onclick="toggleGasPanel()">
+    <div class="gas-dot" id="gdot"></div>
+    <span class="gas-label" id="glabel">GAS連携設定（クリックで手順を表示）</span>
+    <span class="gas-chevron" id="gas-chev">▼</span>
+  </div>
+
+  <!-- 開閉パネル -->
+  <div class="gas-body" id="gas-body">
+    <div class="gas-body-inner">
+
+      <!-- 手順アコーディオン -->
+      <div class="gas-steps">
+
+        <div class="gas-step-item">
+          <div class="gas-step-hd" onclick="toggleGasStep(1)">
+            <div class="gas-step-num">1</div>
+            <div class="gas-step-ttl">Googleスプレッドシートを新規作成する</div>
+            <span class="gas-step-chev" id="gs-chev-1">▼</span>
+          </div>
+          <div class="gas-step-body" id="gs-body-1">
+            Google ドライブで「新規」→「Googleスプレッドシート」を作成します。<br>
+            シート名は何でも構いません。このスプレッドシートに部門設定・項目設定・実行ログが保存されます。
+          </div>
+        </div>
+
+        <div class="gas-step-item">
+          <div class="gas-step-hd" onclick="toggleGasStep(2)">
+            <div class="gas-step-num">2</div>
+            <div class="gas-step-ttl">Apps Script（GAS）を開いてコードを貼り付ける</div>
+            <span class="gas-step-chev" id="gs-chev-2">▼</span>
+          </div>
+          <div class="gas-step-body" id="gs-body-2">
+            スプレッドシートのメニューから「拡張機能」→「Apps Script」を開きます。<br>
+            エディタに表示されているコードを全て削除し、以下のコードを貼り付けて保存（Ctrl+S）してください。<br><br>
+            <details>
+              <summary style="cursor:pointer;font-weight:700;color:var(--accent);font-size:12px;">▶ GASコードを表示</summary>
+              <pre id="gas-code-pre" style="margin-top:10px;background:#1e1b4b;color:#e2e0f0;padding:14px;border-radius:8px;font-size:11px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;"></pre>
+            </details>
+          </div>
+        </div>
+
+        <div class="gas-step-item">
+          <div class="gas-step-hd" onclick="toggleGasStep(3)">
+            <div class="gas-step-num">3</div>
+            <div class="gas-step-ttl">Webアプリとしてデプロイする</div>
+            <span class="gas-step-chev" id="gs-chev-3">▼</span>
+          </div>
+          <div class="gas-step-body" id="gs-body-3">
+            Apps Scriptのエディタ右上「デプロイ」→「新しいデプロイ」をクリックします。<br>
+            ① 種類の選択：<code>ウェブアプリ</code><br>
+            ② 次のユーザーとして実行：<code>自分</code><br>
+            ③ アクセスできるユーザー：<code>全員</code><br>
+            「デプロイ」ボタンを押し、Googleアカウントの認証を完了させます。<br><br>
+            ⚠ 初回のみ「このアプリは確認されていません」と表示された場合は「詳細」→「〇〇（安全ではないページ）に移動」を選択してください。
+          </div>
+        </div>
+
+        <div class="gas-step-item">
+          <div class="gas-step-hd" onclick="toggleGasStep(4)">
+            <div class="gas-step-num">4</div>
+            <div class="gas-step-ttl">WebアプリURLをコピーして下の欄に貼り付ける</div>
+            <span class="gas-step-chev" id="gs-chev-4">▼</span>
+          </div>
+          <div class="gas-step-body" id="gs-body-4">
+            デプロイ完了後に表示される「ウェブアプリのURL」をコピーします。<br>
+            URLは <code>https://script.google.com/macros/s/〇〇〇/exec</code> の形式です。<br>
+            下の入力欄に貼り付けて「接続テスト」ボタンを押してください。<br><br>
+            ✅ 「接続成功」と表示されれば設定完了です。以降は部門設定・項目設定をGASに保存・読込できるようになります。
+          </div>
+        </div>
+
+      </div><!-- /.gas-steps -->
+
+      <!-- URL入力エリア -->
+      <div class="gas-connect-row">
+        <div class="gas-dot" id="gdot2"></div>
+        <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/〇〇〇/exec" oninput="onGasUrlChange()">
+        <button class="btn btn-ghost btn-sm" onclick="testGas()">接続テスト</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadFromGas()">設定を読込</button>
+      </div>
+
+    </div><!-- /.gas-body-inner -->
+  </div><!-- /.gas-body -->
+</div><!-- /.gas-wrap -->
+
+<main class="main">
+
+<!-- STEP 1 -->
+<div class="screen active" id="sc1">
+  <div class="card">
+    <div class="card-ttl">CSVファイルのアップロード</div>
+    <div class="alert a-info">
+      給与システムから出力した社保CSV（<b>1行目に部門名、1列目に項目名</b>が並ぶ形式）をアップロードしてください。
+    </div>
+    <div class="dropzone" id="dz" onclick="document.getElementById('fi').click()" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+      <div class="dz-icon">📂</div>
+      <div class="dz-ttl">クリック または ドラッグ＆ドロップ</div>
+      <div class="dz-hint">CSVファイル（.csv）</div>
+    </div>
+    <input type="file" id="fi" accept=".csv" style="display:none" onchange="onFileSelect(event)">
+    <div id="csv-result" style="display:none; margin-top:16px;"></div>
+  </div>
+  <div class="btn-row" style="justify-content:space-between;">
+    <button class="btn btn-ghost btn-lg" id="btn-clear-csv" onclick="clearCSV()" style="display:none;">🗑 CSVをクリア</button>
+    <button class="btn btn-primary btn-lg" onclick="tryGoStep(2)" id="btn12" style="margin-left:auto;" disabled>次へ：部門設定 →</button>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="screen" id="sc2">
+  <div class="card">
+    <div class="card-ttl">部門設定（原価 / 販管）</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">CSVの1行目から抽出した部門一覧です。各部門を「原価」か「販管」に設定してください。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>部門名</th><th>区分</th></tr></thead>
+        <tbody id="dept-tbody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="setAllDept('原価')">全て原価</button>
+      <button class="btn btn-ghost btn-sm" onclick="setAllDept('販管')">全て販管</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveDeptToGas()">💾 GASに保存</button>
+    </div>
+
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;">集計表示モード</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+        集計確認・PDF出力の際に、部門ごとの明細を残すか、原価/販管の区分で集約（部門名は表示しない）するかを選択してください。
+      </p>
+      <div class="agg-mode-group">
+        <label class="agg-mode-opt" id="agg-opt-dept">
+          <input type="radio" name="agg-mode" value="dept" checked onchange="S.aggMode=this.value">
+          <div class="agg-mode-box">
+            <div class="agg-mode-icon">🏢</div>
+            <div class="agg-mode-ttl">部門別明細</div>
+            <div class="agg-mode-desc">部門名ごとに行を分けて表示します</div>
+          </div>
+        </label>
+        <label class="agg-mode-opt" id="agg-opt-kubun">
+          <input type="radio" name="agg-mode" value="kubun" onchange="S.aggMode=this.value">
+          <div class="agg-mode-box">
+            <div class="agg-mode-icon">📊</div>
+            <div class="agg-mode-ttl">区分で集約（原価 / 販管）</div>
+            <div class="agg-mode-desc">部門名を省略し、原価・販管の2行に集約して表示します</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+  </div>
+  <div class="btn-row between">
+    <button class="btn btn-ghost btn-lg" onclick="tryGoStep(1)">← 戻る</button>
+    <button class="btn btn-primary btn-lg" onclick="tryGoStep(3)">次へ：集計項目設定 →</button>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="screen" id="sc3">
+  <div class="card">
+    <div class="card-ttl">集計項目設定</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:6px;">
+      CSVの行（項目名）ごとに区分を設定してください。<br>
+      <b>「(会社負担分)」を含む行は自動的に「会社負担」、合計行・雇用保険行は自動的に「除外」にしています。</b>ご確認の上、必要に応じて変更してください。
+    </p>
+    <div class="tw" style="margin-top:14px;">
+      <table>
+        <thead><tr><th>項目名</th><th>区分</th><th class="num">全部門合計（参考）</th></tr></thead>
+        <tbody id="item-tbody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="setAllItem('会社負担')">全て会社負担</button>
+      <button class="btn btn-ghost btn-sm" onclick="setAllItem('本人負担')">全て本人負担</button>
+      <button class="btn btn-ghost btn-sm" onclick="setAllItem('集計対象外')">全て除外</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveItemToGas()">💾 GASに保存</button>
+    </div>
+  </div>
+  <div class="btn-row between">
+    <button class="btn btn-ghost btn-lg" onclick="tryGoStep(2)">← 戻る</button>
+    <button class="btn btn-primary btn-lg" onclick="tryGoStep(4)">次へ：会社負担額入力 →</button>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="screen" id="sc4">
+  <div class="card" style="max-width:500px;">
+    <div class="card-ttl">社保支払額（総額）の入力</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">給与システム上で確認できる「社保支払額（本人負担＋会社負担の合計）」を入力してください。CSV集計値との差分確認に使います。</p>
+    <div class="fgroup">
+      <label class="flabel">対象年月</label>
+      <input type="text" id="f-month" placeholder="例：2026年5月" style="max-width:200px;">
+    </div>
+    <div class="fgroup">
+      <label class="flabel">作成者</label>
+      <input type="text" id="f-creator" placeholder="氏名または部署名" style="max-width:200px;">
+    </div>
+    <div class="fgroup">
+      <label class="flabel">社保支払額（本人負担＋会社負担の合計）【円】</label>
+      <input type="number" id="f-systotal" placeholder="例：1117934" style="max-width:240px;font-size:16px;font-weight:800;">
+    </div>
+    <div class="alert a-info" id="csv-kaisha-hint" style="display:none;"></div>
+  </div>
+  <div class="btn-row between">
+    <button class="btn btn-ghost btn-lg" onclick="tryGoStep(3)">← 戻る</button>
+    <button class="btn btn-primary btn-lg" onclick="doCalcAndGo5()">集計・確認 →</button>
+  </div>
+</div>
+
+<!-- STEP 5 -->
+<div class="screen" id="sc5">
+  <div class="sgrid" id="sc5-summary"></div>
+  <div class="card">
+    <div class="card-ttl">部門別・原価/販管別 集計結果</div>
+    <div class="alert" id="sc5-diff-alert"></div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr id="sc5-thead-row">
+            <th class="th-dept">部門名</th>
+            <th>区分</th>
+            <th class="num" style="color:#92400e;">本人負担（円）</th>
+            <th class="num" style="color:#065f46;">会社負担（円）</th>
+            <th class="num">補正額（円）</th>
+            <th class="num" style="font-weight:800;">確定額／会社負担（円）</th>
+          </tr>
+        </thead>
+        <tbody id="sc5-tbody"></tbody>
+        <tfoot>
+          <tr class="tr-total">
+            <td class="td-dept-total">部門</td>
+            <td>合計</td>
+            <td class="num" id="sc5-tot-honnin"></td>
+            <td class="num" id="sc5-tot-csv"></td>
+            <td class="num" id="sc5-tot-corr"></td>
+            <td class="num" id="sc5-tot-final"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="doProportional()" id="btn-prop">按分補正</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetCorr()">補正リセット</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">「按分補正」は差分を集計額比率で自動配分します。手動補正は補正額欄に直接入力してください。</p>
+  </div>
+  <div class="btn-row between">
+    <button class="btn btn-ghost btn-lg" onclick="tryGoStep(4)">← 戻る</button>
+    <button class="btn btn-success btn-lg" onclick="doConfirm()">✔ データ確定・PDF出力へ →</button>
+  </div>
+</div>
+
+<!-- STEP 6 -->
+<div class="screen" id="sc6">
+  <div class="sgrid" id="sc6-summary"></div>
+  <div class="card">
+    <div class="card-ttl">確定内容の確認</div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th class="th-dept6">部門名</th><th>区分</th>
+            <th class="num" style="color:#92400e;">本人負担</th>
+            <th class="num" style="color:#065f46;">会社負担</th>
+            <th class="num">補正額</th>
+            <th class="num" style="font-weight:800;">確定額／会社負担</th>
+          </tr>
+        </thead>
+        <tbody id="sc6-tbody"></tbody>
+        <tfoot>
+          <tr class="tr-total">
+            <td class="td-dept6-total">部門</td>
+            <td>合計</td>
+            <td class="num" id="sc6-tot-honnin"></td>
+            <td class="num" id="sc6-tot-csv"></td>
+            <td class="num" id="sc6-tot-corr"></td>
+            <td class="num" id="sc6-tot-final"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-ttl">出力</div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-lg" id="btn-pdf" onclick="genPDF()">📄 PDF生成・ダウンロード</button>
+      <button class="btn btn-ghost btn-lg" onclick="doSaveLog()">💾 ログをGASに保存</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">PDF生成に数秒かかる場合があります。</p>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-lg" onclick="tryGoStep(5)">← 集計確認に戻る</button>
+    <button class="btn btn-ghost btn-lg" onclick="startOver()">🔄 最初から（新しいCSV）</button>
+  </div>
+</div>
+
+</main>
+
+<!-- PDF hidden element -->
+<div id="pdf-el">
+  <div class="ptitle">社会保険料 会社負担分 費用計上一覧</div>
+  <div class="pmeta">
+    <span id="pm-month"></span><span id="pm-creator"></span><span id="pm-date"></span>
+  </div>
+  <div class="pinfo">
+    <table>
+      <tr><td>社保支払額（給与システム）</td><td id="pm-sys"></td></tr>
+      <tr><td>CSV本人負担合計</td><td id="pm-honnin"></td></tr>
+      <tr><td>CSV会社負担合計</td><td id="pm-csv"></td></tr>
+      <tr><td>差分（支払額ベース）</td><td id="pm-diff"></td></tr>
+      <tr><td>補正後 会社負担確定総額</td><td id="pm-final"></td></tr>
+    </table>
+  </div>
+  <div class="pmain" id="pm-table"></div>
+  <div class="pnotes">本資料は社保費用計上ツールにより自動生成されました。</div>
+</div>
+
+<script>
+/* STATE */
+const S = {
+  step:1,
+  depts:[],        // ['製造部門', '営業販売管理部門']
+  items:[],        // [{name, values:{部門名:金額}, total}]
+  deptKubun:{},    // {部門名:'原価'|'販管'}
+  itemKubun:{},    // {項目名:'会社負担'|'本人負担'|'集計対象外'}
+  summary:[],      // [{dept,kubun,honninAmt,csvAmt,corr,final}]
+  sysTotal:0,      // 社保支払額（本人負担＋会社負担の合計）
+  aggMode:'dept',  // 'dept'=部門別明細 / 'kubun'=区分で集約
+  month:'', creator:'',
+  gasUrl:'', gasOk:false
+};
+
+/* ── GAS アコーディオン ── */
+function toggleGasPanel(){
+  const body=document.getElementById('gas-body');
+  const chev=document.getElementById('gas-chev');
+  const open=body.classList.toggle('open');
+  chev.classList.toggle('open',open);
+  // GASコードを初回表示時に挿入
+  if(open && !document.getElementById('gas-code-pre').textContent.trim()){
+    document.getElementById('gas-code-pre').textContent=GAS_CODE;
+  }
+}
+function toggleGasStep(n){
+  const body=document.getElementById('gs-body-'+n);
+  const chev=document.getElementById('gs-chev-'+n);
+  const open=body.classList.toggle('open');
+  chev.classList.toggle('open',open);
+}
+
+/* ── GAS接続 ── */
+function onGasUrlChange(){
+  S.gasUrl=document.getElementById('gas-url-input').value.trim();
+  setGasDot(false);
+}
+function setGasDot(ok){
+  S.gasOk=ok;
+  const cls='gas-dot'+(ok?' ok':'');
+  document.getElementById('gdot').className=cls;
+  document.getElementById('gdot2').className=cls;
+  document.getElementById('glabel').textContent=ok
+    ?'GAS接続済み　設定の保存・読込が使えます'
+    :'GAS連携設定（クリックで手順を表示）';
+}
+async function testGas(){
+  if(!S.gasUrl){alert('GAS URLを入力してください');return;}
+  try{
+    const r=await fetch(S.gasUrl+'?action=ping');
+    const d=await r.json();
+    if(d.status==='ok'){setGasDot(true);}
+    else{setGasDot(false);alert('GASから予期しないレスポンス');}
+  }catch(e){setGasDot(false);alert('接続失敗：'+e.message);}
+}
+async function gasPost(action,data){
+  if(!S.gasUrl)return null;
+  try{
+    const r=await fetch(S.gasUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})});
+    return await r.json();
+  }catch(e){console.warn('GAS error',e);return null;}
+}
+async function loadFromGas(){
+  if(!S.gasUrl){alert('GAS URLを入力してください');return;}
+  const r=await gasPost('getSettings',{});
+  if(!r){alert('設定の読込に失敗しました');return;}
+  if(r.deptKubun) Object.assign(S.deptKubun,r.deptKubun);
+  if(r.itemKubun) Object.assign(S.itemKubun,r.itemKubun);
+  alert('GASから設定を読み込みました');
+  if(S.step===2)renderDeptTable();
+  if(S.step===3)renderItemTable();
+}
+async function saveDeptToGas(){
+  collectDept();
+  const r=await gasPost('saveDepartmentSettings',{data:S.deptKubun});
+  alert(r&&r.status==='ok'?'部門設定を保存しました':'保存失敗（GAS未接続またはエラー）');
+}
+async function saveItemToGas(){
+  collectItem();
+  const r=await gasPost('saveItemSettings',{data:S.itemKubun});
+  alert(r&&r.status==='ok'?'項目設定を保存しました':'保存失敗（GAS未接続またはエラー）');
+}
+async function doSaveLog(){
+  const csvTot=csvTotal(),honninTot=honninTotal();
+  const r=await gasPost('saveLog',{data:{month:S.month,sysTotal:S.sysTotal,honninTotal:honninTot,csvTotal:csvTot,diff:S.sysTotal-(csvTot+honninTot),finalTotal:finalTotal(),createdAt:new Date().toLocaleString('ja-JP')}});
+  alert(r&&r.status==='ok'?'ログを保存しました':'保存失敗（GAS未接続）');
+}
+
+/* ── GASコード（ページ内埋め込み） ── */
+const GAS_CODE = `const SS = SpreadsheetApp.getActiveSpreadsheet();
+
+function doGet(e) {
+  if (e.parameter.action === 'ping') {
+    return json({ status: 'ok' });
+  }
+  return json({ status: 'ok' });
+}
+
+function doPost(e) {
+  const body = JSON.parse(e.postData.contents);
+  const action = body.action;
+  if (action === 'getSettings') return json(getSettings());
+  if (action === 'saveDepartmentSettings') return json(saveDepartmentSettings(body.data));
+  if (action === 'saveItemSettings') return json(saveItemSettings(body.data));
+  if (action === 'saveLog') return json(saveLog(body.data));
+  return json({ status: 'error', message: 'unknown action' });
+}
+
+function getSettings() {
+  const deptSheet = getOrCreateSheet('部門設定');
+  const itemSheet = getOrCreateSheet('項目設定');
+  const deptKubun = {};
+  const itemKubun = {};
+  const deptData = deptSheet.getDataRange().getValues();
+  for (let i = 1; i < deptData.length; i++) {
+    if (deptData[i][0]) deptKubun[deptData[i][0]] = deptData[i][1];
+  }
+  const itemData = itemSheet.getDataRange().getValues();
+  for (let i = 1; i < itemData.length; i++) {
+    if (itemData[i][0]) itemKubun[itemData[i][0]] = itemData[i][1];
+  }
+  return { status: 'ok', deptKubun, itemKubun };
+}
+
+function saveDepartmentSettings(data) {
+  const sheet = getOrCreateSheet('部門設定');
+  sheet.clearContents();
+  sheet.appendRow(['部門名', '区分']);
+  Object.entries(data).forEach(([k, v]) => sheet.appendRow([k, v]));
+  return { status: 'ok' };
+}
+
+function saveItemSettings(data) {
+  const sheet = getOrCreateSheet('項目設定');
+  sheet.clearContents();
+  sheet.appendRow(['項目名', '区分']);
+  Object.entries(data).forEach(([k, v]) => sheet.appendRow([k, v]));
+  return { status: 'ok' };
+}
+
+function saveLog(data) {
+  const sheet = getOrCreateSheet('実行ログ');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['実行日時', '対象月', '社保支払額', '本人負担合計', '会社負担CSV', '差分', '確定総額']);
+  }
+  sheet.appendRow([data.createdAt, data.month, data.sysTotal, data.honninTotal, data.csvTotal, data.diff, data.finalTotal]);
+  return { status: 'ok' };
+}
+
+function getOrCreateSheet(name) {
+  return SS.getSheetByName(name) || SS.insertSheet(name);
+}
+
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+
+/* ── CSV PARSE ── */
+function dzOver(e){e.preventDefault();document.getElementById('dz').classList.add('over');}
+function dzLeave(){document.getElementById('dz').classList.remove('over');}
+function dzDrop(e){e.preventDefault();dzLeave();const f=e.dataTransfer.files[0];if(f)readCSV(f);}
+function onFileSelect(e){const f=e.target.files[0];if(f)readCSV(f);}
+
+function readCSV(file){
+  if(!file.name.toLowerCase().endsWith('.csv')){alert('CSVファイルを選択してください');return;}
+  const rd=new FileReader();
+  rd.onload=e=>{try{parseCSV(e.target.result,file.name);}catch(err){alert('CSV解析エラー：'+err.message);}};
+  rd.readAsText(file,'UTF-8');
+}
+
+function parseLine(line){
+  const res=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){res.push(cur.trim());cur='';}
+    else cur+=c;
+  }
+  res.push(cur.trim());
+  return res;
+}
+
+function parseCSV(text,fname){
+  const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)throw new Error('データ行が少なすぎます');
+
+  const hdr=parseLine(lines[0]);
+  // hdr[0]='部門1名'（ラベル列）、hdr[1..]= 部門名
+  const depts=hdr.slice(1).filter(d=>d);
+
+  // 2行目が「部門1名（階層含む）」等のサブヘッダーならスキップ
+  let startRow=1;
+  if(lines.length>1){
+    const row1cells=parseLine(lines[1]);
+    const firstCell=row1cells[0]||'';
+    if(firstCell.includes('階層')||firstCell.includes('部門1名')||firstCell===hdr[0]){
+      startRow=2;
+    }
+  }
+
+  const items=[];
+  for(let i=startRow;i<lines.length;i++){
+    const cells=parseLine(lines[i]);
+    const name=(cells[0]||'').trim();
+    if(!name)continue;
+    const vals={};
+    let total=0;
+    depts.forEach((d,j)=>{
+      const v=parseFloat((cells[j+1]||'0').replace(/,/g,''))||0;
+      vals[d]=v;
+      total+=v;
+    });
+    items.push({name,values:vals,total});
+  }
+
+  S.depts=depts;
+  S.items=items;
+
+  // 部門区分の初期値（既存設定を優先）
+  // GAS読込済みの場合、新規追加部門を検知して通知
+  const newDepts=[];
+  depts.forEach(d=>{
+    if(!S.deptKubun[d]){
+      S.deptKubun[d]='原価';
+      newDepts.push(d);
+    }
+  });
+
+  // 項目区分の自動推定（既存設定を優先）
+  // GAS読込済みの場合、新規追加項目を検知して通知
+  const newItems=[];
+  items.forEach(item=>{
+    if(S.itemKubun[item.name]){return;}
+    newItems.push(item.name);
+    const n=item.name;
+    if(n.includes('会社負担分')){S.itemKubun[n]='会社負担';}
+    else if(n.includes('控除合計')||n.includes('控除額計')||n.includes('合計')){S.itemKubun[n]='集計対象外';}
+    else if(n.includes('雇用保険')||n.includes('労働保険')){S.itemKubun[n]='集計対象外';}
+    else{S.itemKubun[n]='本人負担';}
+  });
+
+  renderCSVPreview(fname,hdr,items,newDepts,newItems);
+  document.getElementById('btn12').disabled=false;
+}
+
+function renderCSVPreview(fname,hdr,items,newDepts,newItems){
+  const kaishaItems=items.filter(i=>S.itemKubun[i.name]==='会社負担');
+  const kaishaSum=kaishaItems.reduce((s,i)=>s+i.total,0);
+
+  let html=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;">📄 ${esc(fname)}</span>
+      <span class="badge b-genka">${S.depts.length} 部門</span>
+      <span class="badge b-kaisha">${items.length} 項目</span>
+    </div>
+    <div class="alert a-ok">
+      ✓ 検出された部門：${S.depts.map(d=>'<b>'+esc(d)+'</b>').join('　')}<br>
+      ✓「会社負担分」として自動検出：${kaishaItems.length}項目（全部門合計参考値：<b>${fmt(kaishaSum)}円</b>）
+    </div>
+  `;
+
+  // 新部門・新項目が見つかった場合の通知
+  if((newDepts&&newDepts.length>0)||(newItems&&newItems.length>0)){
+    html+=`<div class="alert a-warn">`;
+    if(newDepts&&newDepts.length>0){
+      html+=`⚠ <b>GAS設定にない新しい部門</b>が検出されました（${newDepts.length}件）：${newDepts.map(d=>'<b>'+esc(d)+'</b>').join('、')}<br>
+        → デフォルト「<b>原価</b>」に設定しています。STEP2で区分を確認・変更してください。`;
+    }
+    if(newItems&&newItems.length>0){
+      if(newDepts&&newDepts.length>0) html+='<br>';
+      html+=`⚠ <b>GAS設定にない新しい項目</b>が検出されました（${newItems.length}件）：${newItems.map(i=>'<b>'+esc(i)+'</b>').join('、')}<br>
+        → 自動推定で区分を設定しています。STEP3で区分を確認・変更してください。`;
+    }
+    html+=`</div>`;
+  }
+
+  html+='<div class="prev-wrap"><table><thead><tr>';
+  hdr.forEach(h=>html+=`<th>${esc(h)}</th>`);
+  html+='</tr></thead><tbody>';
+  items.forEach(item=>{
+    const k=S.itemKubun[item.name];
+    const bc=k==='会社負担'?'b-kaisha':k==='本人負担'?'b-honnin':'b-jokyo';
+    html+=`<tr><td><b>${esc(item.name)}</b> <span class="badge ${bc}">${k}</span></td>`;
+    S.depts.forEach(d=>html+=`<td class="num">${fmtF(item.values[d]||0)}</td>`);
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+
+  const el=document.getElementById('csv-result');
+  el.innerHTML=html; el.style.display='block';
+  document.getElementById('dz').style.display='none';
+  document.getElementById('btn-clear-csv').style.display='inline-flex';
+}
+
+/* ── STEP 2: 部門設定 ── */
+function renderDeptTable(){
+  let html='';
+  S.depts.forEach(d=>{
+    const v=S.deptKubun[d]||'原価';
+    const id='dp_'+safeId(d);
+    html+=`<tr>
+      <td style="font-weight:700;">${esc(d)}</td>
+      <td><div class="chips">
+        <input type="radio" name="${id}" id="${id}_g" value="原価" ${v==='原価'?'checked':''}>
+        <label for="${id}_g">原価</label>
+        <input type="radio" name="${id}" id="${id}_h" value="販管" ${v==='販管'?'checked':''}>
+        <label for="${id}_h">販管</label>
+      </div></td>
+    </tr>`;
+  });
+  document.getElementById('dept-tbody').innerHTML=html;
+}
+function setAllDept(val){
+  S.depts.forEach(d=>{
+    const r=document.querySelector(`input[name="dp_${safeId(d)}"][value="${val}"]`);
+    if(r)r.checked=true;
+  });
+}
+function collectDept(){
+  S.depts.forEach(d=>{
+    const r=document.querySelector(`input[name="dp_${safeId(d)}"]:checked`);
+    if(r)S.deptKubun[d]=r.value;
+  });
+}
+
+/* ── STEP 3: 項目設定 ── */
+function renderItemTable(){
+  let html='';
+  S.items.forEach(item=>{
+    const v=S.itemKubun[item.name]||'集計対象外';
+    const id='it_'+safeId(item.name);
+    html+=`<tr>
+      <td>${esc(item.name)}</td>
+      <td><div class="chips">
+        <input type="radio" name="${id}" id="${id}_k" value="会社負担" ${v==='会社負担'?'checked':''}>
+        <label for="${id}_k">会社負担</label>
+        <input type="radio" name="${id}" id="${id}_h" value="本人負担" ${v==='本人負担'?'checked':''}>
+        <label for="${id}_h">本人負担</label>
+        <input type="radio" name="${id}" id="${id}_j" value="集計対象外" ${v==='集計対象外'?'checked':''}>
+        <label for="${id}_j">除外</label>
+      </div></td>
+      <td class="num" style="color:var(--text-muted);">${fmtF(item.total)}</td>
+    </tr>`;
+  });
+  document.getElementById('item-tbody').innerHTML=html;
+}
+function setAllItem(val){
+  S.items.forEach(item=>{
+    const r=document.querySelector(`input[name="it_${safeId(item.name)}"][value="${val}"]`);
+    if(r)r.checked=true;
+  });
+}
+function collectItem(){
+  S.items.forEach(item=>{
+    const r=document.querySelector(`input[name="it_${safeId(item.name)}"]:checked`);
+    if(r)S.itemKubun[item.name]=r.value;
+  });
+}
+
+/* ── STEP 4 ── */
+function showKaishaHint(){
+  collectItem();
+  const kaishaTotal=S.items.filter(i=>S.itemKubun[i.name]==='会社負担').reduce((s,i)=>s+i.total,0);
+  const honninTotal=S.items.filter(i=>S.itemKubun[i.name]==='本人負担').reduce((s,i)=>s+i.total,0);
+  const el=document.getElementById('csv-kaisha-hint');
+  el.style.display='block';
+  el.innerHTML=`
+    ℹ 現在の項目設定に基づくCSV集計（全部門合計・参考）：<br>
+    　本人負担：<b>${fmt(honninTotal)}円</b>　会社負担：<b>${fmt(kaishaTotal)}円</b>　合計：<b>${fmt(honninTotal+kaishaTotal)}円</b>
+  `;
+}
+
+/* ── STEP 5: 集計 ── */
+function doCalcAndGo5(){
+  collectDept();
+  collectItem();
+  S.sysTotal=parseInt(document.getElementById('f-systotal').value)||0;
+  S.month=document.getElementById('f-month').value.trim();
+  S.creator=document.getElementById('f-creator').value.trim();
+
+  // aggModeをラジオボタンから読み取る
+  const modeEl=document.querySelector('input[name="agg-mode"]:checked');
+  S.aggMode=modeEl?modeEl.value:'dept';
+
+  const map={};
+  S.depts.forEach(dept=>{
+    const kubun=S.deptKubun[dept]||'原価';
+    // 部門別明細モード → キー=部門名+区分、集約モード → キー=区分のみ
+    const key=S.aggMode==='kubun' ? kubun : dept+'|||'+kubun;
+    const displayDept=S.aggMode==='kubun' ? '（集約）' : dept;
+    if(!map[key]) map[key]={dept:displayDept,kubun,honninAmt:0,csvAmt:0,corr:0,final:0};
+    S.items.forEach(item=>{
+      const v=item.values[dept]||0;
+      if(S.itemKubun[item.name]==='会社負担') map[key].csvAmt+=v;
+      else if(S.itemKubun[item.name]==='本人負担') map[key].honninAmt+=v;
+    });
+  });
+
+  S.summary=Object.values(map).map(r=>({...r,final:r.csvAmt}));
+  // 部門別明細モード → 部門名でソート、集約モード → 区分でソート
+  if(S.aggMode==='kubun'){
+    S.summary.sort((a,b)=>a.kubun.localeCompare(b.kubun,'ja'));
+  } else {
+    S.summary.sort((a,b)=>a.dept.localeCompare(b.dept,'ja'));
+  }
+  renderStep5();
+  goStep(5);
+}
+
+function honninTotal(){return S.summary.reduce((s,r)=>s+r.honninAmt,0);}
+function csvTotal(){return S.summary.reduce((s,r)=>s+r.csvAmt,0);}
+function corrTotal(){return S.summary.reduce((s,r)=>s+r.corr,0);}
+function finalTotal(){return S.summary.reduce((s,r)=>s+r.final,0);}
+
+function renderStep5(){
+  const csvTot=csvTotal(), honninTot=honninTotal();
+  const sysTot=S.sysTotal;
+  // 差分：給与システムの社保支払額 と CSV集計の（本人負担＋会社負担）合計の差
+  const csvSogoTotal=csvTot+honninTot;
+  const diff=sysTot-csvSogoTotal;
+  // 会社負担ベースの差分（按分補正に使う）
+  const kaishaSystemAmt=sysTot-honninTot;
+
+  document.getElementById('sc5-summary').innerHTML=`
+    <div class="sc"><div class="sc-label">社保支払額（給与システム）</div><div class="sc-val">${fmtD(sysTot)}円</div></div>
+    <div class="sc"><div class="sc-label">CSV本人負担合計</div><div class="sc-val">${fmtD(honninTot)}円</div></div>
+    <div class="sc"><div class="sc-label">CSV会社負担合計</div><div class="sc-val">${fmtD(csvTot)}円</div></div>
+    <div class="sc ${Math.abs(diff)>0?'ng':'ok'}"><div class="sc-label">差分（支払額ベース）</div><div class="sc-val">${diff>=0?'+':''}${fmtD(diff)}円</div></div>
+  `;
+  const da=document.getElementById('sc5-diff-alert');
+  if(diff===0){
+    da.className='alert a-ok';
+    da.innerHTML='✅ 差分なし。このまま確定できます。';
+    document.getElementById('btn-prop').disabled=true;
+  } else {
+    da.className='alert a-warn';
+    da.innerHTML=`⚠ 社保支払額の差分 <b>${diff>=0?'+':''}${fmtD(diff)}円</b>（給与システム ${fmtD(sysTot)}円 − CSV合計 ${fmtD(csvSogoTotal)}円）。<br>
+      会社負担分の確定額目標：<b>${fmtD(kaishaSystemAmt)}円</b>。「按分補正」で自動配分するか、補正欄に手動入力してください。`;
+    document.getElementById('btn-prop').disabled=false;
+  }
+  renderSc5Table();
+}
+
+function renderSc5Table(){
+  const isKubun=S.aggMode==='kubun';
+
+  // テーブルに hide-dept クラスを付け外して列を制御
+  const tbl=document.querySelector('#sc5 table');
+  if(tbl) tbl.classList.toggle('hide-dept', isKubun);
+
+  let html='';
+  S.summary.forEach((r,i)=>{
+    html+=`<tr>
+      <td class="dept-cell" style="font-weight:700;">${esc(r.dept)}</td>
+      <td><span class="badge ${r.kubun==='原価'?'b-genka':'b-hankan'}">${r.kubun}</span></td>
+      <td class="num" style="color:#92400e;">${fmtD(r.honninAmt)}</td>
+      <td class="num" style="color:#065f46;">${fmtD(r.csvAmt)}</td>
+      <td class="num"><input type="number" class="corr-input" value="${r.corr.toFixed(1)}" step="0.1" onchange="updateCorr(${i},this.value)"></td>
+      <td class="num" style="font-weight:800;">${fmtD(r.final)}</td>
+    </tr>`;
+  });
+  document.getElementById('sc5-tbody').innerHTML=html;
+  document.getElementById('sc5-tot-honnin').textContent=fmtD(honninTotal());
+  document.getElementById('sc5-tot-csv').textContent=fmtD(csvTotal());
+  document.getElementById('sc5-tot-corr').textContent=fmtD(corrTotal());
+  document.getElementById('sc5-tot-final').textContent=fmtD(finalTotal());
+}
+function updateCorr(i,v){
+  S.summary[i].corr=parseFloat(v)||0;
+  S.summary[i].final=S.summary[i].csvAmt+S.summary[i].corr;
+  renderSc5Table();
+}
+function doProportional(){
+  // 会社負担の確定目標 = 社保支払額 − 本人負担合計
+  const kaishaTarget=S.sysTotal-honninTotal();
+  const base=csvTotal();
+  if(base===0){alert('集計額が0のため按分できません');return;}
+  const diff=kaishaTarget-base;
+  let rem=diff;
+  S.summary.forEach((r,i)=>{
+    if(i<S.summary.length-1){const c=Math.round(diff*(r.csvAmt/base));r.corr=c;r.final=r.csvAmt+c;rem-=c;}
+    else{r.corr=rem;r.final=r.csvAmt+rem;}
+  });
+  renderSc5Table();
+}
+function resetCorr(){
+  S.summary.forEach(r=>{r.corr=0;r.final=r.csvAmt;});
+  renderSc5Table();
+}
+
+/* ── STEP 6 ── */
+function doConfirm(){
+  renderStep6();
+  goStep(6);
+}
+function renderStep6(){
+  const csvTot=csvTotal(),honninTot=honninTotal(),corrTot=corrTotal(),finTot=finalTotal();
+  const kaishaTarget=S.sysTotal-honninTot;
+  const isKubun=S.aggMode==='kubun';
+  document.getElementById('sc6-summary').innerHTML=`
+    <div class="sc"><div class="sc-label">対象月</div><div class="sc-val" style="font-size:17px;">${S.month||'—'}</div></div>
+    <div class="sc"><div class="sc-label">社保支払額（給与システム）</div><div class="sc-val">${fmtD(S.sysTotal)}円</div></div>
+    <div class="sc"><div class="sc-label">本人負担 CSV合計</div><div class="sc-val">${fmtD(honninTot)}円</div></div>
+    <div class="sc ${finTot===kaishaTarget?'ok':''}"><div class="sc-label">確定額（会社負担）</div><div class="sc-val">${fmtD(finTot)}円</div></div>
+  `;
+  // STEP6テーブルに hide-dept6 クラスを付け外して列を制御
+  const tbl6=document.querySelector('#sc6 table');
+  if(tbl6) tbl6.classList.toggle('hide-dept6', isKubun);
+
+  let html='';
+  S.summary.forEach(r=>{
+    html+=`<tr>
+      <td class="dept-cell6" style="font-weight:700;">${esc(r.dept)}</td>
+      <td><span class="badge ${r.kubun==='原価'?'b-genka':'b-hankan'}">${r.kubun}</span></td>
+      <td class="num" style="color:#92400e;">${fmtD(r.honninAmt)}</td>
+      <td class="num" style="color:#065f46;">${fmtD(r.csvAmt)}</td>
+      <td class="num">${r.corr!==0?(r.corr>0?'+':'')+fmtD(r.corr):'—'}</td>
+      <td class="num" style="font-weight:800;">${fmtD(r.final)}</td>
+    </tr>`;
+  });
+  document.getElementById('sc6-tbody').innerHTML=html;
+
+  document.getElementById('sc6-tot-honnin').textContent=fmtD(honninTot);
+  document.getElementById('sc6-tot-csv').textContent=fmtD(csvTot);
+  document.getElementById('sc6-tot-corr').textContent=fmtD(corrTot);
+  document.getElementById('sc6-tot-final').textContent=fmtD(finTot);
+}
+
+/* ── PDF ── */
+async function genPDF(){
+  const btn=document.getElementById('btn-pdf');
+  btn.innerHTML='<span class="spin"></span> 生成中...';btn.disabled=true;
+  const csvTot=csvTotal(),honninTot=honninTotal(),finTot=finalTotal();
+  const diff=S.sysTotal-(csvTot+honninTot);
+  document.getElementById('pm-month').textContent='対象月：'+(S.month||'—');
+  document.getElementById('pm-creator').textContent='　作成者：'+(S.creator||'—');
+  document.getElementById('pm-date').textContent='　作成日：'+new Date().toLocaleDateString('ja-JP');
+  document.getElementById('pm-sys').textContent=fmtD(S.sysTotal)+'円';
+  document.getElementById('pm-honnin').textContent=fmtD(honninTot)+'円';
+  document.getElementById('pm-csv').textContent=fmtD(csvTot)+'円';
+  document.getElementById('pm-diff').textContent=(diff>=0?'+':'')+fmtD(diff)+'円';
+  document.getElementById('pm-final').textContent=fmtD(finTot)+'円';
+
+  const isKubun=S.aggMode==='kubun';
+  const deptCol=isKubun?'':'\n<th>部門名</th>';
+  let t=`<table><thead><tr>${deptCol}
+    <th>区分</th>
+    <th style="text-align:right">本人負担（円）</th>
+    <th style="text-align:right">会社負担（円）</th>
+    <th style="text-align:right">補正額（円）</th>
+    <th style="text-align:right">確定額／会社負担（円）</th>
+  </tr></thead><tbody>`;
+  S.summary.forEach(r=>{
+    const deptCell=isKubun?'':`<td>${esc(r.dept)}</td>`;
+    t+=`<tr>${deptCell}<td>${r.kubun}</td>
+      <td style="text-align:right">${fmtD(r.honninAmt)}</td>
+      <td style="text-align:right">${fmtD(r.csvAmt)}</td>
+      <td style="text-align:right">${r.corr!==0?(r.corr>0?'+':'')+fmtD(r.corr):'—'}</td>
+      <td style="text-align:right;font-weight:800">${fmtD(r.final)}</td></tr>`;
+  });
+  const deptTotalCell=isKubun?'':`<td></td>`;
+  t+=`<tr class="ptfoot">${deptTotalCell}<td>合計</td>
+    <td style="text-align:right">${fmtD(honninTot)}</td>
+    <td style="text-align:right">${fmtD(csvTot)}</td>
+    <td style="text-align:right">${fmtD(corrTotal())}</td>
+    <td style="text-align:right">${fmtD(finTot)}</td></tr>`;
+  t+='</tbody></table>';
+  document.getElementById('pm-table').innerHTML=t;
+
+  const el=document.getElementById('pdf-el');
+  el.style.position='static';el.style.left='0';
+  await new Promise(r=>setTimeout(r,300));
+  try{
+    const canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff'});
+    const img=canvas.toDataURL('image/jpeg',0.95);
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+    const mg=12,iw=pw-mg*2,ih=(canvas.height*iw)/canvas.width;
+    if(ih<=ph-mg*2){
+      pdf.addImage(img,'JPEG',mg,mg,iw,ih);
+    } else {
+      const pch=ph-mg*2,scale=iw/canvas.width;
+      let yOff=0;
+      while(yOff<canvas.height){
+        if(yOff>0)pdf.addPage();
+        const sH=Math.min(pch/scale,canvas.height-yOff);
+        const sc2=document.createElement('canvas');
+        sc2.width=canvas.width;sc2.height=Math.ceil(sH);
+        sc2.getContext('2d').drawImage(canvas,0,-yOff,canvas.width,canvas.height);
+        pdf.addImage(sc2.toDataURL('image/jpeg',0.95),'JPEG',mg,mg,iw,sH*scale);
+        yOff+=sH;
+      }
+    }
+    const fname=(S.month||'社保計上').replace(/[\/\\:*?"<>|]/g,'')+'.pdf';
+    pdf.save(fname);
+    btn.innerHTML='✅ ダウンロード完了';
+    setTimeout(()=>{btn.innerHTML='📄 PDF生成・ダウンロード';btn.disabled=false;},3000);
+  }catch(e){
+    alert('PDF生成に失敗しました：'+e.message);
+    btn.innerHTML='📄 PDF生成・ダウンロード';btn.disabled=false;
+  }finally{
+    el.style.position='absolute';el.style.left='-9999px';
+  }
+}
+
+/* ── NAVIGATION ── */
+function tryGoStep(n){
+  if(n>1&&S.items.length===0){alert('先にCSVをアップロードしてください');return;}
+  if(n===5){doCalcAndGo5();return;}
+  goStep(n);
+}
+function goStep(n){
+  S.step=n;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc'+n).classList.add('active');
+  for(let i=1;i<=6;i++){
+    const el=document.getElementById('st'+i);
+    el.classList.remove('active','done');
+    if(i===n)el.classList.add('active');
+    else if(i<n)el.classList.add('done');
+  }
+  if(n===2)renderDeptTable();
+  if(n===3)renderItemTable();
+  if(n===4)showKaishaHint();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function startOver(){
+  if(!confirm('最初からやり直しますか？部門・項目の設定は保持されます。'))return;
+  S.items=[];S.depts=[];S.summary=[];
+  S.sysTotal=0;S.month='';S.creator='';
+  document.getElementById('dz').style.display='block';
+  document.getElementById('csv-result').style.display='none';
+  document.getElementById('fi').value='';
+  document.getElementById('btn12').disabled=true;
+  document.getElementById('btn-clear-csv').style.display='none';
+  goStep(1);
+}
+
+function clearCSV(){
+  S.items=[];S.depts=[];S.summary=[];
+  document.getElementById('dz').style.display='block';
+  document.getElementById('csv-result').style.display='none';
+  document.getElementById('fi').value='';
+  document.getElementById('btn12').disabled=true;
+  document.getElementById('btn-clear-csv').style.display='none';
+}
+
+/* ── UTILS ── */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(n){return Math.round(n).toLocaleString('ja-JP');}
+// 集計金額表示：小数点第一位まで（例：21,257.3）
+function fmtD(n){
+  return n.toLocaleString('ja-JP',{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function fmtF(n){
+  if(Number.isInteger(n))return n.toLocaleString('ja-JP');
+  return n.toLocaleString('ja-JP',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function safeId(s){return s.replace(/[^a-zA-Z0-9\u3041-\u3096\u30A1-\u30FA\u4E00-\u9FFF]/g,'_');}
+</script>
+</body>
+</html>
