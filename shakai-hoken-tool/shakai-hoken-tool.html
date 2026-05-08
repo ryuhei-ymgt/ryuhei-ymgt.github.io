@@ -1185,7 +1185,20 @@ async function genPDF(){
 function tryGoStep(n){
   if(n>1&&S.items.length===0){alert('先にCSVをアップロードしてください');return;}
   if(n===5){doCalcAndGo5();return;}
+  // 次へ進む際にGAS・localStorageへ自動保存
+  if(n===3 && S.step===2){ collectDept(); autoSyncGas('dept'); }
+  if(n===4 && S.step===3){ collectItem(); autoSyncGas('item'); }
   goStep(n);
+}
+
+// GASへのバックグラウンド自動同期（エラーでも画面遷移を止めない）
+async function autoSyncGas(type){
+  lsSave();
+  if(!S.gasUrl) return;
+  try{
+    if(type==='dept') await gasPost('saveDepartmentSettings',{data:S.deptKubun});
+    if(type==='item') await gasPost('saveItemSettings',{data:S.itemKubun});
+  }catch(e){ console.warn('GAS自動同期エラー（無視）',e); }
 }
 function goStep(n){
   S.step=n;
