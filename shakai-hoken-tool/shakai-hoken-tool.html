@@ -340,7 +340,7 @@ tbody tr:hover td{background:var(--surface2);}
       </p>
       <div class="agg-mode-group">
         <label class="agg-mode-opt" id="agg-opt-dept">
-          <input type="radio" name="agg-mode" value="dept" checked onchange="S.aggMode=this.value">
+          <input type="radio" name="agg-mode" value="dept" checked onchange="S.aggMode=this.value;lsSave();">
           <div class="agg-mode-box">
             <div class="agg-mode-icon">🏢</div>
             <div class="agg-mode-ttl">部門別明細</div>
@@ -348,7 +348,7 @@ tbody tr:hover td{background:var(--surface2);}
           </div>
         </label>
         <label class="agg-mode-opt" id="agg-opt-kubun">
-          <input type="radio" name="agg-mode" value="kubun" onchange="S.aggMode=this.value">
+          <input type="radio" name="agg-mode" value="kubun" onchange="S.aggMode=this.value;lsSave();">
           <div class="agg-mode-box">
             <div class="agg-mode-icon">📊</div>
             <div class="agg-mode-ttl">区分で集約（原価 / 販管）</div>
@@ -540,6 +540,41 @@ const S = {
   gasUrl:'', gasOk:false
 };
 
+/* ── localStorage ── */
+const LS_KEY = 'shakai_hoken_tool_v1';
+
+function lsSave(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      deptKubun: S.deptKubun,
+      itemKubun: S.itemKubun,
+      aggMode:   S.aggMode,
+      gasUrl:    S.gasUrl
+    }));
+  }catch(e){ console.warn('localStorage save error', e); }
+}
+
+function lsLoad(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(d.deptKubun) Object.assign(S.deptKubun, d.deptKubun);
+    if(d.itemKubun) Object.assign(S.itemKubun, d.itemKubun);
+    if(d.aggMode)   S.aggMode = d.aggMode;
+    if(d.gasUrl){
+      S.gasUrl = d.gasUrl;
+      document.getElementById('gas-url-input').value = d.gasUrl;
+    }
+    // 集計モードのラジオボタンを復元
+    const modeEl = document.querySelector(`input[name="agg-mode"][value="${S.aggMode}"]`);
+    if(modeEl) modeEl.checked = true;
+  }catch(e){ console.warn('localStorage load error', e); }
+}
+
+// ページ読み込み時に復元
+window.addEventListener('DOMContentLoaded', lsLoad);
+
 /* ── GAS アコーディオン ── */
 function toggleGasPanel(){
   const body=document.getElementById('gas-body');
@@ -562,6 +597,7 @@ function toggleGasStep(n){
 function onGasUrlChange(){
   S.gasUrl=document.getElementById('gas-url-input').value.trim();
   setGasDot(false);
+  lsSave();
 }
 function setGasDot(ok){
   S.gasOk=ok;
@@ -584,7 +620,10 @@ async function testGas(){
 async function gasPost(action,data){
   if(!S.gasUrl)return null;
   try{
-    const r=await fetch(S.gasUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})});
+    // GASのCORS制限を回避するためGETパラメータ方式を使用
+    const payload=encodeURIComponent(JSON.stringify({action,...data}));
+    const url=S.gasUrl+'?payload='+payload;
+    const r=await fetch(url,{method:'GET',redirect:'follow'});
     return await r.json();
   }catch(e){console.warn('GAS error',e);return null;}
 }
@@ -600,13 +639,15 @@ async function loadFromGas(){
 }
 async function saveDeptToGas(){
   collectDept();
+  lsSave();
   const r=await gasPost('saveDepartmentSettings',{data:S.deptKubun});
-  alert(r&&r.status==='ok'?'部門設定を保存しました':'保存失敗（GAS未接続またはエラー）');
+  alert(r&&r.status==='ok'?'部門設定をGAS・ローカルに保存しました':'ローカルに保存しました（GAS未接続）');
 }
 async function saveItemToGas(){
   collectItem();
+  lsSave();
   const r=await gasPost('saveItemSettings',{data:S.itemKubun});
-  alert(r&&r.status==='ok'?'項目設定を保存しました':'保存失敗（GAS未接続またはエラー）');
+  alert(r&&r.status==='ok'?'項目設定をGAS・ローカルに保存しました':'ローカルに保存しました（GAS未接続）');
 }
 async function doSaveLog(){
   const csvTot=csvTotal(),honninTot=honninTotal();
@@ -617,21 +658,30 @@ async function doSaveLog(){
 /* ── GASコード（ページ内埋め込み） ── */
 const GAS_CODE = `const SS = SpreadsheetApp.getActiveSpreadsheet();
 
+// すべてのリクエストをdoGetで受け取る（CORS回避のためGETのみ使用）
 function doGet(e) {
-  if (e.parameter.action === 'ping') {
-    return json({ status: 'ok' });
+  const cb = e.parameter.callback; // JSONP用（将来拡張）
+  let result;
+  try {
+    const raw = e.parameter.payload;
+    if (!raw) {
+      result = { status: 'ok', message: 'ping' };
+    } else {
+      const body = JSON.parse(decodeURIComponent(raw));
+      const action = body.action;
+      if (action === 'ping')                    result = { status: 'ok' };
+      else if (action === 'getSettings')        result = getSettings();
+      else if (action === 'saveDepartmentSettings') result = saveDepartmentSettings(body.data);
+      else if (action === 'saveItemSettings')   result = saveItemSettings(body.data);
+      else if (action === 'saveLog')            result = saveLog(body.data);
+      else result = { status: 'error', message: 'unknown action' };
+    }
+  } catch(err) {
+    result = { status: 'error', message: err.toString() };
   }
-  return json({ status: 'ok' });
-}
-
-function doPost(e) {
-  const body = JSON.parse(e.postData.contents);
-  const action = body.action;
-  if (action === 'getSettings') return json(getSettings());
-  if (action === 'saveDepartmentSettings') return json(saveDepartmentSettings(body.data));
-  if (action === 'saveItemSettings') return json(saveItemSettings(body.data));
-  if (action === 'saveLog') return json(saveLog(body.data));
-  return json({ status: 'error', message: 'unknown action' });
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function getSettings() {
@@ -677,11 +727,6 @@ function saveLog(data) {
 
 function getOrCreateSheet(name) {
   return SS.getSheetByName(name) || SS.insertSheet(name);
-}
-
-function json(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
 }`;
 
 
@@ -851,6 +896,7 @@ function collectDept(){
     const r=document.querySelector(`input[name="dp_${safeId(d)}"]:checked`);
     if(r)S.deptKubun[d]=r.value;
   });
+  lsSave();
 }
 
 /* ── STEP 3: 項目設定 ── */
@@ -885,6 +931,7 @@ function collectItem(){
     const r=document.querySelector(`input[name="it_${safeId(item.name)}"]:checked`);
     if(r)S.itemKubun[item.name]=r.value;
   });
+  lsSave();
 }
 
 /* ── STEP 4 ── */
