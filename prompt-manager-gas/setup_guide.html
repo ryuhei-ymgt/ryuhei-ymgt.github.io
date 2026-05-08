@@ -302,7 +302,7 @@ body {
 <div class="hero">
   <div class="hero-label">Setup Guide</div>
   <h1>プロンプト管理アプリ（GAS版）<br>セットアップガイド</h1>
-  <p>GitHub Pages + Google Apps Script + スプレッドシートの3ステップ構成</p>
+  <p>Google Apps Script + スプレッドシートを使ったセットアップ手順</p>
 </div>
 
 <!-- 構成図 -->
@@ -310,7 +310,7 @@ body {
   <div class="arch-box">
     <div class="arch-node">
       <div class="arch-node-icon">🌐</div>
-      <div class="arch-node-label">GitHub Pages</div>
+      <div class="arch-node-label">Webブラウザ</div>
       <div class="arch-node-sub">index.html</div>
     </div>
     <div class="arch-arrow">→</div>
@@ -346,11 +346,10 @@ body {
     <div class="checklist" id="checklist">
       <div class="check-item" onclick="toggleCheck(0)"><div class="check-box" id="chk0"></div><div class="check-label" id="lbl0">スプレッドシートを新規作成した</div></div>
       <div class="check-item" onclick="toggleCheck(1)"><div class="check-box" id="chk1"></div><div class="check-label" id="lbl1">GAS（Apps Script）を開いた</div></div>
-      <div class="check-item" onclick="toggleCheck(2)"><div class="check-box" id="chk2"></div><div class="check-label" id="lbl2">gas_code.gs を貼り付け・スプシIDを設定した</div></div>
+      <div class="check-item" onclick="toggleCheck(2)"><div class="check-box" id="chk2"></div><div class="check-label" id="lbl2">GASコードを貼り付け・スプシIDを設定した</div></div>
       <div class="check-item" onclick="toggleCheck(3)"><div class="check-box" id="chk3"></div><div class="check-label" id="lbl3">GASをWebアプリとしてデプロイしたURLを取得した</div></div>
-      <div class="check-item" onclick="toggleCheck(4)"><div class="check-box" id="chk4"></div><div class="check-label" id="lbl4">GitHubにindex.htmlをアップした</div></div>
-      <div class="check-item" onclick="toggleCheck(5)"><div class="check-box" id="chk5"></div><div class="check-label" id="lbl5">GitHub PagesのURLでアプリを開いた</div></div>
-      <div class="check-item" onclick="toggleCheck(6)"><div class="check-box" id="chk6"></div><div class="check-label" id="lbl6">設定タブでGAS URLを入力・接続確認した</div></div>
+      <div class="check-item" onclick="toggleCheck(4)"><div class="check-box" id="chk4"></div><div class="check-label" id="lbl4">アプリのURLをブラウザで開いた</div></div>
+      <div class="check-item" onclick="toggleCheck(5)"><div class="check-box" id="chk5"></div><div class="check-label" id="lbl5">設定タブでGAS URLを入力・接続確認した</div></div>
     </div>
   </div>
 
@@ -433,7 +432,96 @@ body {
       <div class="step-arrow">▼</div>
     </div>
     <div class="step-body">
-      <p>エディタに最初から書かれているコードを<strong>すべて削除</strong>して、<strong>gas_code.gs</strong> の内容をそのまま貼り付けてください。</p>
+      <p>エディタに最初から書かれているコードを<strong>すべて削除</strong>して、以下のコードをそのまま貼り付けてください。</p>
+      <div style="position:relative;margin-top:10px">
+        <div class="code-block" id="gas-code" style="max-height:260px;overflow-y:auto;font-size:11px"><span class="cm">// ============================================================</span>
+<span class="cm">// プロンプト管理アプリ - GAS側コード</span>
+<span class="cm">// ============================================================</span>
+<span class="cm">// 【設定】スプレッドシートIDをここに入力</span>
+const SPREADSHEET_ID = <span class="hl">"ここにスプレッドシートIDを入力"</span>;
+const SHEET_NAME_TEMPLATES = <span class="hl">"templates"</span>;
+const SHEET_NAME_CONFIG    = <span class="hl">"config"</span>;
+
+<span class="cm">// GETリクエスト（読み取り）</span>
+function doGet(e) {
+  const action = e.parameter.action;
+  try {
+    if (action === <span class="hl">"getTemplates"</span>) return jsonResponse(getTemplates());
+    if (action === <span class="hl">"getPassword"</span>)  return jsonResponse(getPassword());
+    return jsonResponse({error: <span class="hl">"unknown action"</span>});
+  } catch(err) { return jsonResponse({error: err.message}); }
+}
+
+<span class="cm">// POSTリクエスト（書き込み）</span>
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const action = body.action;
+    if (action === <span class="hl">"saveTemplates"</span>) { saveTemplates(body.templates); return jsonResponse({ok: true}); }
+    if (action === <span class="hl">"savePassword"</span>)  { savePassword(body.password);  return jsonResponse({ok: true}); }
+    return jsonResponse({error: <span class="hl">"unknown action"</span>});
+  } catch(err) { return jsonResponse({error: err.message}); }
+}
+
+<span class="cm">// テンプレート取得</span>
+function getTemplates() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME_TEMPLATES);
+  if (!sheet) return {templates: []};
+  const data = sheet.getDataRange().getValues();
+  if (data.length &lt; 2) return {templates: []};
+  const templates = data.slice(1)
+    .filter(row =&gt; row[0] &amp;&amp; row[2] &amp;&amp; row[3])
+    .map(row =&gt; ({
+      id:       String(row[0]).trim(),
+      category: String(row[1] || <span class="hl">"未分類"</span>).trim(),
+      title:    String(row[2]).trim(),
+      prompt:   String(row[3]).trim(),
+      visible:  String(row[4]).trim() === <span class="hl">"false"</span> ? false : true
+    }));
+  return {templates};
+}
+
+<span class="cm">// テンプレート保存（上書き）</span>
+function saveTemplates(templates) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(SHEET_NAME_TEMPLATES);
+  if (!sheet) sheet = ss.insertSheet(SHEET_NAME_TEMPLATES);
+  sheet.clearContents();
+  const rows = [[<span class="hl">"id"</span>, <span class="hl">"category"</span>, <span class="hl">"title"</span>, <span class="hl">"prompt"</span>, <span class="hl">"visible"</span>]];
+  templates.forEach(t =&gt; rows.push([t.id, t.category, t.title, t.prompt, t.visible === false ? <span class="hl">"false"</span> : <span class="hl">"true"</span>]));
+  sheet.getRange(1, 1, rows.length, 5).setValues(rows);
+}
+
+<span class="cm">// パスワード取得</span>
+function getPassword() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME_CONFIG);
+  if (!sheet) return {password: <span class="hl">""</span>};
+  const data = sheet.getDataRange().getValues();
+  const row = data.find(r =&gt; String(r[0]).trim() === <span class="hl">"admin_password"</span>);
+  return {password: row ? String(row[1]).trim() : <span class="hl">""</span>};
+}
+
+<span class="cm">// パスワード保存</span>
+function savePassword(password) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(SHEET_NAME_CONFIG);
+  if (!sheet) { sheet = ss.insertSheet(SHEET_NAME_CONFIG); sheet.appendRow([<span class="hl">"key"</span>, <span class="hl">"value"</span>]); }
+  const data = sheet.getDataRange().getValues();
+  const rowIdx = data.findIndex(r =&gt; String(r[0]).trim() === <span class="hl">"admin_password"</span>);
+  if (rowIdx &gt;= 0) { sheet.getRange(rowIdx + 1, 2).setValue(password); }
+  else { sheet.appendRow([<span class="hl">"admin_password"</span>, password]); }
+}
+
+<span class="cm">// レスポンスヘルパー（CORS対応）</span>
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+        <button onclick="copyGasCode()" style="position:absolute;top:8px;right:8px;font-family:inherit;font-size:11px;padding:4px 10px;background:rgba(255,255,255,0.15);color:#A8C4E0;border:1px solid rgba(255,255,255,0.2);border-radius:6px;cursor:pointer" id="copy-gas-btn">コピー</button>
+      </div>
       <div class="note note-warn">
         <span class="note-icon">⚠️</span>
         <span>既存の <code>function myFunction(){}</code> は必ず削除してから貼り付けてください。</span>
@@ -476,6 +564,10 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
         <span class="note-icon">✓</span>
         <span>デプロイが完了すると <strong>WebアプリのURL</strong>（https://script.google.com/macros/s/.../exec）が表示されます。必ずコピーしておいてください。</span>
       </div>
+      <div class="note" style="margin-top:8px">
+        <span class="note-icon">💡</span>
+        <span>取得したWebアプリのURLは、スプレッドシートの <strong>Sheet1のA1セル</strong> などにメモしておくと紛失防止になります。再デプロイでURLが変わった場合もすぐ確認できて便利です。</span>
+      </div>
     </div>
   </div>
 
@@ -498,8 +590,8 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
   <div class="phase">
     <div class="phase-num">3</div>
     <div>
-      <div class="phase-title">GitHub Pages の設定</div>
-      <div class="phase-sub">index.htmlをアップしてアプリを公開します</div>
+      <div class="phase-title">アプリの初期設定</div>
+      <div class="phase-sub">GAS URLを登録して動作確認します</div>
     </div>
   </div>
 
@@ -508,85 +600,20 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
   <div class="step" data-phase="3">
     <div class="step-header" onclick="toggleStep(this)">
       <div class="step-num">1</div>
-      <div class="step-title">GitHubに新しいリポジトリを作成する</div>
-      <div class="step-arrow">▼</div>
-    </div>
-    <div class="step-body">
-      <p>github.com にログインし、右上「＋」→「New repository」で新しいリポジトリを作成してください。</p>
-      <table class="tbl">
-        <thead><tr><th>項目</th><th>設定値</th></tr></thead>
-        <tbody>
-          <tr><td>Repository name</td><td>例：<code>prompt-manager-gas</code></td></tr>
-          <tr><td>公開設定</td><td><span class="badge badge-blue">Public</span></td></tr>
-        </tbody>
-      </table>
-      <div class="note" style="margin-top:10px">
-        <span class="note-icon">💡</span>
-        <span>GitHub Pagesを使うにはPublicリポジトリが必要です。</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="step" data-phase="3">
-    <div class="step-header" onclick="toggleStep(this)">
-      <div class="step-num">2</div>
-      <div class="step-title">index.htmlをアップロードする</div>
-      <div class="step-arrow">▼</div>
-    </div>
-    <div class="step-body">
-      <p>作成したリポジトリページで「Add file」→「Upload files」をクリックし、<strong>index.html</strong> をドラッグ＆ドロップしてアップロードしてください。</p>
-      <div class="ui-hint">📌 <strong>Add file</strong> → <strong>Upload files</strong> → index.html をドロップ → <strong>Commit changes</strong></div>
-    </div>
-  </div>
-
-  <div class="step" data-phase="3">
-    <div class="step-header" onclick="toggleStep(this)">
-      <div class="step-num">3</div>
-      <div class="step-title">GitHub Pages を有効化する</div>
-      <div class="step-arrow">▼</div>
-    </div>
-    <div class="step-body">
-      <p>リポジトリの「Settings」タブ → 左メニュー「Pages」を開いてください。</p>
-      <table class="tbl">
-        <thead><tr><th>項目</th><th>設定値</th></tr></thead>
-        <tbody>
-          <tr><td>Source</td><td>Deploy from a branch</td></tr>
-          <tr><td>Branch</td><td>main / (root)</td></tr>
-        </tbody>
-      </table>
-      <p style="margin-top:10px">「Save」をクリックすると数分後にURLが発行されます。</p>
-      <div class="code-block">https://<span class="hl">ユーザー名</span>.github.io/<span class="hl">リポジトリ名</span>/</div>
-    </div>
-  </div>
-
-  <!-- PHASE 4 -->
-  <div class="phase">
-    <div class="phase-num">4</div>
-    <div>
-      <div class="phase-title">アプリの初期設定</div>
-      <div class="phase-sub">GAS URLを登録して動作確認します</div>
-    </div>
-  </div>
-
-  <div class="toggle-all"><button onclick="toggleAll(4)">すべて開く / 閉じる</button></div>
-
-  <div class="step" data-phase="4">
-    <div class="step-header" onclick="toggleStep(this)">
-      <div class="step-num">1</div>
       <div class="step-title">アプリを開いてログインする</div>
       <div class="step-arrow">▼</div>
     </div>
     <div class="step-body">
-      <p>GitHub PagesのURLをブラウザで開いてください。初回はGAS URLが未設定のためログイン画面が表示されます。</p>
+      <p>管理者からお伝えしたアプリのURLをブラウザで開いてください。初回はGAS URLが未設定のためログイン画面が表示されます。</p>
       <p style="margin-top:8px">初期パスワードは <strong>admin123</strong> です。ログイン後すぐに変更することを推奨します。</p>
       <div class="note note-warn">
         <span class="note-icon">⚠️</span>
-        <span>ローカルの index.html をダブルクリックで開いても動作しません。必ずGitHub PagesのURL（https://...）からアクセスしてください。</span>
+        <span>ローカルの index.html をダブルクリックで開いても動作しません。必ず管理者から共有されたURL（https://...）からアクセスしてください。</span>
       </div>
     </div>
   </div>
 
-  <div class="step" data-phase="4">
+  <div class="step" data-phase="3">
     <div class="step-header" onclick="toggleStep(this)">
       <div class="step-num">2</div>
       <div class="step-title">設定タブでGAS URLを登録する</div>
@@ -603,7 +630,7 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
     </div>
   </div>
 
-  <div class="step" data-phase="4">
+  <div class="step" data-phase="3">
     <div class="step-header" onclick="toggleStep(this)">
       <div class="step-num">3</div>
       <div class="step-title">パスワードを変更する</div>
@@ -618,7 +645,7 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
     </div>
   </div>
 
-  <div class="step" data-phase="4">
+  <div class="step" data-phase="3">
     <div class="step-header" onclick="toggleStep(this)">
       <div class="step-num">4</div>
       <div class="step-title">トラブルシューティング</div>
@@ -632,6 +659,7 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
           <tr><td>データが反映されない</td><td>GASコードを変更した場合は「デプロイを管理」→既存デプロイを更新（新しいバージョン）する</td></tr>
           <tr><td>ログインできない</td><td>2回目以降はスプシのconfigシートのパスワードが使われる。スプシを直接確認して確認</td></tr>
           <tr><td>前回のデータが出ない</td><td>GAS URLはlocalStorageに保存される。別ブラウザ・別PCでは再設定が必要</td></tr>
+          <tr><td>URLを教えてもらっていない</td><td>管理者にアプリのURLを確認してください</td></tr>
         </tbody>
       </table>
     </div>
@@ -646,6 +674,17 @@ const SPREADSHEET_ID = <span class="hl">"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE
 </div>
 
 <script>
+function copyGasCode() {
+  const el = document.getElementById('gas-code');
+  const text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-gas-btn');
+    btn.textContent = '✓ コピー済み';
+    btn.style.color = '#9FE1CB';
+    setTimeout(() => { btn.textContent = 'コピー'; btn.style.color = '#A8C4E0'; }, 2500);
+  });
+}
+
 function toggleStep(header) {
   const body = header.nextElementSibling;
   const arrow = header.querySelector('.step-arrow');
