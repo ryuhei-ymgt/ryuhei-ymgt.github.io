@@ -1,0 +1,581 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.outer{padding:2rem 1rem;display:flex;justify-content:center;background:var(--color-background-tertiary);min-height:100vh;}
+.inner{width:100%;max-width:700px;}
+.pg-title{font-size:19px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.pg-sub{font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem;}
+.top-nav{display:flex;border-bottom:.5px solid var(--color-border-secondary);margin-bottom:1.25rem;}
+.top-nav button{font-size:13px;padding:9px 18px;border:none;background:transparent;cursor:pointer;color:var(--color-text-secondary);border-bottom:2.5px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;}
+.top-nav button.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500;}
+.card{background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:.875rem;}
+.card-label{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:.75rem;display:flex;align-items:center;gap:6px;}
+.upload-zone{border:1.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:1.4rem;text-align:center;cursor:pointer;background:#EFF6FF;transition:background .15s;}
+.upload-zone:hover{background:#DBEAFE;}
+.upload-zone.dragging{border-color:#378ADD;background:#DBEAFE;}
+.upload-zone.has-file{border-style:solid;border-color:#85B7EB;}
+.upload-zone i{font-size:24px;color:#378ADD;margin-bottom:4px;display:block;}
+.upload-zone p{font-size:13px;color:#185FA5;}
+.upload-zone span{font-size:11px;color:#378ADD;}
+#file-input{display:none;}
+.file-status{display:flex;align-items:center;justify-content:space-between;margin-top:7px;gap:8px;}
+.file-ok{font-size:12px;color:var(--color-text-secondary);flex:1;}
+.clear-btn{font-size:11px;padding:4px 10px;border:.5px solid var(--color-border-secondary);border-radius:3px;cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-secondary);display:none;align-items:center;gap:4px;}
+.clear-btn:hover{background:#FCEBEB;color:#A32D2D;border-color:#F09595;}
+.clear-btn.show{display:flex;}
+.error-msg{color:var(--color-text-danger);font-size:12px;margin-top:6px;}
+.fmt-badge{font-size:11px;padding:3px 8px;border-radius:4px;margin-top:6px;display:inline-block;}
+.fmt-a{background:#E6F1FB;color:#185FA5;border:.5px solid #85B7EB;}
+.fmt-b{background:#EAF3DE;color:#3B6D11;border:.5px solid #97C459;}
+.dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;}
+.dept-item{background:#F8FAFF;border:.5px solid #B5D4F4;border-radius:var(--border-radius-md);padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.dept-name{font-size:12px;font-weight:500;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dept-toggle{display:flex;gap:3px;flex-shrink:0;}
+.dept-toggle button{font-size:11px;padding:3px 7px;border-radius:3px;border:.5px solid var(--color-border-secondary);cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary);}
+.dept-toggle button.active-h{background:#E6F1FB;color:#185FA5;border-color:#85B7EB;}
+.dept-toggle button.active-g{background:#EAF3DE;color:#3B6D11;border-color:#97C459;}
+.seg{display:inline-flex;border:.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);overflow:hidden;}
+.seg button{font-size:12px;padding:6px 14px;border:none;cursor:pointer;background:#F1F5FB;color:var(--color-text-secondary);}
+.seg button.active{background:var(--color-background-primary);color:var(--color-text-primary);font-weight:500;}
+.seg button:not(:last-child){border-right:.5px solid var(--color-border-secondary);}
+.count-setting{display:flex;flex-direction:column;gap:6px;}
+.count-row{display:flex;align-items:center;justify-content:space-between;background:#F8FAFF;border:.5px solid #B5D4F4;border-radius:var(--border-radius-md);padding:9px 12px;}
+.emp-label{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.emp-desc{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+.toggle-wrap{display:flex;gap:4px;flex-shrink:0;}
+.toggle-wrap button{font-size:11px;padding:3px 9px;border-radius:3px;border:.5px solid var(--color-border-secondary);cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary);}
+.toggle-wrap button.on{background:#E6F1FB;color:#185FA5;border-color:#85B7EB;}
+.toggle-wrap button.on-off{background:#FCEBEB;color:#A32D2D;border-color:#F09595;}
+.run-btn{margin-top:1rem;width:100%;padding:11px;background:#185FA5;border:none;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;color:#fff;cursor:pointer;}
+.run-btn:hover{background:#0C447C;}
+/* 設定 */
+.setting-section{margin-bottom:2rem;}
+.setting-section h3{font-size:13px;font-weight:500;color:var(--color-text-primary);padding-bottom:8px;border-bottom:.5px solid var(--color-border-tertiary);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.setting-section .desc{font-size:11px;color:var(--color-text-secondary);margin-bottom:10px;line-height:1.6;}
+.reset-btn{font-size:11px;padding:5px 12px;border:.5px solid var(--color-border-secondary);border-radius:3px;cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-secondary);}
+.reset-btn:hover{background:#FCEBEB;color:#A32D2D;}
+.mapwrap{border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden;margin-bottom:10px;}
+.map-head{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--color-background-secondary);border-bottom:.5px solid var(--color-border-tertiary);}
+.map-head span{font-size:11px;font-weight:500;color:var(--color-text-secondary);}
+.map-head .hk{flex:5;}.map-head .ha{flex:0 0 20px;}.map-head .hv{flex:7;}.map-head .hd{flex:0 0 72px;}
+.maprow{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:.5px solid var(--color-border-tertiary);}
+.maprow:last-child{border-bottom:none;}
+.maprow:hover{background:var(--color-background-secondary);}
+.col-k{flex:5;min-width:0;}.col-arr{flex:0 0 20px;text-align:center;font-size:13px;color:var(--color-text-tertiary);}.col-v{flex:7;min-width:0;}.col-d{flex:0 0 72px;display:flex;justify-content:flex-end;}
+.mi{width:100%;font-size:12px;padding:7px 10px;border:.5px solid var(--color-border-secondary);border-radius:5px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;}
+.mi:focus{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,0.12);}
+.mi.key-bg{background:#F0F6FF;}
+.static-label{font-size:11px;color:var(--color-text-secondary);padding:7px 2px;line-height:1.4;}
+.del-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:6px 12px;border-radius:5px;border:.5px solid #F09595;cursor:pointer;background:#FEF2F2;color:#A32D2D;white-space:nowrap;transition:background .12s;}
+.del-btn:hover{background:#FCEBEB;border-color:#E24B4A;}
+.del-btn i{font-size:14px;}
+.fixed-tag{display:inline-flex;align-items:center;font-size:11px;color:var(--color-text-tertiary);padding:5px 10px;border:.5px solid var(--color-border-tertiary);border-radius:5px;background:var(--color-background-secondary);white-space:nowrap;}
+.add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:.5px solid var(--color-border-tertiary);}
+.add-row label{font-size:11px;color:var(--color-text-secondary);white-space:nowrap;flex-shrink:0;}
+.add-row .ai{font-size:12px;padding:7px 10px;border:.5px solid var(--color-border-secondary);border-radius:5px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;flex:1;min-width:100px;}
+.add-row .ai:focus{border-color:#378ADD;}
+.add-row .ai::placeholder{color:var(--color-text-tertiary);}
+.add-btn{font-size:12px;font-weight:500;padding:7px 16px;border:.5px solid #85B7EB;border-radius:5px;cursor:pointer;background:#E6F1FB;color:#185FA5;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;}
+.add-btn:hover{background:#DBEAFE;}
+/* results */
+.tab-bar{display:flex;border-bottom:.5px solid var(--color-border-secondary);margin-bottom:1rem;}
+.tab-bar button{font-size:13px;padding:8px 14px;border:none;background:transparent;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab-bar button.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500;}
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:1.25rem;}
+.metric-row.r2{grid-template-columns:repeat(2,1fr);}
+.metric{background:#F1F5FB;border:.5px solid #B5D4F4;border-radius:var(--border-radius-md);padding:11px 13px;}
+.metric .lbl{font-size:11px;color:#185FA5;margin-bottom:3px;}
+.metric .val{font-size:15px;font-weight:500;color:var(--color-text-primary);}
+.sec-lbl{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;padding-bottom:5px;border-bottom:.5px solid var(--color-border-tertiary);}
+.sec-lbl:first-child{margin-top:0;}
+.jt{width:100%;border-collapse:collapse;font-size:12px;}
+.jt th{text-align:left;padding:7px 9px;font-size:11px;font-weight:500;color:var(--color-text-secondary);border-bottom:.5px solid var(--color-border-secondary);}
+.jt td{padding:7px 9px;border-bottom:.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle;}
+.jt tr:last-child td{border-bottom:none;}
+.jt .amt,.jt .cnt{text-align:right;font-variant-numeric:tabular-nums;}
+.badge{font-size:10px;padding:2px 6px;border-radius:3px;display:inline-block;white-space:nowrap;}
+.bh{background:#E6F1FB;color:#185FA5;}.bg{background:#EAF3DE;color:#3B6D11;}.bk{background:#FAEEDA;color:#854F0B;}
+.total-row td{font-weight:500;border-top:.5px solid var(--color-border-secondary);background:var(--color-background-secondary);}
+.rodo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;}
+.rodo-card{background:#F8FAFF;border:.5px solid #B5D4F4;border-radius:var(--border-radius-md);padding:12px 14px;}
+.rodo-card.genka{background:#F2FAF5;border-color:#97C459;}
+.rodo-card h3{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px;}
+.rodo-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.rodo-row .rlabel{font-size:11px;color:var(--color-text-secondary);}
+.rodo-row .rval{font-size:13px;font-weight:500;color:var(--color-text-primary);font-variant-numeric:tabular-nums;}
+.rodo-divider{border-top:.5px dashed var(--color-border-tertiary);margin:7px 0;}
+.btn-row{display:flex;gap:8px;margin-top:.875rem;flex-wrap:wrap;}
+.export-btn{padding:8px 14px;background:var(--color-background-primary);border:.5px solid var(--color-border-primary);border-radius:var(--border-radius-md);font-size:12px;color:var(--color-text-primary);cursor:pointer;display:flex;align-items:center;gap:5px;}
+.export-btn:hover{background:var(--color-background-secondary);}
+.pdf-btn{padding:8px 14px;background:#EAF3DE;border:.5px solid #97C459;border-radius:var(--border-radius-md);font-size:12px;color:#3B6D11;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.pdf-btn:hover{background:#C0DD97;}
+.hint{font-size:11px;color:var(--color-text-tertiary);margin-top:6px;}
+.hidden{display:none;}
+</style>
+
+<div class="outer"><div class="inner">
+<div class="pg-title"><i class="ti ti-file-invoice" aria-hidden="true" style="color:#185FA5;font-size:20px;"></i>給与仕訳ツール</div>
+<div class="pg-sub">支給控除一覧表（CSV）を読み込んで部門別の給与仕訳データを生成します</div>
+<div class="top-nav">
+  <button class="active" onclick="switchPage('main',this)"><i class="ti ti-home" aria-hidden="true"></i>メイン</button>
+  <button onclick="switchPage('settings',this)"><i class="ti ti-settings" aria-hidden="true"></i>勘定科目設定</button>
+</div>
+
+<div id="page-main">
+  <div class="card">
+    <div class="card-label"><i class="ti ti-upload" aria-hidden="true"></i>CSVファイルをアップロード</div>
+    <div class="upload-zone" id="dropzone" onclick="document.getElementById('file-input').click()">
+      <i class="ti ti-file-text" aria-hidden="true"></i>
+      <p>クリックまたはドラッグ＆ドロップ</p>
+      <span>freee 支給控除一覧表（部門別・従来形式）どちらも対応</span>
+    </div>
+    <input type="file" id="file-input" accept=".csv">
+    <div class="file-status">
+      <div id="file-info" class="file-ok"></div>
+      <button class="clear-btn" id="clear-btn" onclick="clearFile()"><i class="ti ti-x" style="font-size:11px;" aria-hidden="true"></i>クリア</button>
+    </div>
+    <div id="fmt-badge-wrap"></div>
+    <div id="error-msg" class="error-msg"></div>
+  </div>
+  <div id="dept-config" class="hidden">
+    <div class="card">
+      <div class="card-label"><i class="ti ti-building" aria-hidden="true"></i>部門の計上区分設定</div>
+      <div id="dept-grid" class="dept-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-layout-list" aria-hidden="true"></i>仕訳の表示方法</div>
+      <div class="seg" id="view-seg">
+        <button class="active" onclick="setView('dept',this)">部門ごとに表示</button>
+        <button onclick="setView('acct',this)">区分別に集計</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-users" aria-hidden="true"></i>労働保険：人数カウント設定</div>
+      <div class="count-setting" id="count-setting"></div>
+      <div class="hint" style="margin-top:8px;">「常にカウント」は総支給0でも人数に含めます（育休等）。「支給ありのみ」は総支給がある月のみです。</div>
+    </div>
+    <button class="run-btn" onclick="runCalc()"><i class="ti ti-calculator" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;"></i>集計・仕訳を生成する</button>
+  </div>
+  <div id="results" class="hidden" style="margin-top:1.5rem;"></div>
+</div>
+
+<div id="page-settings" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <div style="font-size:14px;font-weight:500;color:var(--color-text-primary);">勘定科目マッピング設定</div>
+      <button class="reset-btn" onclick="resetSettings()"><i class="ti ti-refresh" aria-hidden="true" style="vertical-align:-1px;margin-right:4px;"></i>デフォルトに戻す</button>
+    </div>
+    <div class="setting-section">
+      <h3><i class="ti ti-arrow-up-right" aria-hidden="true" style="color:#185FA5;"></i>支給項目（借方）— 販管</h3>
+      <div class="desc">計上区分「販管」の場合に勤務区分ごとに使用する勘定科目名です。</div>
+      <div class="mapwrap"><div class="map-head"><span class="hk">勤務区分</span><span class="ha"></span><span class="hv">勘定科目名</span><span class="hd"></span></div><div id="mb-hankan"></div></div>
+      <div class="add-row"><label>勤務区分</label><input class="ai" id="hk-k" placeholder="例：嘱託"><label>勘定科目名</label><input class="ai" id="hk-a" placeholder="例：嘱託給与"><button class="add-btn" onclick="addRow('hankan')"><i class="ti ti-plus" aria-hidden="true"></i>追加</button></div>
+    </div>
+    <div class="setting-section">
+      <h3><i class="ti ti-arrow-up-right" aria-hidden="true" style="color:#3B6D11;"></i>支給項目（借方）— 原価</h3>
+      <div class="desc">計上区分「原価」の場合の勘定科目名です。</div>
+      <div class="mapwrap"><div class="map-head"><span class="hk">勤務区分</span><span class="ha"></span><span class="hv">勘定科目名</span><span class="hd"></span></div><div id="mb-genka"></div></div>
+      <div class="add-row"><label>勤務区分</label><input class="ai" id="gk-k" placeholder="例：嘱託"><label>勘定科目名</label><input class="ai" id="gk-a" placeholder="例：賃金（嘱託）"><button class="add-btn" onclick="addRow('genka')"><i class="ti ti-plus" aria-hidden="true"></i>追加</button></div>
+    </div>
+    <div class="setting-section">
+      <h3><i class="ti ti-bus" aria-hidden="true" style="color:#185FA5;"></i>非課税支給（旅費交通費）</h3>
+      <div class="desc">非課税支給額合計に使用する勘定科目名です。</div>
+      <div class="mapwrap"><div class="map-head"><span class="hk">区分キー</span><span class="ha"></span><span class="hv">勘定科目名</span><span class="hd"></span></div><div id="mb-travel"></div></div>
+      <div class="add-row"><label>区分キー</label><input class="ai" id="tv-k" placeholder="例：special"><label>勘定科目名</label><input class="ai" id="tv-a" placeholder="例：旅費交通費（特別）"><button class="add-btn" onclick="addRow('travel')"><i class="ti ti-plus" aria-hidden="true"></i>追加</button></div>
+    </div>
+    <div class="setting-section" style="margin-bottom:0;">
+      <h3><i class="ti ti-arrow-down-left" aria-hidden="true" style="color:#854F0B;"></i>控除項目（貸方）</h3>
+      <div class="desc">CSV行名と勘定科目名のマッピングです。「固定」行は削除不可ですが科目名は編集できます。</div>
+      <div class="mapwrap"><div class="map-head"><span class="hk">CSV行名</span><span class="ha"></span><span class="hv">勘定科目名</span><span class="hd"></span></div><div id="mb-credit"></div></div>
+      <div class="add-row"><label>CSV行名</label><input class="ai" id="cr-k" placeholder="例：立替金"><label>勘定科目名</label><input class="ai" id="cr-a" placeholder="例：立替金控除"><button class="add-btn" onclick="addRow('credit')"><i class="ti ti-plus" aria-hidden="true"></i>追加</button></div>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<script>
+const fmt=n=>n.toLocaleString('ja-JP');
+
+// デフォルト部門設定（両形式対応）
+const DEPT_DEFAULTS_GENKA=['製造部','製造','詰口部','製品'];
+
+const DEFAULT_SETTINGS=()=>({
+  hankan:[
+    {key:'役員',   acct:'役員報酬'},
+    {key:'正社員', acct:'給料手当'},
+    {key:'パート', acct:'雑給（販管）'},
+    {key:'マネキン',acct:'雑給（販管・マネキン）'},
+  ],
+  genka:[
+    {key:'正社員', acct:'賃金'},
+    {key:'パート', acct:'雑給（原価）'},
+  ],
+  travel:[
+    {key:'hankan', acct:'旅費交通費（販管）'},
+    {key:'genka',  acct:'旅費交通費（原価）'},
+  ],
+  shahoAcct:'預り金（社会保険）',
+  credits:[
+    {key:'所得税',             acct:'預り金（所得税）',  fixed:true},
+    {key:'雇用保険料',          acct:'預り金（雇用保険）', fixed:true},
+    {key:'住民税',             acct:'預り金（住民税）',  fixed:true},
+    {key:'社販（給与支払時控除）', acct:'社販控除',         fixed:false},
+  ],
+});
+let S=DEFAULT_SETTINGS();
+let countConfig={'正社員':'always','パート':'always','マネキン':'present'};
+let viewMode='dept';
+let parsedData=null,deptConfig={};
+
+/* ===== CSV 自動判別パーサー ===== */
+function splitCSVLine(line){
+  const cols=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    if(line[i]==='"'){inQ=!inQ;}
+    else if(line[i]===','&&!inQ){cols.push(cur.trim());cur='';}
+    else cur+=line[i];
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+/* 勤務区分の正規化
+   形式A: 正社員/パート/マネキン/役員 など
+   形式B: 社員_7.5ｈ/社員_8ｈ/パート・アルバイト/マネキン など */
+function normalizeEmpType(s){
+  if(!s)return '正社員';
+  const v=s.trim();
+  if(v.includes('役員'))return '役員';
+  if(v.includes('マネキン'))return 'マネキン';
+  // パート・アルバイト → パート
+  if(v.includes('パート')||v.includes('アルバイト'))return 'パート';
+  // 社員_Xh / 正社員 → 正社員
+  if(v.includes('社員'))return '正社員';
+  return '正社員';
+}
+
+function parseCSV(text){
+  const raw=text.replace(/^\uFEFF/,''); // BOM除去
+  const lines=raw.split(/\r?\n/).filter(l=>l.trim());
+  const rows=lines.map(splitCSVLine);
+  if(rows.length<4)throw new Error('CSVの行数が不足しています');
+
+  /* ---- フォーマット自動判別 ----
+     形式A: 1行目=部門名, 2行目=勤務区分, 3行目=従業員名, 4行目〜=データ
+     形式B: 1行目=支給月日, 2行目=賃金計算期間, 3行目=部門(「部門」含む), 4行目=勤務区分, 5行目=従業員名, 6行目〜=データ
+  */
+  let deptRowIdx, empTypeRowIdx, nameRowIdx, dataStartIdx, format;
+
+  // 形式B判定: 行ラベル「部門」を含む行を探す
+  const deptLabelRow=rows.findIndex(r=>r[0]&&r[0].includes('部門'));
+  const empTypeLabelRow=rows.findIndex(r=>r[0]&&(r[0].includes('勤務')&&r[0].includes('賃金')));
+  const nameLabelRow=rows.findIndex(r=>r[0]&&r[0].includes('従業員'));
+
+  if(deptLabelRow>=0&&empTypeLabelRow>=0&&nameLabelRow>=0){
+    // 形式B
+    format='B';
+    deptRowIdx=deptLabelRow;
+    empTypeRowIdx=empTypeLabelRow;
+    nameRowIdx=nameLabelRow;
+    dataStartIdx=nameRowIdx+1;
+  } else {
+    // 形式A（従来）
+    format='A';
+    deptRowIdx=0;
+    empTypeRowIdx=1;
+    nameRowIdx=2;
+    dataStartIdx=3;
+  }
+
+  const deptRow=rows[deptRowIdx];
+  const empTypeRow=rows[empTypeRowIdx];
+  const nameRow=rows[nameRowIdx];
+
+  // 最終列（総合計列）を除く列範囲を決定
+  // 従業員名が空 or "総合計" の列は除外
+  const employees=[];
+  const colCount=deptRow.length;
+
+  for(let c=1;c<colCount;c++){
+    const name=nameRow[c]?.trim()||'';
+    const dept=deptRow[c]?.trim()||'';
+    if(!name||!dept)continue;
+    if(name==='総合計'||name==='合計')continue;
+    if(dept==='総合計'||dept==='合計')continue;
+
+    const empType=normalizeEmpType(empTypeRow[c]);
+    const emp={dept,empType,name,items:{}};
+    for(let r=dataStartIdx;r<rows.length;r++){
+      const key=rows[r][0]?.trim();
+      if(!key)continue;
+      const raw=rows[r][c]||'';
+      const val=parseInt(raw.replace(/,/g,''),10)||0;
+      emp.items[key]=val;
+    }
+    employees.push(emp);
+  }
+
+  if(employees.length===0)throw new Error('従業員データが見つかりません。CSVの形式を確認してください。');
+
+  const uniqueDepts=[...new Set(employees.map(e=>e.dept))];
+  return{employees,uniqueDepts,format};
+}
+
+/* ===== 設定ページ ===== */
+function switchPage(id,btn){
+  ['main','settings'].forEach(p=>document.getElementById('page-'+p).classList.toggle('hidden',p!==id));
+  document.querySelectorAll('.top-nav button').forEach(b=>b.classList.toggle('active',b===btn));
+  if(id==='settings')renderSettingsPage();
+}
+function renderSettingsPage(){
+  renderMapBody('mb-hankan',S.hankan,(i,f,v)=>S.hankan[i][f]=v,(i)=>{S.hankan.splice(i,1);renderSettingsPage();});
+  renderMapBody('mb-genka', S.genka, (i,f,v)=>S.genka[i][f]=v, (i)=>{S.genka.splice(i,1);renderSettingsPage();});
+  renderMapBody('mb-travel',S.travel,(i,f,v)=>S.travel[i][f]=v,(i)=>{S.travel.splice(i,1);renderSettingsPage();});
+  renderCreditBody();
+}
+function makeDelBtn(onDelete){
+  const btn=document.createElement('button');btn.className='del-btn';
+  btn.innerHTML='<i class="ti ti-trash" aria-hidden="true"></i>削除';
+  btn.addEventListener('click',onDelete);return btn;
+}
+function makeInput(value,cls,onInput){
+  const inp=document.createElement('input');inp.type='text';
+  inp.className='mi'+(cls?' '+cls:'');inp.value=value;
+  inp.addEventListener('input',()=>onInput(inp.value));return inp;
+}
+function renderMapBody(containerId,arr,onChange,onDelete){
+  const el=document.getElementById(containerId);el.innerHTML='';
+  arr.forEach((row,i)=>{
+    const div=document.createElement('div');div.className='maprow';
+    const kw=document.createElement('div');kw.className='col-k';kw.appendChild(makeInput(row.key,'key-bg',v=>onChange(i,'key',v)));
+    const aw=document.createElement('div');aw.className='col-arr';aw.textContent='→';
+    const vw=document.createElement('div');vw.className='col-v';vw.appendChild(makeInput(row.acct,'',v=>onChange(i,'acct',v)));
+    const dw=document.createElement('div');dw.className='col-d';dw.appendChild(makeDelBtn(()=>onDelete(i)));
+    div.append(kw,aw,vw,dw);el.appendChild(div);
+  });
+}
+function renderCreditBody(){
+  const el=document.getElementById('mb-credit');el.innerHTML='';
+  const div0=document.createElement('div');div0.className='maprow';
+  const k0=document.createElement('div');k0.className='col-k';
+  const sl=document.createElement('div');sl.className='static-label';sl.textContent='社会保険料控除合計 − 雇用保険料';k0.appendChild(sl);
+  const a0=document.createElement('div');a0.className='col-arr';a0.textContent='→';
+  const v0=document.createElement('div');v0.className='col-v';v0.appendChild(makeInput(S.shahoAcct,'',val=>{S.shahoAcct=val;}));
+  const d0=document.createElement('div');d0.className='col-d';
+  const ft0=document.createElement('span');ft0.className='fixed-tag';ft0.textContent='固定計算';d0.appendChild(ft0);
+  div0.append(k0,a0,v0,d0);el.appendChild(div0);
+  S.credits.forEach((c,i)=>{
+    const div=document.createElement('div');div.className='maprow';
+    const kw=document.createElement('div');kw.className='col-k';
+    if(c.fixed){const lbl=document.createElement('div');lbl.className='static-label';lbl.textContent=c.key;kw.appendChild(lbl);}
+    else{kw.appendChild(makeInput(c.key,'key-bg',v=>{S.credits[i].key=v;}));}
+    const aw=document.createElement('div');aw.className='col-arr';aw.textContent='→';
+    const vw=document.createElement('div');vw.className='col-v';vw.appendChild(makeInput(c.acct,'',v=>{S.credits[i].acct=v;}));
+    const dw=document.createElement('div');dw.className='col-d';
+    if(c.fixed){const ft=document.createElement('span');ft.className='fixed-tag';ft.textContent='固定';dw.appendChild(ft);}
+    else{dw.appendChild(makeDelBtn(()=>{S.credits.splice(i,1);renderCreditBody();}));}
+    div.append(kw,aw,vw,dw);el.appendChild(div);
+  });
+}
+function addRow(type){
+  const m={hankan:['hk-k','hk-a'],genka:['gk-k','gk-a'],travel:['tv-k','tv-a'],credit:['cr-k','cr-a']};
+  const[kid,aid]=m[type];
+  const k=document.getElementById(kid).value.trim();
+  const a=document.getElementById(aid).value.trim();
+  if(!k||!a){alert('両方の項目を入力してください。');return;}
+  if(type==='hankan')S.hankan.push({key:k,acct:a});
+  else if(type==='genka')S.genka.push({key:k,acct:a});
+  else if(type==='travel')S.travel.push({key:k,acct:a});
+  else S.credits.push({key:k,acct:a,fixed:false});
+  document.getElementById(kid).value='';document.getElementById(aid).value='';
+  renderSettingsPage();
+}
+function resetSettings(){if(!confirm('デフォルトに戻しますか？'))return;S=DEFAULT_SETTINGS();renderSettingsPage();}
+
+/* ===== 集計 ===== */
+function getDebitAcct(empType,kai){
+  const found=(kai==='genka'?S.genka:S.hankan).find(r=>r.key===empType);
+  return found?found.acct:(kai==='genka'?'賃金':'給料手当');
+}
+function getTravelAcct(kai){const found=S.travel.find(r=>r.key===kai);return found?found.acct:'旅費交通費';}
+function setView(v,btn){viewMode=v;document.querySelectorAll('#view-seg button').forEach(b=>b.classList.toggle('active',b===btn));}
+function calcRodo(employees){
+  const res={hankan:{koyo:{count:0,amount:0},rodo:{count:0,amount:0}},genka:{koyo:{count:0,amount:0},rodo:{count:0,amount:0}}};
+  for(const emp of employees.filter(e=>e.empType!=='役員')){
+    const kai=deptConfig[emp.dept]||'hankan',total=emp.items['総支給額']||0,et=emp.empType;
+    if((countConfig[et]||'present')==='present'&&total===0)continue;
+    const isKoyo=(et==='正社員'||et==='パート');
+    if(isKoyo){res[kai].koyo.count++;res[kai].koyo.amount+=total;}
+    res[kai].rodo.count++;res[kai].rodo.amount+=total;
+  }
+  return res;
+}
+function runCalc(){
+  if(!parsedData)return;
+  const{employees}=parsedData;
+  const aggMap={};
+  const add=(k,v)=>{aggMap[k]=(aggMap[k]||0)+v;};
+  for(const emp of employees){
+    const kai=deptConfig[emp.dept]||'hankan';
+    const kazei=emp.items['課税支給額合計']||0,hikazei=emp.items['非課税支給額合計']||0;
+    if(kazei>0)add(`${emp.dept}|||${getDebitAcct(emp.empType,kai)}|||${kai}`,kazei);
+    if(hikazei>0)add(`${emp.dept}|||${getTravelAcct(kai)}|||${kai}`,hikazei);
+    const koyo=emp.items['雇用保険料']||0,shaho=(emp.items['社会保険料控除合計']||0)-koyo;
+    if(shaho>0)add(`__c|||${S.shahoAcct}|||hikae`,shaho);
+    for(const d of S.credits){const v=emp.items[d.key]||0;if(v>0)add(`__c|||${d.acct}|||hikae`,v);}
+  }
+  let lines=Object.entries(aggMap).map(([k,v])=>{const[dept,acct,kai]=k.split('|||');return{dept:dept==='__c'?'−':dept,acct,kai,amount:v};});
+  if(viewMode==='acct'){const m={};for(const l of lines){const k=`${l.acct}|||${l.kai}`;if(!m[k])m[k]={dept:'（合計）',acct:l.acct,kai:l.kai,amount:0};m[k].amount+=l.amount;}lines=Object.values(m);}
+  lines.sort((a,b)=>{const o={hankan:0,genka:1,hikae:2};return(o[a.kai]-o[b.kai])||a.dept.localeCompare(b.dept,'ja')||a.acct.localeCompare(b.acct,'ja');});
+  const td=lines.filter(l=>l.kai!=='hikae').reduce((s,l)=>s+l.amount,0);
+  const tc=lines.filter(l=>l.kai==='hikae').reduce((s,l)=>s+l.amount,0);
+  renderResults(lines,td,tc,td-tc,calcRodo(employees));
+}
+
+/* ===== 結果描画 ===== */
+function renderResults(lines,totalDebit,totalCredit,totalPay,rodo){
+  const hasDept=viewMode==='dept',colSpan=hasDept?3:2,deptTh=hasDept?'<th>部門</th>':'';
+  const dr=lines.filter(l=>l.kai!=='hikae'),cr=lines.filter(l=>l.kai==='hikae');
+  const drRows=dr.map(l=>`<tr><td><span class="badge ${l.kai==='hankan'?'bh':'bg'}">${l.kai==='hankan'?'販管':'原価'}</span></td>${hasDept?`<td>${l.dept}</td>`:''}<td>${l.acct}</td><td class="amt">¥${fmt(l.amount)}</td></tr>`).join('');
+  const crRows=cr.map(l=>`<tr><td><span class="badge bk">控除</span></td>${hasDept?'<td>−</td>':''}<td>${l.acct}</td><td class="amt">¥${fmt(l.amount)}</td></tr>`).join('');
+  const totK={count:rodo.hankan.koyo.count+rodo.genka.koyo.count,amount:rodo.hankan.koyo.amount+rodo.genka.koyo.amount};
+  const totR={count:rodo.hankan.rodo.count+rodo.genka.rodo.count,amount:rodo.hankan.rodo.amount+rodo.genka.rodo.amount};
+  const rsOnly=r=>({count:r.rodo.count-r.koyo.count,amount:r.rodo.amount-r.koyo.amount});
+  const rH=rsOnly(rodo.hankan),rG=rsOnly(rodo.genka),totRO={count:totR.count-totK.count,amount:totR.amount-totK.amount};
+  const rodoCard=(kai,label,cls,rd)=>{const rs=rsOnly(rd);return`<div class="rodo-card ${kai}"><h3><span class="badge ${cls}">${label}</span></h3><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:5px;">雇用保険対象（正社員・パート）</div><div class="rodo-row"><span class="rlabel">人数</span><span class="rval">${rd.koyo.count} 名</span></div><div class="rodo-row"><span class="rlabel">総支給額</span><span class="rval">¥${fmt(rd.koyo.amount)}</span></div><div class="rodo-divider"></div><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:5px;">労災保険対象（雇用保険対象分を除く）</div><div class="rodo-row"><span class="rlabel">人数</span><span class="rval">${rs.count} 名</span></div><div class="rodo-row"><span class="rlabel">総支給額</span><span class="rval">¥${fmt(rs.amount)}</span></div></div>`;};
+  const el=document.getElementById('results');el.classList.remove('hidden');
+  el.innerHTML=`<div class="tab-bar"><button class="active" onclick="switchResTab('journal',this)"><i class="ti ti-receipt" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"></i>給与仕訳</button><button onclick="switchResTab('rodo',this)"><i class="ti ti-shield-check" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"></i>労働保険料集計</button></div>
+  <div id="tab-journal"><div class="metric-row"><div class="metric"><div class="lbl">支給合計（借方）</div><div class="val">¥${fmt(totalDebit)}</div></div><div class="metric"><div class="lbl">控除合計（貸方）</div><div class="val">¥${fmt(totalCredit)}</div></div><div class="metric"><div class="lbl">差引支給（現金等）</div><div class="val">¥${fmt(totalPay)}</div></div></div>
+  <div class="card" style="padding:1rem 1.25rem;"><div class="sec-lbl">借方 — 支給項目</div><table class="jt"><thead><tr><th>区分</th>${deptTh}<th>勘定科目</th><th style="text-align:right">金額</th></tr></thead><tbody>${drRows}</tbody><tfoot><tr class="total-row"><td colspan="${colSpan}">借方合計</td><td class="amt">¥${fmt(totalDebit)}</td></tr></tfoot></table>
+  <div class="sec-lbl">貸方 — 控除項目</div><table class="jt"><thead><tr><th>区分</th>${deptTh}<th>勘定科目</th><th style="text-align:right">金額</th></tr></thead><tbody>${crRows}</tbody><tfoot><tr class="total-row"><td colspan="${colSpan}">貸方合計</td><td class="amt">¥${fmt(totalCredit)}</td></tr></tfoot></table>
+  <div class="sec-lbl">貸方 — 差引支給額</div><table class="jt"><tbody><tr><td><span class="badge bk">支払</span></td>${hasDept?'<td>−</td>':''}<td>現金／普通預金（振込）</td><td class="amt">¥${fmt(totalPay)}</td></tr></tbody></table></div>
+  <div class="btn-row"><button class="export-btn" onclick="exportJournalCSV(${JSON.stringify(lines).replace(/"/g,'&quot;')},${totalDebit},${totalCredit},${totalPay})"><i class="ti ti-download" aria-hidden="true"></i>CSVエクスポート</button><button class="pdf-btn" onclick="printSection('journal')"><i class="ti ti-printer" aria-hidden="true"></i>PDF出力</button></div><div class="hint">PDF出力：印刷ダイアログで「PDFに保存」を選択してください。</div></div>
+  <div id="tab-rodo" class="hidden"><div class="metric-row r2"><div class="metric"><div class="lbl">雇用保険対象 人数合計</div><div class="val">${totK.count} 名</div></div><div class="metric"><div class="lbl">雇用保険対象 総支給合計</div><div class="val">¥${fmt(totK.amount)}</div></div><div class="metric"><div class="lbl">労災保険対象（全体）人数合計</div><div class="val">${totR.count} 名</div></div><div class="metric"><div class="lbl">労災保険対象（全体）総支給合計</div><div class="val">¥${fmt(totR.amount)}</div></div></div>
+  <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:.75rem;">※ 役員は集計対象外。人数カウントは設定に基づきます。</div>
+  <div class="rodo-grid">${rodoCard('hankan','販管','bh',rodo.hankan)}${rodoCard('genka','原価','bg',rodo.genka)}</div>
+  <div class="card" style="padding:1rem 1.25rem;"><div class="sec-lbl" style="margin-top:0;">販管・原価 内訳テーブル</div><table class="jt"><thead><tr><th>区分</th><th>対象</th><th style="text-align:right">人数</th><th style="text-align:right">総支給額</th></tr></thead><tbody>
+  <tr><td><span class="badge bh">販管</span></td><td>雇用保険対象（正社員・パート）</td><td class="cnt">${rodo.hankan.koyo.count} 名</td><td class="amt">¥${fmt(rodo.hankan.koyo.amount)}</td></tr>
+  <tr><td><span class="badge bh">販管</span></td><td>労災保険対象（雇用保険対象分を除く）</td><td class="cnt">${rH.count} 名</td><td class="amt">¥${fmt(rH.amount)}</td></tr>
+  <tr><td><span class="badge bg">原価</span></td><td>雇用保険対象（正社員・パート）</td><td class="cnt">${rodo.genka.koyo.count} 名</td><td class="amt">¥${fmt(rodo.genka.koyo.amount)}</td></tr>
+  <tr><td><span class="badge bg">原価</span></td><td>労災保険対象（雇用保険対象分を除く）</td><td class="cnt">${rG.count} 名</td><td class="amt">¥${fmt(rG.amount)}</td></tr>
+  <tr class="total-row"><td colspan="2">合計 — 雇用保険対象</td><td class="cnt">${totK.count} 名</td><td class="amt">¥${fmt(totK.amount)}</td></tr>
+  <tr class="total-row"><td colspan="2">合計 — 労災保険対象（全体）</td><td class="cnt">${totR.count} 名</td><td class="amt">¥${fmt(totR.amount)}</td></tr>
+  <tr class="total-row"><td colspan="2">合計 — 労災保険対象（雇用保険対象分を除く）</td><td class="cnt">${totRO.count} 名</td><td class="amt">¥${fmt(totRO.amount)}</td></tr>
+  </tbody></table></div>
+  <div class="btn-row"><button class="export-btn" onclick="exportRodoCSV(${JSON.stringify(rodo)},${JSON.stringify({totK,totR,totRO,rH,rG})})"><i class="ti ti-download" aria-hidden="true"></i>CSVエクスポート</button><button class="pdf-btn" onclick="printSection('rodo')"><i class="ti ti-printer" aria-hidden="true"></i>PDF出力</button></div><div class="hint">PDF出力：印刷ダイアログで「PDFに保存」を選択してください。</div></div>`;
+}
+
+function switchResTab(id,btn){
+  ['journal','rodo'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('hidden',t!==id);});
+  document.querySelectorAll('.tab-bar button').forEach(b=>b.classList.toggle('active',b===btn));
+}
+function printSection(tab){
+  const tabEl=document.getElementById('tab-'+tab);
+  const pw=window.open('','_blank','width=820,height=640');
+  pw.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${tab==='journal'?'給与仕訳':'労働保険料集計'}</title><style>*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif;}body{padding:20px;font-size:12px;color:#111;}h2{font-size:15px;margin-bottom:14px;font-weight:500;}.metric-row{display:grid;grid-template-columns:repeat(${tab==='journal'?3:2},1fr);gap:8px;margin-bottom:14px;}.metric{background:#F1F5FB;border:1px solid #B5D4F4;border-radius:6px;padding:10px 12px;}.metric .lbl{font-size:10px;color:#185FA5;margin-bottom:2px;}.metric .val{font-size:14px;font-weight:500;}.card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:12px;}.sec-lbl{font-size:10px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid #eee;}.sec-lbl:first-child{margin-top:0;}table{width:100%;border-collapse:collapse;font-size:11px;}th{text-align:left;padding:6px 8px;font-size:10px;font-weight:500;color:#666;border-bottom:1px solid #ccc;}td{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:middle;}tr:last-child td{border-bottom:none;}.amt,.cnt{text-align:right;font-variant-numeric:tabular-nums;}.badge{font-size:9px;padding:1px 5px;border-radius:2px;display:inline-block;}.bh{background:#E6F1FB;color:#185FA5;}.bg{background:#EAF3DE;color:#3B6D11;}.bk{background:#FAEEDA;color:#854F0B;}.total-row td{font-weight:500;border-top:1px solid #ccc;background:#F5F5F5;}.rodo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}.rodo-card{background:#F8FAFF;border:1px solid #B5D4F4;border-radius:6px;padding:10px 12px;}.rodo-card.genka{background:#F2FAF5;border-color:#97C459;}.rodo-card h3{font-size:11px;font-weight:500;color:#666;margin-bottom:6px;}.rodo-row{display:flex;justify-content:space-between;margin-bottom:3px;}.rlabel{font-size:10px;color:#666;}.rval{font-size:12px;font-weight:500;}.rodo-divider{border-top:1px dashed #ddd;margin:5px 0;}.btn-row,.hint{display:none;}</style></head><body><h2>${tab==='journal'?'給与仕訳':'労働保険料集計'}</h2>${tabEl.innerHTML}</body></html>`);
+  pw.document.close();setTimeout(()=>pw.print(),400);
+}
+function exportJournalCSV(lines,totalDebit,totalCredit,totalPay){
+  const rows=[['区分','部門','借貸','勘定科目','金額']];
+  for(const l of lines){const dr=l.kai!=='hikae';rows.push([dr?(l.kai==='hankan'?'販管':'原価'):'控除',l.dept,dr?'借方':'貸方',l.acct,l.amount]);}
+  rows.push(['支払','−','貸方','現金／普通預金（振込）',totalDebit-totalCredit]);
+  dl('\uFEFF'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'),'給与仕訳.csv');
+}
+function exportRodoCSV(rodo,t){
+  const rows=[['区分','対象','人数','総支給額'],['販管','雇用保険対象（正社員・パート）',rodo.hankan.koyo.count,rodo.hankan.koyo.amount],['販管','労災保険対象（雇用保険対象分を除く）',t.rH.count,t.rH.amount],['原価','雇用保険対象（正社員・パート）',rodo.genka.koyo.count,rodo.genka.koyo.amount],['原価','労災保険対象（雇用保険対象分を除く）',t.rG.count,t.rG.amount],['合計','雇用保険対象',t.totK.count,t.totK.amount],['合計','労災保険対象（全体）',t.totR.count,t.totR.amount],['合計','労災保険対象（雇用保険対象分を除く）',t.totRO.count,t.totRO.amount]];
+  dl('\uFEFF'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'),'労働保険料集計.csv');
+}
+function dl(c,f){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv;charset=utf-8'}));a.download=f;a.click();}
+
+function clearFile(){
+  parsedData=null;deptConfig={};
+  document.getElementById('file-input').value='';
+  document.getElementById('file-info').textContent='';
+  document.getElementById('error-msg').textContent='';
+  document.getElementById('fmt-badge-wrap').innerHTML='';
+  document.getElementById('clear-btn').classList.remove('show');
+  document.getElementById('dropzone').classList.remove('has-file');
+  document.getElementById('dept-config').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+}
+
+function handleFile(file){
+  if(!file)return;
+  document.getElementById('error-msg').textContent='';
+  document.getElementById('fmt-badge-wrap').innerHTML='';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      // まずUTF-8で試みる
+      let text=e.target.result;
+      parsedData=parseCSV(text);
+      const f=parsedData.format;
+      document.getElementById('file-info').textContent=
+        `✓ ${file.name}（従業員 ${parsedData.employees.length} 名・部門 ${parsedData.uniqueDepts.length} 件）`;
+      // フォーマットバッジ
+      const badge=document.createElement('div');
+      badge.className='fmt-badge '+(f==='B'?'fmt-b':'fmt-a');
+      badge.textContent=f==='B'
+        ?'📋 部門別形式（freee 拡張）を検出しました'
+        :'📋 標準形式を検出しました';
+      document.getElementById('fmt-badge-wrap').appendChild(badge);
+      document.getElementById('clear-btn').classList.add('show');
+      document.getElementById('dropzone').classList.add('has-file');
+      renderDeptConfig();
+    }catch(err){
+      document.getElementById('error-msg').textContent='エラー: '+err.message;
+    }
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+function renderDeptConfig(){
+  const grid=document.getElementById('dept-grid');grid.innerHTML='';deptConfig={};
+  for(const d of parsedData.uniqueDepts){
+    deptConfig[d]=DEPT_DEFAULTS_GENKA.includes(d)?'genka':'hankan';
+  }
+  for(const dept of parsedData.uniqueDepts){
+    const isG=deptConfig[dept]==='genka';
+    const div=document.createElement('div');div.className='dept-item';
+    div.innerHTML=`<span class="dept-name" title="${dept}">${dept}</span><div class="dept-toggle"><button class="${!isG?'active-h':''}" data-dept="${dept}" data-val="hankan">販管</button><button class="${isG?'active-g':''}" data-dept="${dept}" data-val="genka">原価</button></div>`;
+    grid.appendChild(div);
+  }
+  grid.querySelectorAll('.dept-toggle button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const dept=btn.dataset.dept,val=btn.dataset.val;
+      deptConfig[dept]=val;
+      btn.parentElement.querySelectorAll('button').forEach(b=>{b.className=b.dataset.val===val?(val==='hankan'?'active-h':'active-g'):'';});
+    });
+  });
+  renderCountSetting();
+  document.getElementById('dept-config').classList.remove('hidden');
+  document.getElementById('results').classList.add('hidden');
+}
+
+function renderCountSetting(){
+  const el=document.getElementById('count-setting');el.innerHTML='';
+  const descs={'正社員':'育休等で総支給0の場合を考慮','パート':'正社員に準じた運用','マネキン':'総支給なしは通常対象外'};
+  for(const et of ['正社員','パート','マネキン']){
+    const cur=countConfig[et];
+    const div=document.createElement('div');div.className='count-row';
+    div.innerHTML=`<div><div class="emp-label">${et}</div><div class="emp-desc">${descs[et]}</div></div><div class="toggle-wrap"><button class="${cur==='always'?'on':''}" data-et="${et}" data-val="always">常にカウント</button><button class="${cur==='present'?'on-off':''}" data-et="${et}" data-val="present">支給ありのみ</button></div>`;
+    el.appendChild(div);
+  }
+  el.querySelectorAll('.toggle-wrap button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const et=btn.dataset.et,val=btn.dataset.val;
+      countConfig[et]=val;
+      btn.parentElement.querySelectorAll('button').forEach(b=>{b.className=b.dataset.val===val?(val==='always'?'on':'on-off'):'';});
+    });
+  });
+}
+document.getElementById('file-input').addEventListener('change',e=>handleFile(e.target.files[0]));
+const dz=document.getElementById('dropzone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragging');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragging'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragging');handleFile(e.dataTransfer.files[0]);});
+window.runCalc=runCalc;window.setView=setView;window.clearFile=clearFile;
+window.switchPage=switchPage;window.switchResTab=switchResTab;
+window.addRow=addRow;window.resetSettings=resetSettings;
+window.exportJournalCSV=exportJournalCSV;window.exportRodoCSV=exportRodoCSV;window.printSection=printSection;
+</script>
