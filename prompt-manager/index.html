@@ -351,6 +351,7 @@ async function initApp() {
         prompt: r[3].trim(),
         visible: r[4]?.trim()==='false' ? false : true
       }));
+      extraCategories = [];
       syncCategoryOrder();
     }
   } catch(e) { /* スプシ未設定時はサンプルデータ */ }
@@ -398,16 +399,23 @@ function showToast(msg, ok=true) {
   setTimeout(()=>{ t.className='toast'+(ok?'':' err'); }, 2500);
 }
 let categoryOrder = [];
+let extraCategories = []; // テンプレートなしで追加されたカテゴリ
 
 function getCategories() {
-  const all = [...new Set(templates.filter(t=>!t._placeholder).map(t=>t.category))];
+  const all = [...new Set([
+    ...templates.filter(t=>!t._placeholder).map(t=>t.category),
+    ...extraCategories
+  ])];
   const ordered = categoryOrder.filter(c => all.includes(c));
   const rest = all.filter(c => !ordered.includes(c));
   return [...ordered, ...rest];
 }
 
 function syncCategoryOrder() {
-  const current = [...new Set(templates.filter(t=>!t._placeholder).map(t=>t.category))];
+  const current = [...new Set([
+    ...templates.filter(t=>!t._placeholder).map(t=>t.category),
+    ...extraCategories
+  ])];
   const existing = categoryOrder.filter(c => current.includes(c));
   const newOnes = current.filter(c => !existing.includes(c));
   categoryOrder = [...existing, ...newOnes];
@@ -852,6 +860,7 @@ function saveCatRename(enc){
   if(nw===old){$('catedit-'+btoa(enc)).style.display='none';return;}
   if(getCategories().includes(nw)){showToast('同じ名前のカテゴリが既に存在します',false);return;}
   templates=templates.map(t=>t.category===old?{...t,category:nw}:t);
+  extraCategories=extraCategories.map(c=>c===old?nw:c);
   categoryOrder=categoryOrder.map(c=>c===old?nw:c);
   showToast(`「${old}」→「${nw}」に変更しました`); renderCatList(); renderAdminList(); autoSyncToSheets();
 }
@@ -859,6 +868,7 @@ function deleteCat(enc){
   const name=decodeURIComponent(enc), count=templates.filter(t=>t.category===name&&!t._placeholder).length;
   if(!confirm(count>0?`「${name}」を削除すると、このカテゴリのテンプレート${count}件もすべて削除されます。\n本当に削除しますか？`:`「${name}」を削除しますか？`))return;
   templates=templates.filter(t=>t.category!==name);
+  extraCategories=extraCategories.filter(c=>c!==name);
   categoryOrder=categoryOrder.filter(c=>c!==name);
   showToast(`「${name}」を削除しました`); renderCatList(); renderAdminList(); autoSyncToSheets();
 }
@@ -866,7 +876,8 @@ $('add-cat-btn').addEventListener('click', ()=>{
   const name=$('new-cat-input').value.trim();
   if(!name){showToast('カテゴリ名を入力してください',false);return;}
   if(getCategories().includes(name)){showToast('同じ名前のカテゴリが既に存在します',false);return;}
-  templates.push({id:'placeholder_'+Date.now(),title:'（テンプレートを追加してください）',category:name,prompt:'',_placeholder:true});
+  extraCategories.push(name);
+  syncCategoryOrder();
   $('new-cat-input').value=''; showToast(`「${name}」を追加しました`); renderCatList(); renderAdminList();
 });
 $('new-cat-input').addEventListener('keydown', e=>{if(e.key==='Enter')$('add-cat-btn').click();});
