@@ -95,6 +95,8 @@ textarea{resize:vertical;line-height:1.6}
 .vis-label{font-size:11px;color:#6E89B4}
 .hidden-badge{font-size:10px;padding:1px 6px;border-radius:50px;background:#FEF0EF;color:#A32D2D;border:1px solid #F0A0A0;font-weight:500;margin-left:6px}
 .cat-item[draggable]{cursor:grab}
+.tmpl-item[draggable]{cursor:grab}
+.tmpl-drag-grip{color:#C3D2EE;font-size:16px;margin-right:8px;flex-shrink:0;margin-top:2px}
 .drag-grip{color:#C3D2EE;font-size:16px;margin-right:10px;flex-shrink:0}
 .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
 .spinner-dark{border-color:rgba(29,53,87,0.15);border-top-color:#1D3557}
@@ -1095,13 +1097,24 @@ function renderAdminList(){
   getCategories().forEach(cat=>{
     const items=list.filter(t=>t.category===cat);if(!items.length)return;
     html+=`<div class="section-header"><span style="font-size:13px;font-weight:500;color:#1D3557">${escHtml(cat)}</span><span class="section-count">${items.length}件</span></div>`;
-    items.forEach(t=>{
+    items.forEach((t,idx)=>{
       const vis=t.visible!==false;
-      html+=`<div class="tmpl-item" style="${vis?'':'opacity:0.6'}">
-        <div style="min-width:0;flex:1">
-          <div style="display:flex;align-items:center"><div class="tmpl-item-title">${escHtml(t.title)}</div>${vis?'':'<span class="hidden-badge">非表示</span>'}</div>
-          <div class="tmpl-item-preview">${escHtml(t.prompt.slice(0,45).replace(/\n/g,' '))}...</div>
-          <div class="vis-row" onclick="toggleVisible('${t.id}')"><div class="vis-switch ${vis?'on':''}"></div><span class="vis-label">${vis?'ユーザーに表示中':'ユーザーに非表示'}</span></div>
+      // カテゴリ内でのグローバルインデックスを計算
+      const globalIdx=templates.findIndex(x=>x.id===t.id);
+      html+=`<div class="tmpl-item" draggable="true"
+        data-id="${t.id}" data-cat="${encodeURIComponent(cat)}" data-gidx="${globalIdx}"
+        style="${vis?'':'opacity:0.6'}"
+        ondragstart="onTmplDragStart(event)"
+        ondragover="onTmplDragOver(event)"
+        ondrop="onTmplDrop(event)"
+        ondragend="onTmplDragEnd(event)">
+        <div style="display:flex;align-items:flex-start;min-width:0;flex:1">
+          <span class="tmpl-drag-grip">⠿</span>
+          <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:center"><div class="tmpl-item-title">${escHtml(t.title)}</div>${vis?'':'<span class="hidden-badge">非表示</span>'}</div>
+            <div class="tmpl-item-preview">${escHtml(t.prompt.slice(0,45).replace(/\n/g,' '))}...</div>
+            <div class="vis-row" onclick="toggleVisible('${t.id}')"><div class="vis-switch ${vis?'on':''}"></div><span class="vis-label">${vis?'ユーザーに表示中':'ユーザーに非表示'}</span></div>
+          </div>
         </div>
         <div class="tmpl-item-btns"><button class="btn btn-success btn-sm" onclick="openEdit('${t.id}')">編集</button><button class="btn btn-danger btn-sm" onclick="deleteItem('${t.id}')">削除</button></div>
       </div>`;
@@ -1109,6 +1122,47 @@ function renderAdminList(){
   });
   div.innerHTML=html;
 }
+// テンプレート ドラッグ＆ドロップ
+let tmplDragSrcId = null;
+let tmplDragSrcCat = null;
+
+function onTmplDragStart(e) {
+  tmplDragSrcId  = e.currentTarget.dataset.id;
+  tmplDragSrcCat = decodeURIComponent(e.currentTarget.dataset.cat);
+  e.currentTarget.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onTmplDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.borderColor = '#1D6FCA';
+}
+function onTmplDrop(e) {
+  e.preventDefault();
+  const destId  = e.currentTarget.dataset.id;
+  const destCat = decodeURIComponent(e.currentTarget.dataset.cat);
+  if (!tmplDragSrcId || tmplDragSrcId === destId) return;
+  // 同カテゴリ内のみ並び替え
+  if (tmplDragSrcCat !== destCat) {
+    showToast('カテゴリをまたいだ並び替えはできません', false);
+    return;
+  }
+  // templatesの並び替え
+  const srcIdx  = templates.findIndex(t => t.id === tmplDragSrcId);
+  const destIdx = templates.findIndex(t => t.id === destId);
+  if (srcIdx < 0 || destIdx < 0) return;
+  const moved = templates.splice(srcIdx, 1)[0];
+  templates.splice(destIdx, 0, moved);
+  renderAdminList();
+  syncToSheets();
+  showToast('テンプレートの順番を変更しました');
+}
+function onTmplDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  document.querySelectorAll('.tmpl-item').forEach(el => el.style.borderColor = '');
+  tmplDragSrcId = null; tmplDragSrcCat = null;
+}
+
 function toggleVisible(id){const idx=templates.findIndex(t=>t.id===id);if(idx<0)return;templates[idx].visible=templates[idx].visible===false?true:false;renderAdminList();syncToSheets();showToast(templates[idx].visible!==false?'表示に変更しました':'非表示に変更しました');}
 function buildEditCatSel(){const sel=$('edit-cat-sel');sel.innerHTML='';getCategories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});}
 function openEdit(id=null){
