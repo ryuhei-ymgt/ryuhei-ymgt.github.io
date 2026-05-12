@@ -250,7 +250,6 @@ textarea{resize:vertical;line-height:1.6}
       <div class="setting-title">データ同期</div>
       <div class="setting-sub">スプレッドシートとのデータを手動で同期できます。</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-blue" id="reload-tmpl-btn">🔄 テンプレートを再読み込み</button>
         <button class="btn btn-orange" id="reload-pw-btn">🔑 パスワードを同期</button>
       </div>
       <div class="sync-result" id="reload-result"></div>
@@ -524,20 +523,6 @@ function renderSettingPane() {
 }
 
 // テンプレート再読み込み
-$('reload-tmpl-btn').addEventListener('click', async () => {
-  const btn=$('reload-tmpl-btn'), result=$('reload-result');
-  setLoading(btn,'読み込み中...',true); result.style.display='none';
-  try {
-    const data = await sheetsGet('templates!A2:E1000');
-    const rows = (data.values||[]).filter(r=>r[0]&&r[2]&&r[3]);
-    if (!rows.length) { setSyncResult('reload-result','✗ テンプレートが0件です','ng'); return; }
-    templates = rows.map(r=>({id:r[0].trim(),category:(r[1]||'未分類').trim(),title:r[2].trim(),prompt:r[3].trim(),visible:r[4]?.trim()==='false'?false:true}));
-    syncCategoryOrder();
-    setSyncResult('reload-result',`✓ ${templates.length}件のテンプレートを読み込みました`,'ok');
-    renderAdminList(); showToast(`${templates.length}件を読み込みました`);
-  } catch(e) { setSyncResult('reload-result','✗ 読み込み失敗: '+e.message,'ng'); showToast('読み込みに失敗しました',false); }
-  finally { setLoading(btn,'🔄 テンプレートを再読み込み',false); }
-});
 
 // PW再同期
 $('reload-pw-btn').addEventListener('click', async () => {
