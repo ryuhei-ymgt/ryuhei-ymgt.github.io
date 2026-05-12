@@ -433,7 +433,7 @@ function updateWriteAllArea() { $('write-all-area').style.display = oauthToken ?
 function showScreen(name) {
   ['loading','login','user','admin'].forEach(s => $('screen-'+s).style.display = s===name ? 'block' : 'none');
   if (name==='user') initUser();
-  if (name==='admin') { switchTab('tmpl'); renderAdminList(); }
+  if (name==='admin') { switchTab('tmpl'); renderAdminList(); updateWriteAllArea(); }
 }
 
 function switchTab(tab) {
