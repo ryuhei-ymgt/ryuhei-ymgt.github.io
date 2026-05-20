@@ -590,13 +590,346 @@
   }
 
   .btn-modal-cancel:hover { background: #f4f2ed; }
+
+  /* ── STEP indicator ── */
+  .step-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 2rem;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #b4b2a9;
+  }
+
+  .step-item.active { color: #534AB7; }
+  .step-item.done   { color: #1D9E75; }
+
+  .step-circle {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid #D3D1C7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #b4b2a9;
+    background: #fff;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .step-item.active .step-circle {
+    border-color: #534AB7; color: #534AB7; background: #EEEDFE;
+  }
+
+  .step-item.done .step-circle {
+    border-color: #1D9E75; background: #1D9E75; color: #fff;
+  }
+
+  .step-connector {
+    flex: 1; height: 2px; background: #D3D1C7; margin: 0 8px; min-width: 20px;
+  }
+
+  /* ── 元帳ヘッダーパネル ── */
+  .ledger-panel {
+    background: #fff;
+    border: 0.5px solid #D3D1C7;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 2rem;
+    display: none;
+  }
+
+  .ledger-panel.visible { display: block; }
+
+  .ledger-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .ledger-panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a18;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ledger-panel-meta {
+    font-size: 11px;
+    color: #888780;
+  }
+
+  .ledger-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .ledger-card {
+    background: #f4f2ed;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  .ledger-card .lc-label {
+    font-size: 11px;
+    color: #888780;
+    margin-bottom: 4px;
+  }
+
+  .ledger-card .lc-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a18;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ledger-card .lc-sub {
+    font-size: 10px;
+    color: #b4b2a9;
+    margin-top: 2px;
+  }
+
+  .ledger-card.highlight {
+    background: #EEEDFE;
+  }
+
+  .ledger-card.highlight .lc-label { color: #534AB7; }
+  .ledger-card.highlight .lc-value { color: #3C3489; }
+
+  /* ── 差異パネル（集計結果下部） ── */
+  .diff-panel {
+    background: #fff;
+    border: 0.5px solid #D3D1C7;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-top: 1.5rem;
+    display: none;
+  }
+
+  .diff-panel.visible { display: block; }
+
+  .diff-panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a18;
+    margin-bottom: 14px;
+  }
+
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+
+  .diff-card {
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: #f4f2ed;
+  }
+
+  .diff-card .dc-label  { font-size: 11px; color: #888780; margin-bottom: 6px; }
+  .diff-card .dc-row    { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; color: #5F5E5A; }
+  .diff-card .dc-row .dc-key { color: #888780; }
+  .diff-card .dc-divider { height: 1px; background: #D3D1C7; margin: 6px 0; }
+  .diff-card .dc-diff   { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; }
+
+  .diff-ok   { color: #1D9E75; }
+  .diff-warn { color: #E0700A; }
+
+  /* ── 元帳アップロードゾーン ── */
+  .upload-zone.ledger-zone {
+    border-color: #b4b2a9;
+    background: #faf9f6;
+  }
+
+  .upload-zone.ledger-zone:hover,
+  .upload-zone.ledger-zone.drag-over {
+    border-color: #1D9E75;
+    background: #E1F5EE;
+  }
+
+  .upload-zone.ledger-zone .upload-icon {
+    background: #D3D1C7;
+  }
+
+  .upload-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #888780;
+    margin-bottom: 8px;
+  }
+
+  /* 自家用処理ボタン */
+  .btn-jikayo-apply {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    margin-top: 1.2rem;
+    background: #fff;
+    border: 1.5px solid #C0392B;
+    color: #C0392B;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-jikayo-apply:hover {
+    background: #FCEBEB;
+  }
+
+  .btn-jikayo-apply.applied {
+    border-color: #1D9E75;
+    color: #1D9E75;
+  }
+
+  .btn-jikayo-apply.applied:hover {
+    background: #E1F5EE;
+  }
+
+  /* 調整後テーブルセクション */
+  .adjusted-section {
+    display: none;
+    margin-top: 1.5rem;
+  }
+
+  .adjusted-section.visible { display: block; }
+
+  .adjusted-note {
+    font-size: 12px;
+    color: #888780;
+    background: #FCEBEB;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .result-table .adjusted-row td {
+    background: #faf9f6;
+    color: #888780;
+    font-size: 12px;
+  }
+
+  .result-table .adjusted-total-row {
+    background: #E1F5EE;
+    font-weight: 700;
+    border-top: 2px solid #1D9E75;
+  }
+
+  .result-table .adjusted-total-row td {
+    color: #0F6E56;
+  }
+
+  /* 消費税差異メッセージ */
+  .tax-diff-msg {
+    display: none;
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: #FAEEDA;
+    border: 1px solid #F0C070;
+    border-radius: 9px;
+    font-size: 13px;
+    color: #633806;
+    line-height: 1.7;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .tax-diff-msg.visible {
+    display: flex;
+  }
+
+  .tax-diff-msg svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* PDFダウンロードボタン */
+  .btn-pdf {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    margin-top: 1.5rem;
+    background: #1a1a18;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .btn-pdf:hover { background: #3a3a38; }
+
+  /* ============================================================
+     印刷（PDF出力）用スタイル
+     @media print でツールUIを隠し、結果のみ印刷
+  ============================================================ */
+  @media print {
+    body { background: #fff; padding: 0; }
+
+    header, .step-bar, .upload-label,
+    .upload-zone, .cat-manager-btn,
+    #productSection, .btn-aggregate,
+    .btn-export, .btn-jikayo-apply,
+    .btn-pdf, #catModal,
+    .modal-overlay { display: none !important; }
+
+    .result-section { display: block !important; }
+    .adjusted-section { display: block !important; }
+    .diff-panel { display: block !important; }
+    .ledger-panel { display: block !important; }
+    .tax-diff-msg { display: flex !important; }
+
+    .table-wrap {
+      border: 1px solid #ccc;
+      border-radius: 0;
+      overflow: visible;
+    }
+
+    table { font-size: 11px; }
+    th, td { padding: 6px 8px; }
+
+    .summary-cards { display: none; }
+
+    .print-header {
+      display: block !important;
+      margin-bottom: 16px;
+    }
+
+    .page-break { page-break-before: always; }
+  }
+
+  /* 通常時は非表示 */
+  .print-header { display: none; }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Sales Aggregation Tool</h1>
-  <p>XLS / CSV をアップロードして、カテゴリを修正・集計できます</p>
+  <p>① 売掛金元帳を読み込み → ② 売上データを読み込んでカテゴリ集計・照合</p>
 </header>
 
 
@@ -624,6 +957,50 @@
   </div>
 </div>
 
+
+<!-- Step bar -->
+<div class="step-bar">
+  <div class="step-item active" id="step1Item">
+    <div class="step-circle" id="step1Circle">1</div>
+    <span>売掛金元帳の読み込み</span>
+  </div>
+  <div class="step-connector"></div>
+  <div class="step-item" id="step2Item">
+    <div class="step-circle" id="step2Circle">2</div>
+    <span>売上データの読み込み・集計</span>
+  </div>
+</div>
+
+<!-- Ledger upload zone -->
+<div class="upload-label">STEP 1 ── 売掛金元帳ファイル</div>
+<div class="upload-zone ledger-zone" id="ledgerUploadZone">
+  <div class="upload-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  </div>
+  <p><span>元帳ファイルを選択</span>またはここにドロップ</p>
+  <p style="font-size:12px; margin-top:6px;">XLS / XLSX / CSV（得意先元帳合計）に対応</p>
+  <input type="file" id="ledgerFileInput" accept=".xls,.xlsx,.csv">
+</div>
+
+<!-- Ledger summary panel -->
+<div class="ledger-panel" id="ledgerPanel">
+  <div class="ledger-panel-header">
+    <span class="ledger-panel-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      売掛金元帳　読み込み完了
+    </span>
+    <span class="ledger-panel-meta" id="ledgerPanelMeta"></span>
+  </div>
+  <div class="ledger-cards" id="ledgerCards"></div>
+</div>
+
+<!-- Step 2 label -->
+<div class="upload-label" style="margin-top:0;">STEP 2 ── 売上データファイル</div>
 <!-- Upload Zone -->
 <div class="upload-zone" id="uploadZone">
   <div class="upload-icon">
@@ -633,7 +1010,7 @@
       <line x1="12" y1="3" x2="12" y2="15"/>
     </svg>
   </div>
-  <p><span>ファイルを選択</span>またはここにドロップ</p>
+  <p><span>売上ファイルを選択</span>またはここにドロップ</p>
   <p style="font-size:12px; margin-top:6px;">XLS / XLSX / CSV に対応</p>
   <input type="file" id="fileInput" accept=".xls,.xlsx,.csv">
 </div>
@@ -699,6 +1076,62 @@
       <tbody id="resultBody"></tbody>
     </table>
   </div>
+
+  <!-- 自家用処理ボタン -->
+  <button class="btn-jikayo-apply hidden" id="jikayoApplyBtn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    自家用処理分を織り込む
+  </button>
+
+  <!-- 自家用控除後テーブル -->
+  <div class="adjusted-section" id="adjustedSection">
+    <div class="section-header" style="margin-top:1rem;">
+      <span class="section-title">集計結果（自家用控除後）</span>
+      <button class="btn-export" id="exportAdjustedBtn" style="flex:none; padding:6px 14px; font-size:12px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        CSV出力
+      </button>
+    </div>
+    <div class="adjusted-note">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="adjustedNoteText"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>カテゴリ</th>
+            <th>税区分</th>
+            <th class="amount">売上金額合計</th>
+            <th class="amount">自家用控除額</th>
+            <th class="amount">控除後金額</th>
+            <th class="amount">消費税（参考）</th>
+          </tr>
+        </thead>
+        <tbody id="adjustedBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Diff panel -->
+  <div class="diff-panel" id="diffPanel">
+    <div class="diff-panel-title">元帳との照合</div>
+    <div class="diff-grid" id="diffGrid"></div>
+    <!-- 消費税差異メッセージ -->
+    <div class="tax-diff-msg" id="taxDiffMsg">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span id="taxDiffMsgText"></span>
+    </div>
+  </div>
+
+  <!-- 印刷用ヘッダー -->
+  <div class="print-header" id="printHeader"></div>
+
+  <!-- PDFダウンロードボタン -->
+  <button class="btn-pdf hidden" id="pdfBtn" onclick="window.print()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    最終結果をPDFで保存
+  </button>
 </div>
 
 <!-- SheetJS for XLS/XLSX parsing -->
@@ -717,11 +1150,23 @@
   // ============================================================
   let rows = []; // { 商品名称, 酒別名称, 取引名称, 消費税率名称, 当年金額, initialCategory, currentCategory, isFixed }
 
+  // 元帳データ
+  let ledgerData = null; // { uriage, henpin, netUriage, zei, period, filename }
+
   // ============================================================
   // UI Elements
   // ============================================================
+  // 元帳UI
+  const ledgerUploadZone = document.getElementById('ledgerUploadZone');
+  const ledgerFileInput  = document.getElementById('ledgerFileInput');
+  const ledgerPanel      = document.getElementById('ledgerPanel');
+  const ledgerCards      = document.getElementById('ledgerCards');
+  const ledgerPanelMeta  = document.getElementById('ledgerPanelMeta');
+  const diffPanel        = document.getElementById('diffPanel');
+  const diffGrid         = document.getElementById('diffGrid');
+
   const uploadZone = document.getElementById('uploadZone');
-  const fileInput = document.getElementById('fileInput');
+  const fileInput  = document.getElementById('fileInput');
   const productSection = document.getElementById('productSection');
   const productBody = document.getElementById('productBody');
   const rowCount = document.getElementById('rowCount');
@@ -729,6 +1174,163 @@
   const resultSection = document.getElementById('resultSection');
   const resultBody = document.getElementById('resultBody');
   const summaryCards = document.getElementById('summaryCards');
+
+  // ============================================================
+  // 元帳ファイルアップロード処理
+  // ============================================================
+  ledgerUploadZone.addEventListener('click', () => ledgerFileInput.click());
+
+  ledgerUploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    ledgerUploadZone.classList.add('drag-over');
+  });
+
+  ledgerUploadZone.addEventListener('dragleave', () => {
+    ledgerUploadZone.classList.remove('drag-over');
+  });
+
+  ledgerUploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    ledgerUploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleLedgerFile(file);
+  });
+
+  ledgerFileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleLedgerFile(e.target.files[0]);
+  });
+
+  function handleLedgerFile(file) {
+    const reader = new FileReader();
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext === 'csv' || ext === 'xls' || ext === 'xlsx') {
+      // TSVやCSVとして読み込み（このファイルはTSV/CP932相当）
+      reader.onload = (e) => {
+        // バイナリで読んでテキストとして処理
+        const ab = e.target.result;
+        const bytes = new Uint8Array(ab);
+        // CP932デコード（TextDecoderで対応）
+        let text;
+        try {
+          text = new TextDecoder('shift-jis').decode(bytes);
+        } catch {
+          text = new TextDecoder('utf-8').decode(bytes);
+        }
+        parseLedger(text, file.name);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+  // 数値文字列をパース（カンマ・クォート・マイナス対応）
+  function parseNum(s) {
+    if (s === undefined || s === null) return 0;
+    const cleaned = String(s).replace(/"/g, '').replace(/,/g, '').trim();
+    const n = parseInt(cleaned, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function parseLedger(text, filename) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+
+    // 対象期間を行2から取得
+    let period = '';
+    if (lines.length > 1) {
+      period = lines[1].replace(/"/g, '').split('\t')[0].trim();
+    }
+
+    // ★総合計★行を探す
+    let totalRow = null;
+    for (const line of lines) {
+      if (line.includes('★総合計★') || line.includes('総合計')) {
+        totalRow = line.split('\t');
+        break;
+      }
+    }
+
+    if (!totalRow) {
+      alert('★総合計★行が見つかりませんでした。ファイルを確認してください。');
+      return;
+    }
+
+    // ★総合計★行の列マッピング（確認済み）:
+    // [0]=★総合計★, [1]=前月末残高, [2]=当月売上額, [3]=当月分入金,
+    // [4]=返品, [5]=値引相殺, [6]=回収, [7]=消費税, [8]=差引額, [9]=当月残高
+    const uriage = parseNum(totalRow[2]);  // 当月売上額
+    const henpin = parseNum(totalRow[4]);  // 返品
+    const zei    = parseNum(totalRow[7]);  // 消費税
+
+    // 請求先名称に「自家」を含む明細行の当月売上額を合算
+    // 明細行: [0]=コード, [1]=名称, [2]=前月末残高, [3]=当月売上額, ...
+    let jikayo = 0;
+    for (const line of lines) {
+      const cols = line.split('\t');
+      const name = cols[1] ? cols[1].replace(/"/g, '').trim() : '';
+      if (name.replace(/\s/g, '').includes('自家')) {
+        jikayo += parseNum(cols[3]); // 明細行の当月売上額はcol[3]
+      }
+    }
+
+    // 純売上 = 当月売上額 + 返品 - 自家用処理金額
+    const netUriage = uriage + henpin - jikayo;
+
+    ledgerData = { uriage, henpin, jikayo, netUriage, zei, period, filename };
+    renderLedgerPanel();
+    updateStepBar(1);
+  }
+
+  function renderLedgerPanel() {
+    if (!ledgerData) return;
+    const { uriage, henpin, jikayo, netUriage, zei, period, filename } = ledgerData;
+
+    ledgerPanelMeta.textContent = period ? period : filename;
+
+    const henpinDisplay = henpin < 0
+      ? '▲¥' + Math.abs(henpin).toLocaleString()
+      : henpin > 0 ? '¥' + henpin.toLocaleString() : '—';
+    const henpinColor = henpin < 0 ? '#C0392B' : '#1a1a18';
+
+    ledgerCards.innerHTML = `
+      <div class="ledger-card">
+        <div class="lc-label">当月売上額</div>
+        <div class="lc-value">¥${uriage.toLocaleString()}</div>
+        <div class="lc-sub">税抜</div>
+      </div>
+      <div class="ledger-card">
+        <div class="lc-label">返品</div>
+        <div class="lc-value" style="color:${henpinColor};">${henpinDisplay}</div>
+        <div class="lc-sub">税抜</div>
+      </div>
+      <div class="ledger-card">
+        <div class="lc-label">自家用処理金額</div>
+        <div class="lc-value" style="color:#C0392B;">
+          ${jikayo > 0 ? '▲¥' + jikayo.toLocaleString() : '—'}
+        </div>
+        <div class="lc-sub">売上から除外</div>
+      </div>
+      <div class="ledger-card highlight">
+        <div class="lc-label">純売上合計（売上＋返品－自家用）</div>
+        <div class="lc-value">¥${netUriage.toLocaleString()}</div>
+        <div class="lc-sub">税抜</div>
+      </div>
+      <div class="ledger-card highlight">
+        <div class="lc-label">消費税合計</div>
+        <div class="lc-value">¥${zei.toLocaleString()}</div>
+        <div class="lc-sub">元帳計上額</div>
+      </div>
+    `;
+
+    ledgerPanel.classList.add('visible');
+  }
+
+  function updateStepBar(completedStep) {
+    if (completedStep >= 1) {
+      document.getElementById('step1Item').className = 'step-item done';
+      document.getElementById('step1Circle').textContent = '✓';
+      document.getElementById('step2Item').className = 'step-item active';
+    }
+  }
 
   // ============================================================
   // ファイルアップロード処理
@@ -1113,7 +1715,241 @@
     // 集計データをグローバルに保持（CSV出力用）
     window._lastResultData = data;
     window._lastGrandTotal = grandTotal;
+
+    // 自家用処理ボタンを表示（元帳読み込み済みかつ自家用金額>0のとき）
+    const jikayoBtn = document.getElementById('jikayoApplyBtn');
+    const adjustedSection = document.getElementById('adjustedSection');
+    adjustedSection.classList.remove('visible');
+    jikayoBtn.className = 'btn-jikayo-apply hidden';
+    if (ledgerData && ledgerData.jikayo > 0) {
+      jikayoBtn.classList.remove('hidden');
+      jikayoBtn.classList.add('btn-jikayo-apply');
+      jikayoBtn.textContent = '';
+      jikayoBtn.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        自家用処理分を織り込む（▲¥${ledgerData.jikayo.toLocaleString()} を控除）
+      `;
+    }
+
+    // 元帳との照合パネルを描画
+    renderDiffPanel(grandTotal, data);
   }
+
+  // ============================================================
+  // 元帳との照合パネル
+  // ============================================================
+  function renderDiffPanel(grandTotal, data) {
+    // 売上集計側の消費税合計
+    const calcTax = data.reduce((s, r) => s + Math.round(r.total * r.taxRateNum), 0);
+
+    diffGrid.innerHTML = '';
+
+    const taxDiffMsg  = document.getElementById('taxDiffMsg');
+    const taxDiffText = document.getElementById('taxDiffMsgText');
+    taxDiffMsg.classList.remove('visible');
+
+    if (!ledgerData) {
+      diffPanel.classList.remove('visible');
+      return;
+    }
+
+    const { netUriage, zei } = ledgerData;
+
+    // 売上照合
+    const salesDiff = grandTotal - netUriage;
+    const salesOk   = salesDiff === 0;
+    const salesCard = document.createElement('div');
+    salesCard.className = 'diff-card';
+    salesCard.innerHTML = `
+      <div class="dc-label">売上金額（税抜）の照合</div>
+      <div class="dc-row"><span class="dc-key">元帳　純売上</span><span>¥${netUriage.toLocaleString()}</span></div>
+      <div class="dc-row"><span class="dc-key">集計ツール合計</span><span>¥${grandTotal.toLocaleString()}</span></div>
+      <div class="dc-divider"></div>
+      <div class="dc-diff">
+        <span>差異</span>
+        <span class="${salesOk ? 'diff-ok' : 'diff-warn'}">
+          ${salesOk ? '✓ 一致' : (salesDiff > 0 ? '+' : '') + salesDiff.toLocaleString() + ' 円'}
+        </span>
+      </div>
+    `;
+
+    // 消費税照合
+    const taxDiff = calcTax - zei;
+    const taxOk   = taxDiff === 0;
+    const taxCard = document.createElement('div');
+    taxCard.className = 'diff-card';
+    taxCard.innerHTML = `
+      <div class="dc-label">消費税の照合</div>
+      <div class="dc-row"><span class="dc-key">元帳　消費税</span><span>¥${zei.toLocaleString()}</span></div>
+      <div class="dc-row"><span class="dc-key">集計ツール算出</span><span>¥${calcTax.toLocaleString()}</span></div>
+      <div class="dc-divider"></div>
+      <div class="dc-diff">
+        <span>差異</span>
+        <span class="${taxOk ? 'diff-ok' : 'diff-warn'}">
+          ${taxOk ? '✓ 一致' : (taxDiff > 0 ? '+' : '') + taxDiff.toLocaleString() + ' 円'}
+        </span>
+      </div>
+    `;
+
+    diffGrid.appendChild(salesCard);
+    diffGrid.appendChild(taxCard);
+    diffPanel.classList.add('visible');
+
+    // 消費税差異メッセージ
+    if (!taxOk) {
+      const absDiff = Math.abs(taxDiff);
+      const direction = taxDiff > 0 ? '減額' : '増額';
+      taxDiffText.textContent =
+        `⚠ 消費税に差異があります。清酒カテゴリの消費税を ${absDiff.toLocaleString()} 円${direction}調整してください。` +
+        `（集計算出: ¥${calcTax.toLocaleString()} ／ 元帳計上: ¥${zei.toLocaleString()}）`;
+      taxDiffMsg.classList.add('visible');
+    }
+
+    // PDFボタン表示
+    const pdfBtn = document.getElementById('pdfBtn');
+    pdfBtn.classList.remove('hidden');
+
+    // 印刷用ヘッダーを生成
+    const printHeader = document.getElementById('printHeader');
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+    const period = ledgerData ? ledgerData.period : '';
+    printHeader.innerHTML = `
+      <div style="font-size:18px; font-weight:700; margin-bottom:4px;">売上概算集計レポート</div>
+      <div style="font-size:12px; color:#888; margin-bottom:12px;">対象期間：${period}　／　出力日：${dateStr}</div>
+      <hr style="border:none; border-top:1px solid #ccc; margin-bottom:16px;">
+    `;
+  }
+
+
+  // ============================================================
+  // 自家用処理分の織り込み
+  // ============================================================
+  document.getElementById('jikayoApplyBtn').addEventListener('click', applyJikayoDeduction);
+
+  function applyJikayoDeduction() {
+    const data = window._lastResultData;
+    if (!data || !ledgerData) return;
+
+    const jikayoTotal = ledgerData.jikayo; // 元帳から取得した自家用合計金額
+
+    // 売上ツール側の自家用内訳（清酒・リキュールのjikayoTotal）を利用して
+    // カテゴリ別に自家用控除額を按分する
+    // 売上ツールの自家用合計（清酒・リキュールのjikayoTotalの合算）
+    const toolJikayoTotal = data.reduce((s, r) => s + r.jikayoTotal, 0);
+
+    const adjustedBody = document.getElementById('adjustedBody');
+    const adjustedSection = document.getElementById('adjustedSection');
+    const adjustedNoteText = document.getElementById('adjustedNoteText');
+
+    adjustedBody.innerHTML = '';
+
+    let adjGrandTotal = 0;
+    let adjTaxTotal   = 0;
+    const adjustedRows = [];
+
+    data.forEach(row => {
+      // このカテゴリの自家用控除額
+      // 売上ツール側にjikayoTotalがあればその金額を使う
+      // なければ按分（toolJikayoTotal=0の場合は均等分配しない）
+      let deduction = 0;
+      if (row.jikayoTotal > 0) {
+        // 按分：元帳自家用合計 × (このカテゴリの自家用 / 売上ツール自家用合計)
+        deduction = toolJikayoTotal > 0
+          ? Math.round(jikayoTotal * (row.jikayoTotal / toolJikayoTotal))
+          : 0;
+      }
+
+      const adjTotal  = row.total - deduction;
+      const adjTaxAmt = row.taxRateNum > 0 ? Math.round(adjTotal * row.taxRateNum) : 0;
+
+      adjGrandTotal += adjTotal;
+      adjTaxTotal   += adjTaxAmt;
+
+      adjustedRows.push({ ...row, deduction, adjTotal, adjTaxAmt });
+    });
+
+    // 按分の端数調整：合計が元帳純売上と一致するよう最終行で調整
+    // （ここでは表示のみ、照合パネルで差異確認）
+
+    adjustedRows.forEach(row => {
+      const tr = document.createElement('tr');
+      const pillCls = row.tax === '8%（軽減）' ? 'pill pill-8'
+                    : row.tax === '対象外'     ? 'pill pill-exempt'
+                    : 'pill pill-10';
+      const adjTaxStr = row.taxRateNum > 0 ? `¥${row.adjTaxAmt.toLocaleString()}` : '—';
+      const deductStr = row.deduction > 0 ? `▲¥${row.deduction.toLocaleString()}` : '—';
+
+      tr.innerHTML = `
+        <td>${row.category}</td>
+        <td><span class="${pillCls}">${row.tax}</span></td>
+        <td class="amount">¥${row.total.toLocaleString()}</td>
+        <td class="amount" style="color:#C0392B; font-size:12px;">${deductStr}</td>
+        <td class="amount" style="font-weight:600;">¥${row.adjTotal.toLocaleString()}</td>
+        <td class="amount" style="color:#888780; font-size:12px;">${adjTaxStr}</td>
+      `;
+      adjustedBody.appendChild(tr);
+    });
+
+    // 合計行
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'adjusted-total-row';
+    const totalDeduction = adjustedRows.reduce((s, r) => s + r.deduction, 0);
+    totalTr.innerHTML = `
+      <td colspan="2">合計（控除後）</td>
+      <td class="amount">¥${window._lastGrandTotal.toLocaleString()}</td>
+      <td class="amount">▲¥${totalDeduction.toLocaleString()}</td>
+      <td class="amount">¥${adjGrandTotal.toLocaleString()}</td>
+      <td class="amount">¥${adjTaxTotal.toLocaleString()}</td>
+    `;
+    adjustedBody.appendChild(totalTr);
+
+    adjustedNoteText.textContent =
+      `自家用処理金額 ▲¥${jikayoTotal.toLocaleString()} を清酒・リキュールの自家用内訳に応じて按分控除しています。`;
+
+    adjustedSection.classList.add('visible');
+    adjustedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // ボタンを「適用済み」スタイルに
+    const btn = document.getElementById('jikayoApplyBtn');
+    btn.className = 'btn-jikayo-apply applied';
+    btn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      自家用処理分を織り込み済み
+    `;
+
+    // グローバル保持（CSV用）
+    window._lastAdjustedRows = adjustedRows;
+    window._lastAdjGrandTotal = adjGrandTotal;
+    window._lastAdjTaxTotal   = adjTaxTotal;
+
+    // 照合パネルを控除後の数値で再描画
+    renderDiffPanel(adjGrandTotal, adjustedRows.map(r => ({ ...r, total: r.adjTotal })));
+  }
+
+  // 調整後CSV出力
+  document.getElementById('exportAdjustedBtn').addEventListener('click', () => {
+    const rows = window._lastAdjustedRows;
+    if (!rows) return;
+    const headers = ['カテゴリ', '税区分', '売上金額合計', '自家用控除額', '控除後金額', '消費税（参考）'];
+    const dataRows = rows.map(r => {
+      const deductStr = r.deduction > 0 ? -r.deduction : '';
+      const taxStr    = r.taxRateNum > 0 ? r.adjTaxAmt : '';
+      return [r.category, r.tax, r.total, deductStr, r.adjTotal, taxStr];
+    });
+    const totalDeduction = rows.reduce((s, r) => s + r.deduction, 0);
+    dataRows.push(['合計（控除後）', '', window._lastGrandTotal, -totalDeduction, window._lastAdjGrandTotal, window._lastAdjTaxTotal]);
+    if (ledgerData) {
+      dataRows.push([]);
+      dataRows.push(['【元帳照合】', '', '', '', '', '']);
+      dataRows.push(['元帳　純売上', '', '', '', ledgerData.netUriage, '']);
+      dataRows.push(['控除後売上合計', '', '', '', window._lastAdjGrandTotal, '']);
+      const diff = window._lastAdjGrandTotal - ledgerData.netUriage;
+      dataRows.push(['差異', '', '', '', diff, '']);
+    }
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    downloadCSV(`sales_adjusted_${today}.csv`, headers, dataRows);
+  });
 
   // ============================================================
   // CSV出力ユーティリティ
@@ -1168,6 +2004,20 @@
     // 合計行
     const totalTaxAmt = data.reduce((sum, r) => sum + Math.round(r.total * r.taxRateNum), 0);
     dataRows.push(['合計', '', window._lastGrandTotal, '', totalTaxAmt]);
+    // 元帳照合行
+    if (ledgerData) {
+      dataRows.push([]);
+      dataRows.push(['【元帳照合】', '', '', '', '']);
+      dataRows.push(['元帳　純売上（売上＋返品－自家用）', '', ledgerData.netUriage, '', '']);
+      dataRows.push(['  うち当月売上額', '', ledgerData.uriage, '', '']);
+      dataRows.push(['  うち返品', '', ledgerData.henpin, '', '']);
+      dataRows.push(['  うち自家用処理金額', '', -ledgerData.jikayo, '', '']);
+      dataRows.push(['元帳　消費税', '', '', '', ledgerData.zei]);
+      const salesDiff = window._lastGrandTotal - ledgerData.netUriage;
+      const taxDiff   = totalTaxAmt - ledgerData.zei;
+      dataRows.push(['売上差異', '', salesDiff, '', '']);
+      dataRows.push(['消費税差異', '', '', '', taxDiff]);
+    }
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     downloadCSV(`sales_summary_${today}.csv`, headers, dataRows);
   });
