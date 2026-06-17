@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>じゃらん宿泊費 仕訳ツール｜楯の川酒造</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:      #f4f3ef;
+  --bg2:     #eceae4;
+  --surface: #ffffff;
+  --border:  #d8d5cc;
+  --border2: #e8e5de;
+  --text:    #1c1a17;
+  --text2:   #6b6760;
+  --text3:   #9c9890;
+  --accent:  #1a3a5c;
+  --accent2: #2d5a8e;
+  --ok:      #2d7a4f;
+  --ok-bg:   #e8f5ee;
+  --warn:    #b45309;
+  --warn-bg: #fef3e2;
+  --gold:    #c8a84b;
+  --mono:    'DM Mono', monospace;
+  --sans:    'Noto Sans JP', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+/* ── Header ── */
+.header { background: var(--accent); color: #fff; padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; border-bottom: 3px solid var(--gold); }
+.header-logo  { font-size: 10px; letter-spacing: .15em; opacity: .7; font-family: var(--mono); }
+.header-title { font-size: 16px; font-weight: 500; letter-spacing: .05em; }
+.header-badge { margin-left: auto; font-size: 11px; font-family: var(--mono); background: rgba(255,255,255,.12); padding: 3px 10px; border-radius: 20px; opacity: .8; }
+
+/* ── Layout ── */
+.container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+/* ── Upload ── */
+#upload-area { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+.upload-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 18px; padding: 2.5rem 2.5rem; max-width: 520px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,.07); }
+.upload-card-title { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 1.75rem; display: flex; align-items: center; gap: 8px; letter-spacing: .03em; }
+
+/* 請求金額入力ブロック */
+.amount-block { background: #f0f5fb; border: 1.5px solid #b8cfe8; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+.amount-label { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; margin-bottom: .5rem; }
+.amount-desc  { font-size: 12px; color: var(--text2); margin-bottom: .75rem; line-height: 1.6; }
+.amount-input-row { display: flex; align-items: center; gap: 10px; }
+.amount-prefix { font-size: 20px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+#invoice-amount { font-size: 22px; font-family: var(--mono); font-weight: 700; color: var(--accent); border: 2px solid #b8cfe8; border-radius: 8px; padding: 8px 14px; width: 200px; text-align: right; outline: none; background: #fff; transition: border-color .2s; }
+#invoice-amount:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(45,90,142,.12); }
+.amount-unit { font-size: 13px; color: var(--text2); }
+
+/* ドロップゾーン */
+.drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem 1.5rem; text-align: center; background: var(--bg); transition: border-color .2s, background .2s; }
+.drop-zone.over { border-color: var(--accent2); background: #eef4fb; }
+.drop-icon  { font-size: 36px; margin-bottom: .75rem; opacity: .4; }
+.drop-title { font-size: 16px; font-weight: 500; margin-bottom: .4rem; }
+.drop-hint  { font-size: 12px; color: var(--text2); margin-bottom: 1.25rem; }
+.file-btn   { display: inline-block; padding: 10px 24px; border: 1.5px solid var(--accent); border-radius: 8px; font-size: 14px; cursor: pointer; color: var(--accent); font-weight: 500; }
+
+/* 集計ボタン */
+.agg-start-btn { display: block; width: 100%; margin-top: 1.25rem; padding: 13px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; font-family: var(--sans); cursor: pointer; background: var(--accent); color: #fff; letter-spacing: .04em; transition: background .15s, opacity .15s; }
+.agg-start-btn:hover:not(:disabled) { background: var(--accent2); }
+.agg-start-btn:disabled { opacity: .4; cursor: default; }
+
+/* ファイル選択済み表示 */
+.file-selected { display: none; margin-top: .75rem; font-size: 12px; color: var(--ok); font-weight: 500; }
+
+/* ── Main ── */
+#main-area { display: none; }
+
+/* ── Summary ── */
+.summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 1.25rem; }
+.stat { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: .875rem 1.25rem; }
+.stat-label { font-size: 11px; color: var(--text2); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+
+/* ── Warnings ── */
+.warn-box { display: flex; gap: 8px; align-items: flex-start; background: var(--warn-bg); border: 1px solid #fcd49a; border-radius: 8px; padding: 9px 14px; font-size: 12px; color: var(--warn); margin-bottom: 8px; }
+
+/* ── Tabs ── */
+.tab-bar { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1rem; }
+.tab { padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -2px; letter-spacing: .03em; }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; }
+table.jt { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.jt thead tr { background: var(--accent); }
+table.jt th { text-align: left; font-size: 11px; font-weight: 500; color: rgba(255,255,255,.85); padding: 9px 8px; white-space: nowrap; }
+table.jt td { padding: 6px 8px; border-bottom: 1px solid var(--border2); vertical-align: middle; }
+table.jt tbody tr:last-child td { border-bottom: none; }
+table.jt tbody tr:nth-child(even) td { background: #fafaf8; }
+table.jt tbody tr:hover td { background: #f0f4f8; }
+table.jt select, table.jt input[type=text] { font-size: 12px; font-family: var(--sans); padding: 4px 6px; width: 100%; background: #fff; border: 1px solid var(--border); border-radius: 5px; color: var(--text); outline: none; }
+.amt { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+
+/* ── Badge ── */
+.badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 20px; font-weight: 500; margin-top: 2px; }
+.b-auto { background: #dbeafe; color: #1d4ed8; }
+
+/* 展開セル */
+.expand-cell { position: relative; }
+.expand-cell .cell-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px; color: var(--text2); }
+.expand-cell .expand-btn {
+  display: inline-block; margin-top: 2px; font-size: 10px; color: var(--accent2);
+  cursor: pointer; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px;
+}
+.expand-cell.open .cell-text { white-space: normal; max-width: 240px; overflow: visible; }
+.expand-cell.open .expand-btn::before { content: '▲ 閉じる'; }
+.expand-cell:not(.open) .expand-btn::before { content: '▼ 全文を見る'; }
+.b-warn { background: var(--warn-bg); color: var(--warn); }
+.b-ok   { background: var(--ok-bg);   color: var(--ok); }
+
+/* ── 削除ボタン ── */
+.del-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid #e2b8b8; border-radius: 6px; background: #fdf2f2; color: #c0392b; font-size: 14px; cursor: pointer; transition: background .15s, border-color .15s; }
+.del-btn:hover { background: #fce8e8; border-color: #c0392b; }
+
+/* ── 削除確認モーダル ── */
+#del-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 9000; align-items: center; justify-content: center; }
+#del-modal-overlay.show { display: flex; }
+#del-modal { background: #fff; border-radius: 14px; padding: 2rem 2.25rem; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.25); text-align: center; }
+#del-modal .modal-icon { font-size: 40px; margin-bottom: .75rem; }
+#del-modal .modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: .5rem; }
+#del-modal .modal-body  { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 1.5rem; }
+#del-modal .modal-name  { font-weight: 700; color: var(--text); }
+#del-modal .modal-amount { font-family: var(--mono); font-weight: 700; color: #c0392b; font-size: 15px; }
+#del-modal .modal-btns  { display: flex; gap: 10px; justify-content: center; }
+#del-modal .modal-cancel { padding: 9px 28px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; background: #fff; color: var(--text2); font-family: var(--sans); }
+#del-modal .modal-cancel:hover { background: var(--bg); }
+#del-modal .modal-delete { padding: 9px 28px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; background: #c0392b; color: #fff; font-weight: 600; font-family: var(--sans); }
+#del-modal .modal-delete:hover { background: #a93226; }
+
+/* ── 差額調整バナー ── */
+.adj-box { display: inline-grid; grid-template-columns: 90px 1fr; gap: 3px 12px; align-items: baseline; background: #e8f5ee; border: 1px solid #a8d5ba; border-radius: 8px; padding: 10px 16px; font-size: 12px; color: var(--ok); margin-bottom: 8px; font-weight: 500; line-height: 1.8; }
+.adj-box.warn { background: var(--warn-bg); border-color: #fcd49a; color: var(--warn); }
+.adj-lbl { font-size: 11px; color: #4a9e6e; }
+.adj-val { font-family: var(--mono); }
+.adj-diff-badge { display:inline-block; font-size: 11px; background: #c8ead8; border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.adj-box.warn { background: var(--warn-bg); border-color: #fcd49a; color: var(--warn); }
+
+/* ── Footer ── */
+.foot { display: flex; justify-content: space-between; align-items: center; padding: .875rem 1rem; background: var(--surface); border: 1px solid var(--border2); border-top: none; border-radius: 0 0 10px 10px; margin-top: -1px; }
+.foot-totals { display: flex; gap: 2rem; }
+.foot-item { font-size: 12px; color: var(--text2); }
+.foot-item strong { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--text); margin-left: 6px; }
+.pdf-btn { padding: 9px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; background: var(--accent); color: #fff; border: none; font-family: var(--sans); }
+.reload-btn { margin-top: .75rem; display: inline-block; padding: 6px 16px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--text2); background: var(--surface); font-family: var(--sans); }
+
+/* ── Aggregation ── */
+.agg-wrap { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; overflow: hidden; }
+table.agg { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.agg thead tr { background: var(--accent); }
+table.agg th { text-align: left; font-size: 11px; font-weight: 500; color: rgba(255,255,255,.85); padding: 9px 12px; white-space: nowrap; }
+table.agg td { padding: 8px 12px; border-bottom: 1px solid var(--border2); }
+table.agg tbody tr:nth-child(even) td { background: #fafaf8; }
+table.agg tfoot td { font-weight: 700; font-family: var(--mono); border-top: 2px solid var(--border); background: var(--bg2); }
+.amt-r { text-align: right; font-family: var(--mono); }
+
+/* ══════════════════════════════════════
+   印刷専用エリア（画面では非表示）
+══════════════════════════════════════ */
+#print-area { display: none; }
+
+@media print {
+  @page { size: A4 landscape; margin: 12mm 15mm; }
+
+  /* 画面UIをすべて隠す */
+  .header, #upload-area, #main-area { display: none !important; }
+
+  /* 印刷エリアを表示 */
+  #print-area { display: block !important; }
+
+  body { background: #fff; font-family: 'Noto Sans JP', sans-serif; color: #000; font-size: 9pt; }
+
+  /* ── 印刷ヘッダー ── */
+  .pr-hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2pt solid #1a3a5c;
+    padding-bottom: 5pt;
+    margin-bottom: 8pt;
+  }
+  .pr-hd-left .pr-company { font-size: 8pt; color: #555; margin-bottom: 2pt; }
+  .pr-hd-left .pr-title   { font-size: 14pt; font-weight: 700; color: #1a3a5c; letter-spacing: .04em; }
+  .pr-hd-right            { font-size: 8pt; color: #555; text-align: right; line-height: 1.8; }
+
+  /* ── 仕訳明細テーブル ── */
+  table.pr-detail {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-bottom: 10pt;
+    table-layout: fixed;
+  }
+  table.pr-detail colgroup col { }
+  table.pr-detail thead tr {
+    background: #1a3a5c;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  table.pr-detail th {
+    color: #fff;
+    padding: 4pt 5pt;
+    text-align: left;
+    font-weight: 500;
+    font-size: 7.5pt;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  table.pr-detail td {
+    padding: 4pt 5pt;
+    border-bottom: 0.4pt solid #ddd;
+    vertical-align: top;
+    word-break: break-all;
+    overflow: hidden;
+  }
+  table.pr-detail tbody tr:nth-child(even) td {
+    background: #f7f8f5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  table.pr-detail tfoot td {
+    font-weight: 700;
+    border-top: 1.5pt solid #1a3a5c;
+    border-bottom: none;
+    background: #eef2f7;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .pr-amt { text-align: right; font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .pr-num { text-align: center; color: #888; font-size: 7pt; }
+
+  /* ── 集計テーブル ── */
+  .pr-agg-title {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1a3a5c;
+    margin: 12pt 0 5pt;
+    padding-left: 8pt;
+    border-left: 3pt solid #c8a84b;
+  }
+  table.pr-agg {
+    width: 55%;
+    border-collapse: collapse;
+    font-size: 8pt;
+  }
+  table.pr-agg thead tr {
+    background: #1a3a5c;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  table.pr-agg th { color: #fff; padding: 4pt 8pt; text-align: left; font-weight: 500; font-size: 7.5pt; }
+  table.pr-agg td { padding: 4pt 8pt; border-bottom: 0.4pt solid #ddd; }
+  table.pr-agg tbody tr:nth-child(even) td {
+    background: #f7f8f5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  table.pr-agg tfoot td {
+    font-weight: 700;
+    border-top: 1.5pt solid #1a3a5c;
+    background: #eef2f7;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── 注記 ── */
+  .pr-notes { margin-top: 10pt; font-size: 7pt; color: #666; border-top: 0.5pt solid #ccc; padding-top: 6pt; line-height: 2; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ 画面UI ══ -->
+<div class="header">
+  <div>
+    <div class="header-logo">楯の川酒造株式会社</div>
+    <div class="header-title">じゃらん宿泊費 仕訳ツール</div>
+  </div>
+  <div class="header-badge" id="header-period">CSV未読込</div>
+</div>
+
+<div class="container">
+  <div id="upload-area">
+    <div class="upload-card">
+      <div class="upload-card-title">📋 じゃらん宿泊費 仕訳ツール</div>
+
+      <!-- ① 請求金額入力 -->
+      <div class="amount-block">
+        <div class="amount-label">① 請求金額を入力</div>
+        <div class="amount-desc">じゃらんからの請求書に記載された<strong>税込合計金額</strong>を入力してください。<br>CSVとの差額がある場合、自動的に調整されます。</div>
+        <div class="amount-input-row">
+          <span class="amount-prefix">¥</span>
+          <input type="text" id="invoice-amount" placeholder="0" inputmode="numeric">
+          <span class="amount-unit">円（税込）</span>
+        </div>
+      </div>
+
+      <!-- ② CSVアップロード -->
+      <div class="amount-label" style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.06em;margin-bottom:.5rem;">② CSVファイルを選択</div>
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-icon">📂</div>
+        <div class="drop-title">じゃらんCSVをドロップ</div>
+        <div class="drop-hint">MonthlyReservation_COMMON_*.csv（Shift-JIS）</div>
+        <label class="file-btn">ファイルを選択<input type="file" id="csv-input" accept=".csv" style="display:none"></label>
+        <div class="file-selected" id="file-selected">✅ <span id="file-name"></span></div>
+      </div>
+
+      <!-- ③ 集計ボタン -->
+      <button class="agg-start-btn" id="agg-start-btn" disabled onclick="startAgg()">集計する</button>
+    </div>
+  </div>
+
+  <div id="main-area">
+    <div class="summary">
+      <div class="stat"><div class="stat-label">件数</div><div class="stat-value" id="s-count">0</div></div>
+      <div class="stat"><div class="stat-label">精算合計（税込）</div><div class="stat-value" id="s-gross">¥0</div></div>
+    </div>
+    <!-- 請求金額 vs CSV差額バナー -->
+    <div id="adj-banner"></div>
+    <div id="warnings"></div>
+    <div class="tab-bar">
+      <button class="tab on" onclick="switchTab('entry',this)">仕訳確認・修正</button>
+      <button class="tab" onclick="switchTab('agg',this)">部門 × セグメント 集計</button>
+    </div>
+
+    <!-- 仕訳タブ -->
+    <div id="pane-entry">
+      <div class="table-wrap">
+        <table class="jt">
+          <thead><tr>
+            <th style="width:24px">#</th>
+            <th style="min-width:88px">仕訳日付</th>
+            <th style="min-width:90px">宿泊者</th>
+            <th style="min-width:100px">予約番号</th>
+            <th style="min-width:88px">チェックイン</th>
+            <th style="min-width:88px">チェックアウト</th>
+            <th style="min-width:80px">用務内容</th>
+            <th style="min-width:112px">勘定科目</th>
+            <th style="min-width:112px">部門</th>
+            <th style="min-width:130px">セグメント</th>
+            <th style="min-width:70px" class="amt">精算額</th>
+            <th style="width:44px"></th>
+          </tr></thead>
+          <tbody id="journal-body"></tbody>
+        </table>
+      </div>
+      <div class="foot">
+        <div class="foot-totals">
+          <div class="foot-item">精算合計<strong id="f-gross">¥0</strong></div>
+        </div>
+        <button class="pdf-btn" onclick="doPrint()">🖨 印刷 / PDF保存</button>
+      </div>
+      <label class="reload-btn">↩ 別のCSVを読み込む<input type="file" id="csv-input2" accept=".csv" style="display:none"></label>
+    </div>
+
+    <!-- 集計タブ -->
+    <div id="pane-agg" style="display:none">
+      <div class="agg-wrap"><table class="agg" id="agg-table"></table></div>
+      <div id="agg-adj-note"></div>
+      <div style="margin-top:.5rem;font-size:12px;color:var(--text2)">※ 仕訳確認タブでの修正がリアルタイムに反映されます。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 印刷専用エリア（@media print のみ表示） ══ -->
+<div id="print-area">
+  <!-- ヘッダー -->
+  <div class="pr-hd">
+    <div class="pr-hd-left">
+      <div class="pr-company">楯の川酒造株式会社</div>
+      <div class="pr-title" id="pr-title">宿泊費仕訳一覧</div>
+    </div>
+    <div class="pr-hd-right">
+      <div id="pr-meta-period"></div>
+      <div id="pr-meta-date"></div>
+      <div id="pr-meta-count"></div>
+    </div>
+  </div>
+
+  <!-- 仕訳明細 -->
+  <table class="pr-detail">
+    <colgroup>
+      <col style="width:3%">   <!-- # -->
+      <col style="width:7%">   <!-- 日付 -->
+      <col style="width:8%">   <!-- 宿泊者 -->
+      <col style="width:8%">   <!-- 予約番号 -->
+      <col style="width:8%">   <!-- チェックイン -->
+      <col style="width:8%">   <!-- チェックアウト -->
+      <col style="width:14%">  <!-- 用務内容 -->
+      <col style="width:11%">  <!-- 勘定科目 -->
+      <col style="width:11%">  <!-- 部門 -->
+      <col style="width:12%">  <!-- セグメント -->
+      <col style="width:10%">  <!-- 精算額 -->
+    </colgroup>
+    <thead><tr>
+      <th class="pr-num">#</th>
+      <th>仕訳日付</th>
+      <th>宿泊者</th>
+      <th>予約番号</th>
+      <th>チェックイン</th>
+      <th>チェックアウト</th>
+      <th>用務内容</th>
+      <th>勘定科目</th>
+      <th>部門</th>
+      <th>セグメント</th>
+      <th class="pr-amt">精算額</th>
+    </tr></thead>
+    <tbody id="pr-body"></tbody>
+    <tfoot><tr id="pr-tfoot">
+      <td colspan="10" style="text-align:right;font-size:8pt">合　計</td>
+      <td class="pr-amt" id="pr-total-gross"></td>
+    </tr></tfoot>
+  </table>
+
+  <!-- 集計 -->
+  <div class="pr-agg-title">部門 × セグメント 集計</div>
+  <table class="pr-agg">
+    <thead><tr>
+      <th>部門</th><th>セグメント</th>
+      <th style="text-align:right">件数</th>
+      <th class="pr-amt">精算合計</th>
+    </tr></thead>
+    <tbody id="pr-agg-body"></tbody>
+    <tfoot><tr id="pr-agg-foot">
+      <td colspan="2">合　計</td>
+      <td style="text-align:right" id="pr-agg-count"></td>
+      <td class="pr-amt" id="pr-agg-gross"></td>
+    </tr></tfoot>
+  </table>
+
+  <p id="pr-agg-note" style="font-size:7pt;color:#c0392b;opacity:0.8;margin-top:4pt;margin-bottom:6pt;"></p>
+  <!-- 注記 -->
+  <div class="pr-notes">
+    <span>「【製】旅費交通費」は製造原価計上。部門：清酒製成原価（製造部）／共通部門（原価）（詰口部）</span><br>
+    <span>「旅費交通費」は販管費計上。部門：本社経費【仮】。セグメントは用務内容に基づき付与。</span><br>
+    <span>消費税率10%、適格請求書発行事業者確認済み。</span>
+  </div>
+</div>
+
+<!-- ══ 削除確認モーダル ══ -->
+<div id="del-modal-overlay">
+  <div id="del-modal">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">この行を削除しますか？</div>
+    <div class="modal-body">
+      <span class="modal-name" id="modal-name"></span> さんの宿泊データ<br>
+      精算額 <span class="modal-amount" id="modal-amount"></span> を<br>
+      一覧から削除します。<br><br>
+      <strong>この操作は元に戻せません。</strong><br>
+      現地払い等で請求対象外の場合のみ削除してください。
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeDelModal()">キャンセル</button>
+      <button class="modal-delete" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── マスタ ───
+let pendingDeleteIdx = -1;
+let invoiceAmount    = 0;   // 請求書入力金額
+let pendingCSVFile   = null; // 集計待ちのFileオブジェクト
+const TAX_COL  = '消費税額\uff08精算料金\uff09'; // 全角括弧 U+FF08/FF09
+const NET_COL  = '税別料金'; // AL列：税抜金額
+const SECTIONS = ['本社経費【仮】','清酒製成原価','共通部門（原価）','清酒詰口原価','焼酎製成原価','焼酎詰口原価','マッコリ製成原価'];
+const SEGMENTS = ['','国内営業','海外営業','通販事業（EC）','社長室（柳原）','★蔵祭★（特殊）'];
+const ACCOUNTS = ['旅費交通費','【製】旅費交通費'];
+const DEPT_RULE = {
+  '製造部': { account:'【製】旅費交通費', section:'清酒製成原価' },
+  '詰口部': { account:'【製】旅費交通費', section:'共通部門（原価）' },
+};
+const SEG_KW = [
+  { kw:['柳原'],                               seg:'社長室（柳原）' },
+  { kw:['商談','販売会','試飲','酒店','問屋','得意先'], seg:'国内営業' },
+  { kw:['海外','export','輸出'],                seg:'海外営業' },
+  { kw:['通販','EC','楽天'],                    seg:'通販事業（EC）' },
+  { kw:['蔵祭'],                               seg:'★蔵祭★（特殊）' },
+];
+
+function guessSegment(name, purpose) {
+  const t = (name + ' ' + purpose).toLowerCase();
+  for (const r of SEG_KW) if (r.kw.some(k => t.includes(k.toLowerCase()))) return r.seg;
+  return '';
+}
+function lastDay(s) {
+  const [y,m] = s.split('/');
+  const d = new Date(+y, +m, 0);
+  return `${y}/${m.padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseCSV(text) {
+  function parseLine(line) {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) {
+        fields.push(cur.trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    fields.push(cur.trim());
+    return fields;
+  }
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const o = {}; headers.forEach((h,i) => { o[h] = vals[i] ?? ''; }); return o;
+  }).filter(r => parseInt(r['精算料金']||0) > 0);
+}
+
+function buildRows(data) {
+  rows = data.map(r => {
+    const dept    = r['法人専用項目③所属部署'] || '';
+    const name    = r['法人専用項目②宿泊者名'] || (r['宿泊代表者名（姓漢字）']+r['宿泊代表者名（名漢字）']);
+    const purpose = r['法人専用項目①用務内容'] || '';
+    const rule    = DEPT_RULE[dept];
+    const gross   = parseInt(r['精算料金']||0);
+    const tax     = parseInt(r[TAX_COL]||0);
+    const net     = parseInt(r[NET_COL]||0) || (gross - tax); // AL列優先、なければgross-tax
+    const co = r['チェックアウト日']||''; const ci = r['宿泊日（チェックイン日）']||'';
+    const hotel  = (r['宿名']||'').replace(/\s+/g,' ').trim();
+    const nights = r['宿泊数']||'';
+    const resNo  = r['予約番号']||'';
+    return {
+      account: rule ? rule.account : '旅費交通費',
+      section: rule ? rule.section : '本社経費【仮】',
+      segment: guessSegment(name, purpose),
+      gross, tax, net,
+      date:      co ? lastDay(co) : '',
+      name, purpose, hotel, nights, ci, co, resNo,
+      memo:      `宿泊費／${name}／${purpose}／${hotel}　${nights}泊`,
+      monthWarn: ci && co && ci.slice(0,7) !== co.slice(0,7),
+    };
+  });
+}
+
+const fmt = n => '¥' + Number(n).toLocaleString();
+
+function updateSummary() {
+  let tG=0,tT=0,tN=0;
+  rows.forEach(r => { tG+=r.gross; tT+=r.tax; tN+=r.net; });
+
+  // ── 請求金額入力あり → 税込から正しく逆算 ──
+  let displayGross, displayNet, displayTax;
+  if (invoiceAmount > 0) {
+    displayGross = invoiceAmount;
+    displayNet   = Math.round(invoiceAmount / 1.1);   // 税抜 = round(税込 ÷ 1.1)
+    displayTax   = invoiceAmount - displayNet;          // 消費税 = 税込 − 税抜
+  } else {
+    displayGross = tG; displayNet = tN; displayTax = tT;
+  }
+
+  // サマリーカードは「確定後の正しい値」を表示
+  document.getElementById('s-count').textContent = rows.length+'件';
+  document.getElementById('s-gross').textContent = fmt(displayGross);
+
+  // バナー
+  const adjBanner = document.getElementById('adj-banner');
+  if (invoiceAmount > 0) {
+    const match = tG === invoiceAmount;
+    const diffLabel = match
+      ? `${fmt(tG)} ✅ 一致`
+      : `${fmt(tG)}<span class="adj-diff-badge">${invoiceAmount-tG>0?'+':''}${fmt(invoiceAmount-tG)}</span>`;
+    adjBanner.innerHTML = `<div class="adj-box">
+      <span class="adj-lbl">請求金額（税込）</span><span class="adj-val">${fmt(invoiceAmount)}</span>
+      <span class="adj-lbl">CSV合計</span><span class="adj-val">${diffLabel}</span>
+      <span class="adj-lbl">税抜（÷1.1）</span><span class="adj-val"><strong>${fmt(displayNet)}</strong></span>
+      <span class="adj-lbl">消費税（税込−税抜）</span><span class="adj-val"><strong>${fmt(displayTax)}</strong></span>
+    </div>`;
+  } else {
+    adjBanner.innerHTML = '';
+  }
+
+  document.getElementById('f-gross').textContent = fmt(displayGross);
+
+  const warns = [];
+  rows.forEach((r,i) => {
+    if (!r.segment) warns.push(`#${i+1} ${r.name}：セグメント要確認`);
+  });
+  document.getElementById('warnings').innerHTML = warns.map(w=>`<div class="warn-box">⚠️ <span>${w}</span></div>`).join('');
+}
+
+// 差額調整済みの行データを返す
+// 請求金額入力時：税込÷1.1で正しい合計を計算し、
+// 差額（端数）を精算額最大の行の税抜・消費税に反映させる
+// → 明細を足すと合計行と一致するようになる
+function getAdjustedRows() {
+  if (rows.length === 0) return [];
+  if (invoiceAmount <= 0) return rows.map(r => Object.assign({}, r));
+
+  const correctNet = Math.round(invoiceAmount / 1.1); // 正しい税抜合計
+  const correctTax = invoiceAmount - correctNet;        // 正しい消費税合計
+  let csvNet = 0, csvTax = 0;
+  rows.forEach(r => { csvNet += r.net; csvTax += r.tax; });
+  const netDiff = correctNet - csvNet;  // 税抜の差額
+  const taxDiff = correctTax - csvTax;  // 消費税の差額
+
+  if (netDiff === 0 && taxDiff === 0) return rows.map(r => Object.assign({}, r));
+
+  // 精算額が最大の行に差額を乗せる
+  const maxIdx = rows.reduce((mi, r, i) => r.gross > rows[mi].gross ? i : mi, 0);
+  return rows.map((r, i) => {
+    const adj = Object.assign({}, r);
+    if (i === maxIdx) {
+      adj.net = r.net + netDiff;
+      adj.tax = r.tax + taxDiff;
+      // gross（精算額）は変えない。net+taxの合計がgrossと一致しない場合は
+      // 差額がnet側に出ているケースなのでnetを優先し、taxを再計算
+      if (adj.net + adj.tax !== r.gross) {
+        adj.tax = r.gross - adj.net;
+      }
+    }
+    return adj;
+  });
+}
+
+// 差額調整後の合計を返す（サマリー・フッター用）
+function getAdjustedTotals() {
+  if (invoiceAmount > 0) {
+    const adjNet = Math.round(invoiceAmount / 1.1);
+    const adjTax = invoiceAmount - adjNet;
+    return { gross: invoiceAmount, net: adjNet, tax: adjTax };
+  }
+  let tG=0,tT=0,tN=0;
+  rows.forEach(r => { tG+=r.gross; tT+=r.tax; tN+=r.net; });
+  return { gross: tG, tax: tT, net: tN };
+}
+
+function renderTable() {
+  updateSummary();
+  const tbody = document.getElementById('journal-body');
+  tbody.innerHTML = '';
+  rows.forEach(function(r, i) {
+    const tr = document.createElement('tr');
+
+    function makeTd(html) {
+      const td = document.createElement('td');
+      td.innerHTML = html;
+      return td;
+    }
+
+    // #
+    tr.appendChild(makeTd('<span style="color:var(--text3);font-family:var(--mono);font-size:11px">' + (i+1) + '</span>'));
+    // 日付
+    const tdDate = makeTd('');
+    const inp = document.createElement('input');
+    inp.type='text'; inp.value=r.date; inp.style.cssText='width:86px;font-family:var(--mono);font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;';
+    inp.addEventListener('input', (function(idx){ return function(){ rows[idx].date=this.value; updateSummary(); }; })(i));
+    tdDate.appendChild(inp);
+    tr.appendChild(tdDate);
+    // 宿泊者
+    tr.appendChild(makeTd('<span style="white-space:nowrap;font-weight:500">' + r.name + '</span>'));
+    // 予約番号
+    tr.appendChild(makeTd('<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">' + r.resNo + '</span>'));
+    // チェックイン
+    tr.appendChild(makeTd('<span style="font-family:var(--mono);font-size:11px">' + r.ci + '</span>'));
+    // チェックアウト
+    tr.appendChild(makeTd('<span style="font-family:var(--mono);font-size:11px">' + r.co + '</span>'));
+    // 用務内容（展開セル）
+    tr.appendChild(makeExpandCell(r.purpose, null, i, 'purpose'));
+    // 勘定科目
+    const tdAcct = makeTd('');
+    const selAcct = document.createElement('select');
+    selAcct.innerHTML = ACCOUNTS.map(function(a){ return '<option'+(a===r.account?' selected':'')+'>'+a+'</option>'; }).join('');
+    selAcct.addEventListener('change', (function(idx){ return function(){ rows[idx].account=this.value; updateSummary(); }; })(i));
+    tdAcct.appendChild(selAcct);
+    tr.appendChild(tdAcct);
+    // 部門
+    const tdSect = makeTd('');
+    const selSect = document.createElement('select');
+    selSect.innerHTML = SECTIONS.map(function(s){ return '<option'+(s===r.section?' selected':'')+'>'+s+'</option>'; }).join('');
+    selSect.addEventListener('change', (function(idx){ return function(){ rows[idx].section=this.value; updateSummary(); }; })(i));
+    tdSect.appendChild(selSect);
+    tr.appendChild(tdSect);
+    // セグメント
+    const tdSeg = makeTd('');
+    const selSeg = document.createElement('select');
+    selSeg.innerHTML = SEGMENTS.map(function(s){ return '<option'+(s===r.segment?' selected':'')+'>'+(s||'― 未選択 ―')+'</option>'; }).join('');
+    selSeg.addEventListener('click', (function(idx){ return function(){ rows[idx].segment=this.value; updBadge(idx,this); updateSummary(); }; })(i));
+    const badge = document.createElement('span');
+    badge.id = 'b'+i;
+    badge.className = 'badge ' + (r.segment?'b-auto':'b-warn');
+    badge.textContent = r.segment?'提案':'要確認';
+    tdSeg.appendChild(selSeg);
+    tdSeg.appendChild(badge);
+    tr.appendChild(tdSeg);
+    // 税抜・消費税・精算額
+    tr.appendChild(makeTd('<span class="amt" style="font-weight:700">' + fmt(r.gross) + '</span>'));
+
+    // 削除ボタン
+    const tdDel = document.createElement('td');
+    tdDel.style.cssText = 'text-align:center;padding:4px 6px;';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.title = '現地払いのため削除';
+    delBtn.textContent = '🗑';
+    delBtn.addEventListener('click', (function(idx){ return function(){ openDelModal(idx); }; })(i));
+    tdDel.appendChild(delBtn);
+    tr.appendChild(tdDel);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function makeExpandCell(text, memoIdx, rowIdx, type) {
+  const td = document.createElement('td');
+  td.className = 'expand-cell';
+
+  const span = document.createElement('span');
+  span.className = 'cell-text';
+  span.textContent = text;
+
+  const btn = document.createElement('span');
+  btn.className = 'expand-btn';
+  btn.addEventListener('click', function() {
+    td.classList.toggle('open');
+    if (editInp) editInp.style.display = td.classList.contains('open') ? 'block' : 'none';
+  });
+
+  td.appendChild(span);
+  td.appendChild(btn);
+
+  var editInp = null;
+  if (type === 'memo') {
+    editInp = document.createElement('input');
+    editInp.type = 'text';
+    editInp.value = text;
+    editInp.style.cssText = 'width:100%;margin-top:4px;display:none;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;';
+    editInp.addEventListener('input', (function(idx, s){ return function(){ rows[idx].memo=this.value; s.textContent=this.value; }; })(memoIdx, span));
+    td.appendChild(editInp);
+  }
+
+  return td;
+}
+
+function updBadge(i, sel) {
+  const b = document.getElementById('b'+i);
+  if (!b) return;
+  if (sel.value) {
+    b.textContent = '選択済み';
+    b.className   = 'badge b-ok';
+  } else {
+    b.textContent = '要確認';
+    b.className   = 'badge b-warn';
+  }
+}
+
+function renderAgg() {
+  // CSV生値で部門×セグメント集計
+  const map = new Map();
+  rows.forEach(r => {
+    const key = r.section+'__'+(r.segment||'（未設定）');
+    if (!map.has(key)) map.set(key, {section:r.section, segment:r.segment||'（未設定）', gross:0, count:0});
+    const cur = map.get(key);
+    cur.gross+=r.gross; cur.count++;
+  });
+  const items = [...map.values()].sort((a,b) => a.section.localeCompare(b.section,'ja')||a.segment.localeCompare(b.segment,'ja'));
+
+  // 差額：精算合計最大の行のgrossを調整して請求金額に合致させる
+  let csvTotal = 0;
+  items.forEach(it => csvTotal += it.gross);
+  const target  = invoiceAmount > 0 ? invoiceAmount : csvTotal;
+  const diff    = target - csvTotal;
+  const maxIdx  = items.reduce((mi,it,i) => it.gross > items[mi].gross ? i : mi, 0);
+
+  let tG=0, tC=0;
+  let html = `<thead><tr>
+    <th>部門</th><th>セグメント</th>
+    <th style="text-align:right">件数</th>
+    <th class="amt-r">精算合計</th>
+  </tr></thead><tbody>`;
+
+  items.forEach((it, i) => {
+    const dispGross = (diff !== 0 && i === maxIdx) ? it.gross + diff : it.gross;
+    tG+=dispGross; tC+=it.count;
+    html += `<tr>
+      <td>${it.section}</td>
+      <td>${it.segment}</td>
+      <td style="text-align:right;font-family:var(--mono)">${it.count}</td>
+      <td class="amt-r" style="font-weight:700">${fmt(dispGross)}</td>
+    </tr>`;
+  });
+
+  html += `</tbody><tfoot><tr>
+    <td colspan="2">合　計</td>
+    <td style="text-align:right;font-family:var(--mono)">${tC}</td>
+    <td class="amt-r">${fmt(tG)}</td>
+  </tr></tfoot>`;
+  document.getElementById('agg-table').innerHTML = html;
+
+  // 差額調整注記（赤字）
+  const noteDiv = document.getElementById('agg-adj-note');
+  if (noteDiv) {
+    if (invoiceAmount > 0 && diff !== 0 && items.length > 0) {
+      const adjSeg = items[maxIdx].section + '／' + items[maxIdx].segment;
+      noteDiv.innerHTML = `<p style="margin-top:8px;font-size:12px;color:#c0392b;font-weight:600;">差額調整済み（${diff>0?'+':''}${fmt(diff)}）：「${adjSeg}」の精算合計を調整</p>`;
+    } else {
+      noteDiv.innerHTML = '';
+    }
+  }
+}
+
+
+// ─── 印刷用データを #print-area に書き込んでから print() ───
+function doPrint() {
+  const d    = rows[0]?.date || '';
+  const period = d ? d.slice(0,4)+'年'+d.slice(5,7)+'月分' : '';
+  document.getElementById('pr-title').textContent        = '宿泊費仕訳一覧　' + period;
+  document.getElementById('pr-meta-period').textContent  = period;
+  document.getElementById('pr-meta-date').textContent    = '出力日：' + new Date().toLocaleDateString('ja-JP');
+  document.getElementById('pr-meta-count').textContent   = rows.length + '件';
+
+  // ── 仕訳一覧明細：CSV値そのまま・精算額のみ ──
+  const pb = document.getElementById('pr-body');
+  pb.innerHTML = '';
+  let detailG=0;
+  rows.forEach((r,i) => {
+    detailG+=r.gross;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="pr-num">${i+1}</td>
+      <td>${r.date}</td>
+      <td style="white-space:nowrap;font-weight:500">${r.name}</td>
+      <td style="font-family:var(--mono);font-size:7pt">${r.resNo||''}</td>
+      <td style="font-family:var(--mono);font-size:7pt;white-space:nowrap">${r.ci||''}</td>
+      <td style="font-family:var(--mono);font-size:7pt;white-space:nowrap">${r.co||''}</td>
+      <td style="font-size:7.5pt;color:#555;word-break:break-all">${r.purpose}</td>
+      <td>${r.account}</td>
+      <td>${r.section}</td>
+      <td>${r.segment||'―'}</td>
+      <td class="pr-amt" style="font-weight:700">${fmt(r.gross)}</td>
+    `;
+    pb.appendChild(tr);
+  });
+  // 仕訳一覧合計行：精算額の足し算
+  document.getElementById('pr-total-gross').textContent = fmt(detailG);
+
+  // 調整注記（仕訳一覧の下）
+  const noteEl = document.querySelector('.pr-notes');
+  noteEl.dataset.adjNote = '';
+
+  // ── 集計表：精算合計のみ、最大行を調整して請求金額に合致させる ──
+  const aggMap = new Map();
+  rows.forEach(r => {
+    const key = r.section+'__'+(r.segment||'（未設定）');
+    if (!aggMap.has(key)) aggMap.set(key, {section:r.section, segment:r.segment||'（未設定）', gross:0, count:0});
+    const cur = aggMap.get(key);
+    cur.gross+=r.gross; cur.count++;
+  });
+  const aggItems = [...aggMap.values()].sort((a,b)=>a.section.localeCompare(b.section,'ja')||a.segment.localeCompare(b.segment,'ja'));
+
+  let csvAggGross=0;
+  aggItems.forEach(it => csvAggGross+=it.gross);
+  const aggTarget  = invoiceAmount > 0 ? invoiceAmount : csvAggGross;
+  const aggDiff    = aggTarget - csvAggGross;
+  const maxAggIdx  = aggItems.reduce((mi,it,i) => it.gross > aggItems[mi].gross ? i : mi, 0);
+
+  let aG=0, aC=0;
+  const ab = document.getElementById('pr-agg-body');
+  ab.innerHTML='';
+  aggItems.forEach((it, i) => {
+    const dispGross = (aggDiff !== 0 && i === maxAggIdx) ? it.gross + aggDiff : it.gross;
+    aG+=dispGross; aC+=it.count;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${it.section}</td><td>${it.segment}</td><td style="text-align:right">${it.count}</td><td class="pr-amt" style="font-weight:700">${fmt(dispGross)}</td>`;
+    ab.appendChild(tr);
+  });
+  document.getElementById('pr-agg-count').textContent = aC;
+  document.getElementById('pr-agg-gross').textContent = fmt(aG);
+
+  // 差額調整注記（赤字）
+  const prAggNote = document.getElementById('pr-agg-note');
+  if (prAggNote) {
+    if (invoiceAmount > 0 && aggDiff !== 0 && aggItems.length > 0) {
+      const adjSeg = aggItems[maxAggIdx].section + '／' + aggItems[maxAggIdx].segment;
+      prAggNote.innerHTML = `差額調整済み（${aggDiff>0?'+':''}${fmt(aggDiff)}）：「${adjSeg}」の精算合計を調整`;
+    } else {
+      prAggNote.innerHTML = '';
+    }
+  }
+  window.print();
+}
+
+function openDelModal(idx) {
+  pendingDeleteIdx = idx;
+  const r = rows[idx];
+  document.getElementById('modal-name').textContent   = r.name;
+  document.getElementById('modal-amount').textContent = fmt(r.gross);
+  document.getElementById('del-modal-overlay').classList.add('show');
+}
+function closeDelModal() {
+  pendingDeleteIdx = -1;
+  document.getElementById('del-modal-overlay').classList.remove('show');
+}
+function confirmDelete() {
+  if (pendingDeleteIdx < 0) return;
+  rows.splice(pendingDeleteIdx, 1);
+  closeDelModal();
+  renderTable();
+}
+// オーバーレイクリックでも閉じる
+document.getElementById('del-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDelModal();
+});
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pane-entry').style.display = name==='entry' ? '' : 'none';
+  document.getElementById('pane-agg').style.display   = name==='agg'   ? '' : 'none';
+  if (name === 'agg') renderAgg();
+}
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = parseCSV(e.target.result);
+      if (!data.length) { alert('有効な予約データが見つかりません。'); return; }
+      buildRows(data);
+      renderTable();
+      const d = rows[0]?.date || '';
+      if (d) document.getElementById('header-period').textContent = d.slice(0,4)+'年'+d.slice(5,7)+'月分';
+      document.getElementById('upload-area').style.display = 'none';
+      document.getElementById('main-area').style.display   = 'block';
+    } catch(err) { alert('CSV読み込みエラー: '+err.message); }
+  };
+  reader.readAsText(file, 'Shift_JIS');
+}
+
+// ── 請求金額入力 ──
+document.getElementById('invoice-amount').addEventListener('input', function() {
+  // カンマ・円記号を除去して数値化
+  const raw = this.value.replace(/[,，￥¥\s]/g, '');
+  invoiceAmount = parseInt(raw) || 0;
+  checkReadyToAgg();
+});
+document.getElementById('invoice-amount').addEventListener('blur', function() {
+  if (invoiceAmount > 0) this.value = invoiceAmount.toLocaleString();
+});
+document.getElementById('invoice-amount').addEventListener('focus', function() {
+  if (invoiceAmount > 0) this.value = invoiceAmount.toString();
+});
+
+// ── CSVファイル選択 ──
+function onFileSelected(file) {
+  if (!file) return;
+  pendingCSVFile = file;
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-selected').style.display = 'block';
+  checkReadyToAgg();
+}
+function checkReadyToAgg() {
+  const btn = document.getElementById('agg-start-btn');
+  btn.disabled = !(invoiceAmount > 0 && pendingCSVFile);
+}
+
+function startAgg() {
+  if (!pendingCSVFile) return;
+  loadFile(pendingCSVFile);
+}
+
+document.getElementById('csv-input').onchange = e => { if (e.target.files[0]) onFileSelected(e.target.files[0]); };
+
+document.getElementById('csv-input2').onchange = e => {
+  if (e.target.files[0]) {
+    pendingCSVFile = null;
+    invoiceAmount  = 0;
+    document.getElementById('invoice-amount').value = '';
+    document.getElementById('file-selected').style.display = 'none';
+    document.getElementById('upload-area').style.display = '';
+    document.getElementById('main-area').style.display   = 'none';
+    onFileSelected(e.target.files[0]);
+  }
+};
+
+const dz = document.getElementById('drop-zone');
+dz.ondragover  = e => { e.preventDefault(); dz.classList.add('over'); };
+dz.ondragleave = () => dz.classList.remove('over');
+dz.ondrop      = e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) onFileSelected(e.dataTransfer.files[0]); };
+</script>
+</body>
+</html>
