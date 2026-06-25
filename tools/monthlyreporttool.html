@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月次レポート検算 | 楯の川酒造</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --paper:#f7f3ea;
+  --paper-deep:#efe8d8;
+  --sumi:#222220;
+  --indigo:#2b3a4a;
+  --indigo-deep:#1c2733;
+  --shu:#a8482f;
+  --shu-deep:#8a3a25;
+  --gold:#9c8348;
+  --line:#d8cfb8;
+  --ok:#3d6b4f;
+  --ok-bg:#e7efe6;
+  --err:#a8482f;
+  --err-bg:#f7e9e3;
+  --muted:#7c7564;
+  --font-display:"Shippori Mincho","Noto Serif JP",serif;
+  --font-body:"Noto Sans JP","Hiragino Sans",sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono",monospace;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  background-image:
+    radial-gradient(circle at 15% 8%, rgba(168,72,47,0.05), transparent 40%),
+    radial-gradient(circle at 85% 92%, rgba(43,58,74,0.06), transparent 45%);
+  color:var(--sumi);
+  font-family:var(--font-body);
+  line-height:1.6;
+  min-height:100vh;
+}
+
+.wrap{max-width:1060px;margin:0 auto;padding:0 24px 80px;}
+
+/* ---------- HEADER ---------- */
+header.top{
+  padding:56px 24px 40px;
+  border-bottom:1px solid var(--line);
+  position:relative;
+  overflow:hidden;
+}
+header.top::before{
+  content:"";
+  position:absolute;
+  top:-40px; right:-40px;
+  width:220px; height:220px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(168,72,47,0.10), transparent 70%);
+}
+
+/* ---------- HELP BUTTON ---------- */
+.help-btn{
+  position:absolute;
+  top:24px; right:24px;
+  height:34px;
+  padding:0 16px 0 12px;
+  border-radius:18px;
+  border:1.5px solid var(--line);
+  background:#fff;
+  color:var(--shu);
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:12.5px;
+  letter-spacing:.02em;
+  cursor:pointer;
+  z-index:5;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  transition:background .15s, border-color .15s, color .15s;
+}
+.help-btn-ic{
+  width:18px; height:18px;
+  border-radius:50%;
+  background:var(--shu);
+  color:#fff;
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+}
+.help-btn:hover{background:var(--shu); color:#fff; border-color:var(--shu);}
+.help-btn:hover .help-btn-ic{background:#fff; color:var(--shu);}
+
+/* ---------- MANUAL MODAL ---------- */
+.manual-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(34,34,32,0.45);
+  z-index:100;
+  align-items:flex-start;
+  justify-content:center;
+  overflow-y:auto;
+  padding:48px 20px;
+}
+.manual-overlay.open{display:flex;}
+.manual-modal{
+  background:var(--paper);
+  border-radius:4px;
+  max-width:680px;
+  width:100%;
+  box-shadow:0 18px 50px rgba(0,0,0,0.25);
+  overflow:hidden;
+}
+.manual-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:22px 28px;
+  border-bottom:1px solid var(--line);
+  background:#fff;
+}
+.manual-header h2{
+  font-family:var(--font-display);
+  font-size:21px;
+  color:var(--indigo-deep);
+  margin:0;
+}
+.manual-close{
+  width:30px; height:30px;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--muted);
+  cursor:pointer;
+  font-size:13px;
+}
+.manual-close:hover{background:var(--err); color:#fff; border-color:var(--err);}
+.manual-body{padding:28px 28px 8px;}
+.manual-step{
+  display:flex;
+  gap:18px;
+  padding-bottom:24px;
+  margin-bottom:24px;
+  border-bottom:1px solid #ece6d6;
+}
+.manual-step:last-of-type{border-bottom:none;}
+.manual-step-num{
+  flex:none;
+  width:30px; height:30px;
+  border-radius:50%;
+  background:var(--indigo-deep);
+  color:#fbf8f0;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.manual-step-text b{
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:14.5px;
+  color:var(--sumi);
+  display:block;
+  margin-bottom:6px;
+  line-height:1.5;
+}
+.manual-step-text p{
+  margin:0;
+  font-size:12.5px;
+  color:var(--muted);
+  line-height:1.7;
+}
+.manual-note{
+  background:var(--paper-deep);
+  border-left:3px solid var(--gold);
+  padding:14px 18px;
+  font-size:12.5px;
+  color:var(--sumi);
+  line-height:1.7;
+  margin-bottom:24px;
+}
+.manual-note b{color:var(--shu-deep,var(--shu));}
+.top-inner{max-width:1060px;margin:0 auto;position:relative;}
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.18em;
+  color:var(--shu);
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--shu);display:inline-block;}
+h1{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(28px,4vw,40px);
+  margin:0 0 10px;
+  letter-spacing:.01em;
+  color:var(--indigo-deep);
+}
+h1 .sub{
+  display:block;
+  font-size:14.5px;
+  font-weight:500;
+  color:var(--muted);
+  margin-top:10px;
+  letter-spacing:.02em;
+  line-height:1.55;
+}
+.lede{
+  max-width:960px;
+  color:var(--muted);
+  font-size:14.5px;
+  line-height:1.55;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
+
+/* ---------- STEP CARD ---------- */
+.steps{
+  margin-top:40px;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:14px;
+}
+@media (max-width:780px){.steps{grid-template-columns:1fr;}}
+@media (max-width:600px){
+  .help-btn{position:static; margin-bottom:14px;}
+  header.top{padding-top:24px;}
+}
+
+.step-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:20px 18px 18px;
+  position:relative;
+  transition:border-color .2s, box-shadow .2s;
+}
+.step-card.active{border-color:var(--shu);box-shadow:0 1px 0 var(--shu) inset;}
+.step-card.done{border-color:var(--ok);}
+.step-num{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--gold);
+  letter-spacing:.1em;
+  margin-bottom:10px;
+}
+.step-title{
+  font-weight:700;
+  font-size:14.5px;
+  margin-bottom:4px;
+  color:var(--indigo-deep);
+}
+.step-desc{font-size:12.5px;color:var(--muted);margin-bottom:14px;}
+
+.dropzone{
+  display:block;
+  border:1.5px dashed var(--line);
+  border-radius:3px;
+  padding:16px 12px;
+  text-align:center;
+  cursor:pointer;
+  font-size:12.5px;
+  color:var(--muted);
+  background:var(--paper);
+  transition:background .15s, border-color .15s;
+  position:relative;
+  overflow:hidden;
+}
+.dropzone:hover, .dropzone.drag{background:var(--paper-deep);border-color:var(--gold);}
+.dropzone input{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  border:none;outline:none;background:transparent;
+  font-size:0;margin:0;padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.dropzone input::-webkit-file-upload-button{display:none;}
+.dropzone input::file-selector-button{display:none;}
+.dropzone .fname{
+  display:block;margin-top:6px;font-family:var(--font-mono);font-size:11px;
+  color:var(--indigo); word-break:break-all;
+}
+.dropzone.filled{border-color:var(--ok);background:var(--ok-bg);}
+.dropzone .icon{font-size:18px;display:block;margin-bottom:4px;color:var(--gold);}
+.dropzone.filled .icon{color:var(--ok);}
+
+.dz-wrap{position:relative;}
+.dz-remove{
+  position:absolute;
+  top:8px; right:8px;
+  width:22px; height:22px;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1;
+  cursor:pointer;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:5;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.dz-wrap:has(.dropzone.filled) .dz-remove{display:flex;}
+.dz-remove:hover{background:var(--err); color:#fff; border-color:var(--err);}
+
+.optional-tag{
+  font-family:var(--font-mono);
+  font-size:9.5px;
+  color:var(--muted);
+  letter-spacing:.06em;
+  position:absolute;
+  top:20px; right:18px;
+}
+
+/* ---------- MONTH INPUT ---------- */
+.month-row{
+  margin-top:22px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.month-field{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.month-field label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--muted);
+  letter-spacing:.08em;
+}
+.month-field input{
+  font-family:var(--font-display);
+  font-size:20px;
+  font-weight:700;
+  color:var(--indigo-deep);
+  border:none;
+  border-bottom:2px solid var(--shu);
+  background:transparent;
+  width:110px;
+  padding:2px 4px;
+  outline:none;
+}
+.month-native{
+  font-family:var(--font-display);
+  font-size:16px;
+  font-weight:700;
+  color:var(--indigo-deep);
+  border:none;
+  border-bottom:2px solid var(--shu);
+  background:transparent;
+  padding:4px 6px;
+  outline:none;
+  cursor:pointer;
+  width:150px;
+  min-width:150px;
+}
+.month-hint{font-size:11.5px;color:var(--muted);}
+
+.run-btn{
+  margin-top:28px;
+  background:var(--indigo-deep);
+  color:#fbf8f0;
+  border:none;
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:15px;
+  letter-spacing:.03em;
+  padding:16px 34px;
+  border-radius:2px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  transition:background .15s, transform .1s;
+}
+.run-btn:hover:not(:disabled){background:var(--shu-deep);}
+.run-btn:active:not(:disabled){transform:translateY(1px);}
+.run-btn:disabled{background:#c9c2af;cursor:not-allowed;}
+.run-btn .arrow{transition:transform .15s;}
+.run-btn:hover:not(:disabled) .arrow{transform:translateX(3px);}
+
+.status-line{
+  margin-top:14px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:var(--muted);
+  min-height:18px;
+}
+.status-line.err{color:var(--err);}
+
+/* ---------- RESULTS ---------- */
+#results{margin-top:56px;display:none;}
+.results-head{
+  border-bottom:1px solid var(--line);
+  padding-bottom:16px;
+  margin-bottom:24px;
+}
+.results-head h2{
+  font-family:var(--font-display);
+  font-size:24px;
+  margin:0;
+  color:var(--indigo-deep);
+}
+
+.section-block{margin-bottom:36px;}
+.section-title{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line);}
+
+/* ---------- OVERALL SUMMARY ---------- */
+.overall-summary{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  flex-wrap:wrap;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:20px 22px;
+  margin-bottom:24px;
+}
+.overall-summary .big-pill{
+  font-family:var(--font-display);
+  font-size:19px;
+  font-weight:800;
+  padding:10px 20px;
+  border-radius:3px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.overall-summary .big-pill.all-ok{background:var(--ok-bg);color:var(--ok);}
+.overall-summary .big-pill.has-err{background:var(--err-bg);color:var(--err);}
+.overall-stats{
+  display:flex;
+  gap:24px;
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  color:var(--muted);
+}
+.overall-stats b{
+  font-size:17px;
+  color:var(--indigo-deep);
+  font-family:var(--font-body);
+  display:block;
+  margin-bottom:2px;
+}
+.overall-stats .stat-err b{color:var(--err);}
+.overall-stats .stat-ok b{color:var(--ok);}
+
+/* ---------- ACCORDION GROUPS ---------- */
+.group-block{
+  border:1px solid var(--line);
+  border-radius:3px;
+  margin-bottom:14px;
+  background:#fff;
+  overflow:hidden;
+}
+.group-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 22px;
+  cursor:pointer;
+  user-select:none;
+  gap:14px;
+}
+.group-header:hover{background:var(--paper);}
+.group-header-left{display:flex; align-items:center; gap:14px;}
+.group-chevron{
+  font-size:11px;
+  color:var(--muted);
+  transition:transform .2s;
+  display:inline-block;
+  width:14px;
+}
+.group-block.open .group-chevron{transform:rotate(90deg);}
+.group-name{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:16.5px;
+  color:var(--indigo-deep);
+}
+.group-badge{
+  font-family:var(--font-mono);
+  font-size:11px;
+  padding:4px 10px;
+  border-radius:14px;
+  font-weight:600;
+}
+.group-badge.ok{background:var(--ok-bg); color:var(--ok);}
+.group-badge.ng{background:var(--err-bg); color:var(--err);}
+.group-body{
+  display:none;
+  padding:4px 22px 22px;
+  border-top:1px solid var(--line);
+}
+.group-block.open .group-body{display:block;}
+
+table.check-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13.5px;
+  background:#fff;
+}
+table.check-table th{
+  text-align:right;
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:.04em;
+  color:var(--muted);
+  font-weight:500;
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+}
+table.check-table th:first-child{text-align:left;}
+table.check-table td{
+  padding:9px 10px;
+  border-bottom:1px solid #ece6d6;
+  text-align:right;
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums;
+}
+table.check-table td:first-child{
+  text-align:left;
+  font-family:var(--font-body);
+  color:var(--sumi);
+}
+table.check-table tr.row-err td:first-child{color:var(--err);font-weight:600;}
+table.check-table tr.row-err{background:var(--err-bg);}
+table.check-table .mark{width:26px;text-align:center;font-weight:700;}
+.mark.ok{color:var(--ok);}
+.mark.ng{color:var(--err);}
+.mark.na{color:#c9c2af;}
+.diff-note{font-size:11px;color:var(--err);font-family:var(--font-body);}
+
+.err-detail{
+  margin-top:6px;
+  padding:14px 16px;
+  background:#fff;
+  border-left:3px solid var(--err);
+  font-size:12.5px;
+  color:var(--sumi);
+}
+.err-detail b{color:var(--err-deep,var(--err));}
+
+footer.note{
+  margin-top:60px;
+  padding-top:20px;
+  border-top:1px solid var(--line);
+  font-size:11.5px;
+  color:var(--muted);
+}
+footer.note p{margin:4px 0;}
+
+/* spinner */
+.spin{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;
+  display:inline-block;
+  animation:sp .7s linear infinite;
+}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* ---------- MODE TABS ---------- */
+.mode-tabs{
+  display:flex;
+  gap:4px;
+  margin-top:36px;
+  border-bottom:1px solid var(--line);
+}
+.mode-tab{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:15px;
+  color:var(--muted);
+  background:none;
+  border:none;
+  padding:14px 22px 13px;
+  cursor:pointer;
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.mode-tab .tab-num{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.04em;
+  color:var(--gold);
+}
+.mode-tab.active{color:var(--indigo-deep);}
+.mode-tab.active::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:-1px;
+  height:2px;
+  background:var(--shu);
+}
+.mode-tab:not(.active):hover{color:var(--indigo);}
+.mode-panel{display:none;}
+.mode-panel.active{display:block;}
+
+.mode-rule-banner{
+  margin-top:22px;
+  padding:13px 18px;
+  background:var(--paper-deep);
+  border-left:3px solid var(--gold);
+  font-size:12.5px;
+  color:var(--sumi);
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+.mode-rule-banner .ic{color:var(--gold); font-size:14px; line-height:1.3;}
+
+/* ---------- BUILD MODE TABLE ---------- */
+.build-table-wrap{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:3px;
+  overflow:auto;
+}
+table.build-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+table.build-table th{
+  text-align:right;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.03em;
+  color:var(--muted);
+  font-weight:600;
+  padding:10px 12px;
+  background:var(--paper);
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+  position:sticky;
+  top:0;
+}
+table.build-table th:first-child{text-align:left;}
+table.build-table td{
+  padding:8px 12px;
+  border-bottom:1px solid #ece6d6;
+  text-align:right;
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums;
+  user-select:text;
+}
+table.build-table td:first-child{
+  text-align:left;
+  font-family:var(--font-body);
+  color:var(--sumi);
+  user-select:text;
+}
+table.build-table tr.group-row td{
+  background:var(--paper-deep);
+  font-weight:700;
+  font-family:var(--font-display);
+  color:var(--indigo-deep);
+  font-size:13.5px;
+}
+table.build-table tr:hover td{background:#faf7ef;}
+table.build-table tr.group-row:hover td{background:var(--paper-deep);}
+.copy-hint{
+  font-size:11.5px;
+  color:var(--muted);
+  margin:10px 0 4px;
+}
+.copy-bar{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin:10px 0 14px;
+}
+.copy-btn{
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:13px;
+  color:var(--indigo-deep);
+  background:#fff;
+  border:1.5px solid var(--indigo-deep);
+  border-radius:2px;
+  padding:9px 18px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s, color .15s;
+}
+.copy-btn:hover{background:var(--indigo-deep); color:#fff;}
+
+/* ---------- CHECK MODE: MISMATCH CELLS ---------- */
+table.build-table td.mismatch-cell{
+  background:var(--err-bg);
+  color:var(--err);
+  font-weight:700;
+  cursor:pointer;
+  position:relative;
+}
+table.build-table td.mismatch-cell:hover{background:#f3d9cd;}
+.mismatch-detail{
+  margin-top:4px;
+  font-family:var(--font-body);
+  font-weight:500;
+  font-size:11px;
+  color:var(--sumi);
+  background:#fff;
+  border:1px solid var(--err);
+  border-radius:2px;
+  padding:4px 7px;
+  white-space:nowrap;
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <button class="help-btn" id="help-btn" onclick="openManual()" title="使い方を見る"><span class="help-btn-ic">？</span>使い方</button>
+    <div class="eyebrow"><span class="dot"></span>MONTHLY REPORT TOOL</div>
+    <h1>月次レポート 作成・検算<span class="sub">freee連携の予実管理ファイルから、月次レポートの数値を作成・検算します</span></h1>
+    <p class="lede">「作成モード」でレポートに入れる数値を一覧表示し、貼り付けたら必ず「検算モード」で月次レポートと突き合わせて最終確認してください。</p>
+  </div>
+</header>
+
+<div class="manual-overlay" id="manual-overlay" onclick="if(event.target===this) closeManual()">
+  <div class="manual-modal">
+    <div class="manual-header">
+      <h2>使い方</h2>
+      <button class="manual-close" onclick="closeManual()" title="閉じる">✕</button>
+    </div>
+    <div class="manual-body">
+
+      <div class="manual-step">
+        <div class="manual-step-num">1</div>
+        <div class="manual-step-text">
+          <b>当期・前期の予実管理スプレッドシートを、それぞれExcelファイルとしてダウンロードする</b>
+          <p>Googleスプレッドシートで「ファイル → ダウンロード → Microsoft Excel(.xlsx)」を選択。<br>
+          「当期」は今チェックしたい期、「前期」はその1つ前の期のファイルです。前期は省略しても構いません（その場合、前期列は空欄のままになります）。</p>
+        </div>
+      </div>
+
+      <div class="manual-step">
+        <div class="manual-step-num">2</div>
+        <div class="manual-step-text">
+          <b>「作成モード」で①のファイルをアップロードし、対象年月を選んで「数値を作成する」を押す</b>
+          <p>当期ファイルは必須、前期ファイルは任意です。対象年月はカレンダーで選択してください。</p>
+        </div>
+      </div>
+
+      <div class="manual-step">
+        <div class="manual-step-num">3</div>
+        <div class="manual-step-text">
+          <b>月次レポートのスプレッドシートに、対象月のシートを新しく用意する</b>
+          <p>テンプレートのシートをコピーして、シート名を新しい対象月に変更しておきます。</p>
+        </div>
+      </div>
+
+      <div class="manual-step">
+        <div class="manual-step-num">4</div>
+        <div class="manual-step-text">
+          <b>作成モードの「数字だけコピー」を押し、③のシートのE8セルに「値のみ貼り付け」する</b>
+          <p>右クリックして「値のみ貼り付け」（Google スプレッドシートの場合は「特殊貼り付け → 値のみ貼り付け」）を選んでください。E8セルを基準に、行・列が自動的に揃います。</p>
+        </div>
+      </div>
+
+      <div class="manual-step">
+        <div class="manual-step-num">5</div>
+        <div class="manual-step-text">
+          <b>貼り付けたスプレッドシートをExcelファイルとしてダウンロードし、「検算モード」で確認する</b>
+          <p>当期・前期ファイル（手順1のもの）と、貼り付け後の月次レポートファイルをアップロードして検算を実行します。すべて「✓一致」になっていればOKです。不一致が赤く表示された場合は、セルをクリックすると正しい値が確認できます。</p>
+        </div>
+      </div>
+
+      <div class="manual-note">
+        <b>ポイント：</b>貼り付けた後は必ず「検算モード」で月次レポートと突き合わせて確認してください。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab-build" onclick="switchMode('build')">
+      <span class="tab-num">MODE 1</span>作成モード
+    </button>
+    <button class="mode-tab" id="tab-check" onclick="switchMode('check')">
+      <span class="tab-num">MODE 2</span>検算モード
+    </button>
+  </div>
+
+  <!-- ===================== BUILD MODE ===================== -->
+  <div class="mode-panel active" id="panel-build">
+    <div class="mode-rule-banner">
+      <span class="ic">⚠</span>
+      <span>このモードはレポートに入れる数値を予実管理ファイルから機械的に算出して一覧表示するだけです。<b>貼り付けた後は必ず「検算モード」で月次レポートと突き合わせて確認してください。</b>同じロジックの値を見比べるだけでは誤りに気づけません。</span>
+    </div>
+
+    <div class="steps" style="margin-top:22px;">
+      <div class="step-card" id="card-current-b">
+        <span class="optional-tag">必須</span>
+        <div class="step-num">01 ― 当期</div>
+        <div class="step-title">当期 予実管理ファイル</div>
+        <div class="step-desc">「※【XX期】PL予実比較」「【XX期】CR」など当期データを含むファイル</div>
+        <div class="dz-wrap">
+          <label class="dropzone" id="dz-current-b">
+            <span class="icon">⊕</span>
+            <span class="dz-text">クリック または ドラッグ＆ドロップ</span>
+            <span class="fname" id="fname-current-b"></span>
+            <input type="file" id="file-current-b" accept=".xlsx,.xls">
+          </label>
+          <button type="button" class="dz-remove" id="rm-current-b" onclick="removeFile('current')" title="ファイルを削除">✕</button>
+        </div>
+      </div>
+
+      <div class="step-card" id="card-prior-b">
+        <span class="optional-tag">任意</span>
+        <div class="step-num">02 ― 前期</div>
+        <div class="step-title">前期 予実管理ファイル</div>
+        <div class="step-desc">前期列を作成する場合のみ。なければ前期列は空欄になります</div>
+        <div class="dz-wrap">
+          <label class="dropzone" id="dz-prior-b">
+            <span class="icon">⊕</span>
+            <span class="dz-text">クリック または ドラッグ＆ドロップ</span>
+            <span class="fname" id="fname-prior-b"></span>
+            <input type="file" id="file-prior-b" accept=".xlsx,.xls">
+          </label>
+          <button type="button" class="dz-remove" id="rm-prior-b" onclick="removeFile('prior')" title="ファイルを削除">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="month-row">
+      <div class="month-field">
+        <label>対象年月</label>
+        <input type="month" class="month-native" id="month-native-b" onchange="syncMonthField('b')">
+        <input type="hidden" id="target-month-b" value="">
+      </div>
+      <div class="month-hint" id="reiwa-hint-b"></div>
+    </div>
+
+    <button class="run-btn" id="build-btn" disabled>
+      <span id="build-label">数値を作成する</span>
+      <span class="arrow">→</span>
+    </button>
+    <div class="status-line" id="status-line-b"></div>
+
+    <section id="build-results"></section>
+  </div>
+
+  <!-- ===================== CHECK MODE ===================== -->
+  <div class="mode-panel" id="panel-check">
+    <div class="steps">
+      <div class="step-card" id="card-current">
+        <span class="optional-tag">必須</span>
+        <div class="step-num">01 ― 当期</div>
+        <div class="step-title">当期 予実管理ファイル</div>
+        <div class="step-desc">「※【XX期】PL予実比較」「【XX期】CR」など当期データを含むファイル</div>
+        <div class="dz-wrap">
+          <label class="dropzone" id="dz-current">
+            <span class="icon">⊕</span>
+            <span class="dz-text">クリック または ドラッグ＆ドロップ</span>
+            <span class="fname" id="fname-current"></span>
+            <input type="file" id="file-current" accept=".xlsx,.xls">
+          </label>
+          <button type="button" class="dz-remove" id="rm-current" onclick="removeFile('current')" title="ファイルを削除">✕</button>
+        </div>
+      </div>
+
+      <div class="step-card" id="card-prior">
+        <span class="optional-tag">任意</span>
+        <div class="step-num">02 ― 前期</div>
+        <div class="step-title">前期 予実管理ファイル</div>
+        <div class="step-desc">前期列を検算する場合のみ。なければ前期チェックは省略されます</div>
+        <div class="dz-wrap">
+          <label class="dropzone" id="dz-prior">
+            <span class="icon">⊕</span>
+            <span class="dz-text">クリック または ドラッグ＆ドロップ</span>
+            <span class="fname" id="fname-prior"></span>
+            <input type="file" id="file-prior" accept=".xlsx,.xls">
+          </label>
+          <button type="button" class="dz-remove" id="rm-prior" onclick="removeFile('prior')" title="ファイルを削除">✕</button>
+        </div>
+      </div>
+
+      <div class="step-card" id="card-report">
+        <span class="optional-tag">必須</span>
+        <div class="step-num">03 ― レポート</div>
+        <div class="step-title">月次レポートファイル</div>
+        <div class="step-desc">「【月次ﾚﾎﾟｰﾄ】RX.X月」シートを含むファイル</div>
+        <div class="dz-wrap">
+          <label class="dropzone" id="dz-report">
+            <span class="icon">⊕</span>
+            <span class="dz-text">クリック または ドラッグ＆ドロップ</span>
+            <span class="fname" id="fname-report"></span>
+            <input type="file" id="file-report" accept=".xlsx,.xls">
+          </label>
+          <button type="button" class="dz-remove" id="rm-report" onclick="removeFile('report')" title="ファイルを削除">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="month-row">
+      <div class="month-field">
+        <label>対象年月</label>
+        <input type="month" class="month-native" id="month-native" onchange="syncMonthField('')">
+        <input type="hidden" id="target-month" value="">
+      </div>
+      <div class="month-hint" id="reiwa-hint">該当する「【月次ﾚﾎﾟｰﾄ】」シートを自動検索します</div>
+    </div>
+
+    <button class="run-btn" id="run-btn" disabled>
+      <span id="run-label">検算を実行する</span>
+      <span class="arrow">→</span>
+    </button>
+    <div class="status-line" id="status-line"></div>
+
+    <section id="results"></section>
+  </div>
+
+  <footer class="note">
+    <p>※ 数値は百万円単位（チャネル別・酒類別・販売数量関連は万円/本単位）で四捨五入して比較しています。</p>
+    <p>※ 「期間累計」は各シートのO列・Q列（全期間合計）ではなく、9月から対象月までの月次列を実際に積み上げた値を正として比較しています。</p>
+    <p>※ アップロードしたファイルはすべてブラウザ内で処理され、外部に送信されません。</p>
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   STATE
+============================================================ */
+// current/prior workbooks are shared between Build mode and Check mode.
+// report workbook is only used in Check mode.
+const state = { current:null, prior:null, report:null, targetMonth:null };
+let currentMode = 'build';
+
+function switchMode(mode){
+  currentMode = mode;
+  document.getElementById('tab-build').classList.toggle('active', mode==='build');
+  document.getElementById('tab-check').classList.toggle('active', mode==='check');
+  document.getElementById('panel-build').classList.toggle('active', mode==='build');
+  document.getElementById('panel-check').classList.toggle('active', mode==='check');
+}
+
+function openManual(){
+  document.getElementById('manual-overlay').classList.add('open');
+}
+function closeManual(){
+  document.getElementById('manual-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape') closeManual();
+});
+
+/* ============================================================
+   MONTH PICKER (native <input type="month">, 西暦 -> 令和/期番号変換)
+============================================================ */
+function defaultCalendarMonth(){
+  // Default to last month (the month most likely to already have closed actuals to report on).
+  const now = new Date();
+  now.setMonth(now.getMonth()-1);
+  return { year: now.getFullYear(), month: now.getMonth()+1 };
+}
+
+function initMonthPicker(suffix){
+  const input = document.getElementById('month-native'+(suffix?'-'+suffix:''));
+  if(!input) return;
+  const def = defaultCalendarMonth();
+  input.value = `${def.year}-${String(def.month).padStart(2,'0')}`;
+}
+
+// Parses the native <input type="month"> value ("YYYY-MM") into {period, month, calendarYear},
+// where `period` is the correct fiscal period (already accounting for the Sep-Dec offset) and
+// `month` is the plain calendar month (1-12) used throughout the extraction logic.
+function syncMonthField(suffix){
+  const input = document.getElementById('month-native'+(suffix?'-'+suffix:''));
+  const hidden = document.getElementById('target-month'+(suffix?'-'+suffix:''));
+  const hint = document.getElementById('reiwa-hint'+(suffix?'-'+suffix:''));
+  if(!input || !hidden || !input.value) return;
+  const [yStr, mStr] = input.value.split('-');
+  const calendarYear = parseInt(yStr,10);
+  const month = parseInt(mStr,10);
+  const reportLabelYear = calendarToReportLabel(calendarYear, month);
+  // hidden field keeps the "R{labelYear}.{month}" format the rest of the app already expects
+  // for *finding the report sheet*; the fiscal period used for data extraction is derived
+  // separately via calendarToFiscalPeriod at the point of use (see doRun/doBuild).
+  hidden.value = `R${reportLabelYear}.${month}`;
+  hidden.dataset.calendarYear = calendarYear;
+  hidden.dataset.calendarMonth = month;
+  if(hint){
+    hint.textContent = `令和${reportLabelYear}年${month}月　/　該当する「【月次ﾚﾎﾟｰﾄ】」シートを自動検索します`;
+  }
+}
+
+initMonthPicker('b');
+initMonthPicker('');
+syncMonthField('b');
+syncMonthField('');
+
+function bindDropzone(dzId, inputId, fnameId, cardId, onLoaded){
+  const dz = document.getElementById(dzId);
+  const input = document.getElementById(inputId);
+  const fname = document.getElementById(fnameId);
+  const card = document.getElementById(cardId);
+
+  function handleFile(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array', cellDates:true});
+        fname.textContent = file.name;
+        dz.classList.add('filled');
+        if(card) card.classList.add('done');
+        const rmBtn = document.getElementById(dzId.replace('dz-','rm-'));
+        if(rmBtn) rmBtn.style.display = 'flex';
+        onLoaded(wb);
+      }catch(err){
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  input.addEventListener('change', (e)=> handleFile(e.target.files[0]));
+  dz.addEventListener('dragover', (e)=>{e.preventDefault(); dz.classList.add('drag');});
+  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag'));
+  dz.addEventListener('drop', (e)=>{
+    e.preventDefault(); dz.classList.remove('drag');
+    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+// helper: mirror a workbook + filename into the sibling mode's dropzone display, so
+// uploading once in either mode fills both (current/prior are shared state).
+function mirrorFileDisplay(otherDzId, otherFnameId, otherCardId, file){
+  const dz = document.getElementById(otherDzId);
+  const fname = document.getElementById(otherFnameId);
+  const card = document.getElementById(otherCardId);
+  if(fname) fname.textContent = file.name;
+  if(dz) dz.classList.add('filled');
+  if(card) card.classList.add('done');
+  const rmBtn = document.getElementById(otherDzId.replace('dz-','rm-'));
+  if(rmBtn) rmBtn.style.display = 'flex';
+}
+
+function clearDropzoneDisplay(dzId, inputId, fnameId, cardId){
+  const dz = document.getElementById(dzId);
+  const input = document.getElementById(inputId);
+  const fname = document.getElementById(fnameId);
+  const card = document.getElementById(cardId);
+  if(input) input.value = '';
+  if(fname) fname.textContent = '';
+  if(dz) dz.classList.remove('filled');
+  if(card) card.classList.remove('done');
+  const rmBtn = document.getElementById(dzId.replace('dz-','rm-'));
+  if(rmBtn) rmBtn.style.display = 'none';
+}
+
+// key: 'current' | 'prior' | 'report'. current/prior are shared across both modes, so clear both
+// dropzone displays; report only exists in check mode.
+function removeFile(key){
+  if(key==='current'){
+    state.current = null;
+    clearDropzoneDisplay('dz-current','file-current','fname-current','card-current');
+    clearDropzoneDisplay('dz-current-b','file-current-b','fname-current-b','card-current-b');
+  } else if(key==='prior'){
+    state.prior = null;
+    clearDropzoneDisplay('dz-prior','file-prior','fname-prior','card-prior');
+    clearDropzoneDisplay('dz-prior-b','file-prior-b','fname-prior-b','card-prior-b');
+  } else if(key==='report'){
+    state.report = null;
+    clearDropzoneDisplay('dz-report','file-report','fname-report','card-report');
+  }
+  updateRunButton(); updateBuildButton();
+}
+
+// Check mode dropzones
+bindDropzone('dz-current','file-current','fname-current','card-current', (wb)=>{
+  state.current = wb;
+  const f = document.getElementById('file-current').files[0];
+  if(f) mirrorFileDisplay('dz-current-b','fname-current-b','card-current-b', f);
+  updateRunButton(); updateBuildButton();
+});
+bindDropzone('dz-prior','file-prior','fname-prior','card-prior', (wb)=>{
+  state.prior = wb;
+  const f = document.getElementById('file-prior').files[0];
+  if(f) mirrorFileDisplay('dz-prior-b','fname-prior-b','card-prior-b', f);
+  updateRunButton(); updateBuildButton();
+});
+bindDropzone('dz-report','file-report','fname-report','card-report', (wb)=>{
+  state.report = wb;
+  updateRunButton();
+});
+
+// Build mode dropzones
+bindDropzone('dz-current-b','file-current-b','fname-current-b','card-current-b', (wb)=>{
+  state.current = wb;
+  const f = document.getElementById('file-current-b').files[0];
+  if(f) mirrorFileDisplay('dz-current','fname-current','card-current', f);
+  updateRunButton(); updateBuildButton();
+});
+bindDropzone('dz-prior-b','file-prior-b','fname-prior-b','card-prior-b', (wb)=>{
+  state.prior = wb;
+  const f = document.getElementById('file-prior-b').files[0];
+  if(f) mirrorFileDisplay('dz-prior','fname-prior','card-prior', f);
+  updateRunButton(); updateBuildButton();
+});
+
+function updateRunButton(){
+  const btn = document.getElementById('run-btn');
+  btn.disabled = !(state.current && state.report);
+}
+function updateBuildButton(){
+  const btn = document.getElementById('build-btn');
+  btn.disabled = !state.current;
+}
+
+function setStatus(msg, isErr){
+  const el = document.getElementById('status-line');
+  el.textContent = msg||'';
+  el.classList.toggle('err', !!isErr);
+}
+function setStatusBuild(msg, isErr){
+  const el = document.getElementById('status-line-b');
+  el.textContent = msg||'';
+  el.classList.toggle('err', !!isErr);
+}
+
+/* ============================================================
+   SHEET HELPERS
+============================================================ */
+
+// Find a sheet name in a workbook matching predicate over sheet name string
+function findSheet(wb, predicate){
+  return wb.SheetNames.find(predicate);
+}
+
+function sheetByExactCategory(wb, category){
+  // category: 'PL' | 'CR' | 'BS'  -> match "【XX期】PL" but not containing 予実 or 比較 or ﾋﾟﾎﾞｯﾄ
+  const name = wb.SheetNames.find(n=>{
+    if(!n.includes(category)) return false;
+    if(n.includes('予実')) return false;
+    if(n.includes('比較')) return false;
+    if(n.includes('ﾋﾟﾎﾞｯﾄ')) return false;
+    if(n.includes('ﾄﾞｰﾀ')) return false;
+    if(n.includes('デ\u30fc\u30bf')) return false;
+    return /【.*期】/.test(n) || n.startsWith(category);
+  });
+  return name;
+}
+
+function sheetNumberManagement(wb){
+  return wb.SheetNames.find(n=> n.includes('数値管理'));
+}
+
+function sheetPLBudget(wb){
+  return wb.SheetNames.find(n=> n.includes('PL予実比較'));
+}
+
+function sheetCRBudget(wb){
+  return wb.SheetNames.find(n=> n.includes('CR予実') && !n.includes('比較')===false ? true : n.includes('CR予実'));
+}
+
+function getSheetGrid(wb, sheetName){
+  const ws = wb.Sheets[sheetName];
+  if(!ws) return null;
+  return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+}
+
+function cell(grid, row, col){
+  // row, col are 1-indexed (Excel style)
+  if(!grid) return null;
+  const r = grid[row-1];
+  if(!r) return null;
+  const v = r[col-1];
+  return (v===undefined) ? null : v;
+}
+
+function colLetterToIndex(letter){
+  let idx=0;
+  for(let i=0;i<letter.length;i++){
+    idx = idx*26 + (letter.charCodeAt(i)-64);
+  }
+  return idx;
+}
+
+// Excel serial date -> {y,m}
+function excelDateToYM(v){
+  if(v instanceof Date){
+    return {y:v.getFullYear(), m:v.getMonth()+1};
+  }
+  if(typeof v === 'number'){
+    const d = XLSX.SSF.parse_date_code(v);
+    if(d) return {y:d.y, m:d.m};
+  }
+  return null;
+}
+
+// Scan a row range for date headers, return map "YYYY-M" -> colIndex, plus list of {col,y,m}
+function scanDateHeaders(grid, rowRange){
+  const out = [];
+  for(const row of rowRange){
+    const r = grid[row-1];
+    if(!r) continue;
+    for(let c=0;c<r.length;c++){
+      const v = r[c];
+      const ym = excelDateToYM(v);
+      if(ym){ out.push({col:c+1, y:ym.y, m:ym.m}); }
+    }
+    if(out.length>0) break; // use first row that yielded dates
+  }
+  return out;
+}
+
+// find row index (1-indexed) whose given column contains text equal to label (trim match), search col A and B
+function findRowByLabel(grid, label, colsToCheck=[1,2,3,4]){
+  for(let r=1;r<=grid.length;r++){
+    for(const c of colsToCheck){
+      const v = cell(grid, r, c);
+      if(typeof v === 'string' && v.trim()===label.trim()){
+        return r;
+      }
+    }
+  }
+  return null;
+}
+
+function findRowByLabelContains(grid, fragment, colsToCheck=[1,2,3,4]){
+  for(let r=1;r<=grid.length;r++){
+    for(const c of colsToCheck){
+      const v = cell(grid, r, c);
+      if(typeof v === 'string' && v.includes(fragment)){
+        return r;
+      }
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+   MONTH / PERIOD PARSING
+============================================================ */
+// "R8.5" -> {era:'R', period:8, month:5}
+function parseTargetMonth(str){
+  const m = str.trim().match(/^R?\s*(\d+)\s*[.\uff0e]\s*(\d+)\s*月?$/);
+  if(!m) return null;
+  return {period: parseInt(m[1],10), month: parseInt(m[2],10)};
+}
+
+// Reiwa period N, month M -> {y,m} actual calendar year/month.
+// Fiscal year starts in September. Period N runs Sep (calendar year X) - Aug (X+1).
+// R1 = 2019. Reiwa year Y -> calendar year = 2018 + Y.
+// We need: within fiscal period N, calendar reiwa-year for Sep-Dec is N, for Jan-Aug is N+1.
+function reiwaToCalendar(reiwaYear){
+  return 2018 + reiwaYear;
+}
+function fiscalMonthToCalendar(period, month){
+  // month is 1-12 in normal calendar terms (e.g. "5" = May).
+  // Fiscal period N report labels itself "RN" but actually runs Sep of reiwa(N-1) through Aug of reiwa(N).
+  // e.g. 64th period = "R8" report, runs Sep R7 (=2025) through Aug R8 (=2026).
+  let reiwaYearForThisMonth;
+  if(month>=9 && month<=12){
+    reiwaYearForThisMonth = period-1;
+  } else {
+    reiwaYearForThisMonth = period;
+  }
+  return { y: reiwaToCalendar(reiwaYearForThisMonth), m: month };
+}
+
+// Build ordered list of {y,m} from fiscal Sep of `period` through given month (inclusive)
+function monthsFromFiscalStart(period, targetMonth){
+  const months = [9,10,11,12,1,2,3,4,5,6,7,8];
+  const list = [];
+  for(const mo of months){
+    const cal = fiscalMonthToCalendar(period, mo);
+    list.push(cal);
+    if(mo===targetMonth) break;
+  }
+  return list;
+}
+
+// Inverse of fiscalMonthToCalendar: given an actual calendar year/month, derive which fiscal
+// period it belongs to. Fiscal period N runs Sep(reiwa N-1) through Aug(reiwa N), so a calendar
+// month in Sep-Dec belongs to period = (that calendar's reiwa year) + 1, while Jan-Aug belongs to
+// period = (that calendar's reiwa year) itself.
+function calendarToFiscalPeriod(calendarYear, month){
+  const reiwaYear = calendarYear - 2018;
+  const period = (month>=9 && month<=12) ? reiwaYear+1 : reiwaYear;
+  return period;
+}
+
+// The report's sheet-name label always uses the calendar's own reiwa year (e.g. Sep 2025 = "R7.9月"
+// even though it belongs to the 64th/"R8" fiscal period). This equals reiwaYear above, unchanged.
+function calendarToReportLabel(calendarYear, month){
+  return calendarYear - 2018;
+}
+
+/* ============================================================
+   EXTRACTION CORE
+============================================================ */
+
+// Build column map for date-header sheets (PL/CR: row3 typically; 数値管理: row2)
+function buildColumnMap(grid, headerRows){
+  const headers = scanDateHeaders(grid, headerRows);
+  const map = {}; // "y-m" -> col
+  for(const h of headers){ map[h.y+'-'+h.m] = h.col; }
+  return map;
+}
+
+function sumOverMonths(grid, row, colMap, monthList){
+  let total = 0;
+  let any=false;
+  for(const ym of monthList){
+    const col = colMap[ym.y+'-'+ym.m];
+    if(col!=null){
+      const v = cell(grid, row, col);
+      if(typeof v === 'number'){ total+=v; any=true; }
+    }
+  }
+  return any? total: null;
+}
+
+function singleMonth(grid, row, colMap, ym){
+  const col = colMap[ym.y+'-'+ym.m];
+  if(col==null) return null;
+  const v = cell(grid, row, col);
+  return (typeof v==='number') ? v : null;
+}
+
+function roundMillion(v){ return v==null? null : Math.round(v/1000000); }
+function roundManyen(v){ return v==null? null : Math.round(v/10000); }
+
+/* ============================================================
+   REPORT SHEET LOCATION
+============================================================ */
+function findReportSheet(wb, period, month){
+  // sheet names like "【月次ﾚﾎﾟｰﾄ】R8.5月 " (possibly trailing space, possibly half-width variants)
+  const target1 = `R${period}.${month}月`;
+  const target2 = `R${period}．${month}月`;
+  return wb.SheetNames.find(n => n.includes(target1) || n.includes(target2));
+}
+
+/* ============================================================
+   MAIN CHECK LOGIC
+============================================================ */
+
+function getPLSheetGrid(wb){
+  const name = sheetByExactCategory(wb,'PL');
+  return name? {name, grid:getSheetGrid(wb,name)} : null;
+}
+function getCRSheetGrid(wb){
+  const name = sheetByExactCategory(wb,'CR');
+  return name? {name, grid:getSheetGrid(wb,name)} : null;
+}
+function getBSSheetGrid(wb){
+  const name = sheetByExactCategory(wb,'BS');
+  return name? {name, grid:getSheetGrid(wb,name)} : null;
+}
+function getNumSheetGrid(wb){
+  const name = sheetNumberManagement(wb);
+  return name? {name, grid:getSheetGrid(wb,name)} : null;
+}
+function getPLBudgetGrid(wb){
+  const name = sheetPLBudget(wb);
+  return name? {name, grid:getSheetGrid(wb,name)} : null;
+}
+function getCRBudgetGrid(wb){
+  const name = sheetCRBudget(wb);
+  return name? {name, grid:getSheetGrid(wb,name)} : null;
+}
+
+// Labels we look up by text (robust to row-shift between fiscal periods)
+const PL_LABELS = {
+  sales: '売上高　計',
+  cogs: '売上原価', // appears twice; we take the SECOND occurrence (the value row, not section header)
+  grossProfit: '売上総利益',
+  sga: '販売管理費　計',
+  opIncome: '営業利益',
+  ordIncome: '経常利益',
+  netIncome: '当期純利益',
+  // SG&A breakdown
+  exec: '役員報酬', salary:'給料手当', misc_salary:'雑給', bonus:'賞与', retire:'退職金',
+  sme_retire:'中小企業退職金共済金', welfare_stat:'法定福利費', welfare:'福利厚生費',
+  ad:'広告宣伝費', promo:'販売促進費',
+  packing:'荷造包装費', freight:'運賃',
+  depreciation_sga:'減価償却費',
+  // category sales (酒類別)
+  seishu:'清酒売上高', mekko:'マッコリ売上高', genryo:'原料米等商品売上高', shochu:'焼酎売上高',
+  umeshu:'梅酒売上高', fukusanbutsu:'清酒副産品売上高', shohin:'商品売上高', liqueur:'リキュール売上高'
+};
+
+const CR_LABELS = {
+  material: '材料費\u3000計',
+  labor: '労務費\u3000計',
+  mfgCost: '製造経費\u3000計',
+  depreciation: '[製]減価償却費'
+};
+
+const BS_LABELS = {
+  cash_start: '現金',
+  cash_end_label: '譲渡性預金',
+  receivable: '売掛金',
+  payable: '買掛金',
+  unpaid: '未払金',
+  currentRatio: '流動比率',
+  equityRatio: '自己資本比率'
+};
+
+const NUM_LABELS = {
+  totalBottles: '清酒総出荷本数(本)*五合から',
+  b1800: '1,800ml',
+  b720: '720ml',
+  b300: '300ml',
+  ratio720: '720ml比率',
+  totalVolume: '清酒総蔵出数量(ml)',
+  avgPrice: '平均蔵出単価(720ml換算)',
+  ch_domestic:'国内営業', ch_president:'社長室（百貨店・県外問屋スーパー）', ch_overseas:'海外営業（未納税含む）',
+  ch_oem:'OEM（Clear：清酒のみ）', ch_ec:'EC（オンラインショップ）', ch_amazon:'アマゾンジャパン/セラー',
+  ch_shohin:'商品売上高', ch_genryo:'原料米等商品売上高'
+};
+
+function findAllRowsByLabel(grid, label){
+  const rows=[];
+  for(let r=1;r<=grid.length;r++){
+    for(const c of [1,2,3,4]){
+      const v = cell(grid,r,c);
+      if(typeof v==='string' && v.trim()===label.trim()){ rows.push(r); break; }
+    }
+  }
+  return rows;
+}
+
+// Get the "value" row for a label that may appear as both a section header (row with subitems below summing to it)
+// and a value row. We pick the LAST matching row with numeric data in the date columns, OR specifically skip rows
+// that are immediately followed by sub-item rows summing into them. Practically: pick the row with the most non-null numeric cells.
+function findBestValueRow(grid, label, colMap){
+  const rows = findAllRowsByLabel(grid, label);
+  if(rows.length===0) return null;
+  if(rows.length===1) return rows[0];
+  let best=rows[0], bestCount=-1;
+  for(const r of rows){
+    let count=0;
+    for(const k in colMap){
+      const v = cell(grid, r, colMap[k]);
+      if(typeof v==='number') count++;
+    }
+    if(count>bestCount){ bestCount=count; best=r; }
+  }
+  return best;
+}
+
+/* ---- Build extraction for one workbook (current or prior), for given period/month ---- */
+function extractFromWorkbook(wb, period, month, unitDivisor){
+  const monthList = monthsFromFiscalStart(period, month);
+  const targetYM = fiscalMonthToCalendar(period, month);
+  const out = {warnings:[]};
+
+  // PL
+  const plObj = getPLSheetGrid(wb);
+  if(plObj){
+    const colMap = buildColumnMap(plObj.grid, [3,4,1,2]);
+    const g = plObj.grid;
+    function rowVal(label){
+      const r = findBestValueRow(g, label, colMap);
+      if(r==null) return {single:null,cum:null};
+      return {
+        single: singleMonth(g, r, colMap, targetYM),
+        cum: sumOverMonths(g, r, colMap, monthList)
+      };
+    }
+    out.sales = rowVal(PL_LABELS.sales);
+    out.cat_total = out.sales; // 酒類別売上高セクションの合計行は売上高　計と同じ値
+    out.cogs = rowVal(PL_LABELS.cogs);
+    out.grossProfit = rowVal(PL_LABELS.grossProfit);
+    out.sga = rowVal(PL_LABELS.sga);
+    out.opIncome = rowVal(PL_LABELS.opIncome);
+    out.ordIncome = rowVal(PL_LABELS.ordIncome);
+    out.netIncome = rowVal(PL_LABELS.netIncome);
+
+    // labor cost (sum of 8 rows)
+    const laborLabels=[PL_LABELS.exec,PL_LABELS.salary,PL_LABELS.misc_salary,PL_LABELS.bonus,
+      PL_LABELS.retire,PL_LABELS.sme_retire,PL_LABELS.welfare_stat,PL_LABELS.welfare];
+    out.labor = sumLabels(g,colMap,monthList,targetYM,laborLabels);
+    out.ad = sumLabels(g,colMap,monthList,targetYM,[PL_LABELS.ad,PL_LABELS.promo]);
+    out.freight = sumLabels(g,colMap,monthList,targetYM,[PL_LABELS.packing,PL_LABELS.freight]);
+    out.depreciationSga = rowVal(PL_LABELS.depreciation_sga);
+
+    // 酒類別
+    out.cat_seishu = rowVal(PL_LABELS.seishu);
+    out.cat_genryo = rowVal(PL_LABELS.genryo);
+    out.cat_mekko = rowVal(PL_LABELS.mekko);
+    out.cat_fukusan = rowVal(PL_LABELS.fukusanbutsu);
+    out.cat_shohin = rowVal(PL_LABELS.shohin);
+    const liqA = rowVal(PL_LABELS.liqueur);
+    const umeshu = rowVal(PL_LABELS.umeshu);
+    out.cat_liqueur = {
+      single: addNullable(liqA.single, umeshu.single),
+      cum: addNullable(liqA.cum, umeshu.cum)
+    };
+  } else {
+    out.warnings.push('PLシートが見つかりませんでした');
+  }
+
+  // CR
+  const crObj = getCRSheetGrid(wb);
+  if(crObj){
+    const colMap = buildColumnMap(crObj.grid, [3,4,1,2]);
+    const g = crObj.grid;
+    function rowVal(label){
+      const r = findBestValueRow(g, label, colMap);
+      if(r==null) return {single:null,cum:null};
+      return { single: singleMonth(g,r,colMap,targetYM), cum: sumOverMonths(g,r,colMap,monthList) };
+    }
+    out.material = rowVal(CR_LABELS.material);
+    out.cr_labor = rowVal(CR_LABELS.labor);
+    out.mfgCost = rowVal(CR_LABELS.mfgCost);
+    out.depreciationCr = rowVal(CR_LABELS.depreciation);
+  } else {
+    out.warnings.push('CRシートが見つかりませんでした');
+  }
+
+  // BS (end-of-month balance at target month column)
+  const bsObj = getBSSheetGrid(wb);
+  if(bsObj){
+    const colMap = buildColumnMap(bsObj.grid, [3,4,1,2]);
+    const g = bsObj.grid;
+    const targetCol = colMap[targetYM.y+'-'+targetYM.m];
+    function valAt(label){
+      const r = findBestValueRow(g, label, colMap);
+      if(r==null || targetCol==null) return null;
+      const v = cell(g, r, targetCol);
+      return typeof v==='number'? v: null;
+    }
+    // cash group: 現金 ... 譲渡性預金 (sum of all rows between, inclusive)
+    const cashStartRow = findRowByLabel(g, '現金');
+    const cashEndRow = findRowByLabel(g, '譲渡性預金');
+    let cashSum=null;
+    if(cashStartRow!=null && cashEndRow!=null && targetCol!=null){
+      cashSum=0;
+      for(let r=cashStartRow; r<=cashEndRow; r++){
+        const v = cell(g,r,targetCol);
+        if(typeof v==='number') cashSum+=v;
+      }
+    }
+    out.cash = cashSum;
+    out.receivable = valAt('売掛金');
+    const payable = valAt('買掛金');
+    const unpaid = valAt('未払金');
+    out.payableUnpaid = addNullable(payable, unpaid);
+    out.currentRatio = valAt('流動比率');
+    out.equityRatio = valAt('自己資本比率');
+  } else {
+    out.warnings.push('BSシートが見つかりませんでした');
+  }
+
+  // 数値管理
+  const numObj = getNumSheetGrid(wb);
+  if(numObj){
+    const colMap = buildColumnMap(numObj.grid, [2,3]);
+    const g = numObj.grid;
+    function rowVal(label){
+      const r = findBestValueRow(g, label, colMap);
+      if(r==null) return {single:null,cum:null};
+      return { single: singleMonth(g,r,colMap,targetYM), cum: sumOverMonths(g,r,colMap,monthList) };
+    }
+    out.totalBottles = rowVal(NUM_LABELS.totalBottles);
+    out.b1800 = rowVal(NUM_LABELS.b1800);
+    out.b720 = rowVal(NUM_LABELS.b720);
+    out.b300 = rowVal(NUM_LABELS.b300);
+    out.totalVolume = rowVal(NUM_LABELS.totalVolume);
+    out.seishuSalesForPrice = rowVal('清酒売上高');
+
+    // channel sales - careful: there are two "原料米等商品売上高" & similar rows (酒類別 already from PL).
+    // We restrict search to rows AFTER the "チャネル別売上高" section marker.
+    const chSectionRow = findRowByLabelContains(g, 'チャネル別売上高');
+    function rowValAfter(label, afterRow){
+      const rows = findAllRowsByLabel(g, label).filter(r=> afterRow? r>afterRow : true);
+      if(rows.length===0) return {single:null,cum:null};
+      const r = rows[0];
+      return { single: singleMonth(g,r,colMap,targetYM), cum: sumOverMonths(g,r,colMap,monthList) };
+    }
+    out.ch_domestic = rowValAfter(NUM_LABELS.ch_domestic, chSectionRow);
+    out.ch_president = rowValAfter(NUM_LABELS.ch_president, chSectionRow);
+    out.ch_overseas = rowValAfter(NUM_LABELS.ch_overseas, chSectionRow);
+    out.ch_oem = rowValAfter(NUM_LABELS.ch_oem, chSectionRow);
+    out.ch_ec = rowValAfter(NUM_LABELS.ch_ec, chSectionRow);
+    out.ch_amazon = rowValAfter(NUM_LABELS.ch_amazon, chSectionRow);
+    out.ch_genryo = rowValAfter(NUM_LABELS.ch_genryo, chSectionRow);
+  } else {
+    out.warnings.push('数値管理シートが見つかりませんでした');
+  }
+
+  return out;
+}
+
+function sumLabels(grid, colMap, monthList, targetYM, labels){
+  let single=0, cum=0, anyS=false, anyC=false;
+  for(const label of labels){
+    const r = findBestValueRow(grid, label, colMap);
+    if(r==null) continue;
+    const s = singleMonth(grid,r,colMap,targetYM);
+    const c = sumOverMonths(grid,r,colMap,monthList);
+    if(s!=null){ single+=s; anyS=true; }
+    if(c!=null){ cum+=c; anyC=true; }
+  }
+  return { single: anyS? single: null, cum: anyC? cum: null };
+}
+
+function addNullable(a,b){
+  if(a==null && b==null) return null;
+  return (a||0)+(b||0);
+}
+
+/* ---- Budget extraction (PL予実比較 / CR予実) ---- */
+function extractBudget(wb, period, month){
+  const monthList = monthsFromFiscalStart(period, month); // each entry {y,m}
+  const targetYM = fiscalMonthToCalendar(period, month);
+  const out = {warnings:[]};
+
+  const plb = getPLBudgetGrid(wb);
+  if(plb){
+    const g = plb.grid;
+    // header row 3 or 4 has dates at the start of each 4-col block; we scan ALL rows 1-6 for date cells
+    const dateScan = scanDateHeaders(g, [3,4,1,2,5,6]);
+    // map y-m -> block start col (the col where the date appears = budget col of that block)
+    const blockStart = {};
+    for(const h of dateScan){ blockStart[h.y+'-'+h.m]=h.col; }
+
+    function rowBudget(label){
+      const r = findBestValueRow(g, label, allBudgetCols(blockStart));
+      if(r==null) return {single:null,cum:null};
+      const tCol = blockStart[targetYM.y+'-'+targetYM.m];
+      const single = tCol!=null? numOrNull(cell(g,r,tCol)) : null;
+      let cum=0, any=false;
+      for(const ym of monthList){
+        const c = blockStart[ym.y+'-'+ym.m];
+        if(c!=null){ const v=cell(g,r,c); if(typeof v==='number'){cum+=v; any=true;} }
+      }
+      return {single, cum: any? cum: null};
+    }
+    out.sales = rowBudget(PL_LABELS.sales);
+    out.cogs = rowBudget(PL_LABELS.cogs);
+    out.grossProfit = rowBudget(PL_LABELS.grossProfit);
+    out.sga = rowBudget(PL_LABELS.sga);
+    out.opIncome = rowBudget(PL_LABELS.opIncome);
+    out.ordIncome = rowBudget(PL_LABELS.ordIncome);
+    out.netIncome = rowBudget(PL_LABELS.netIncome);
+
+    function sumBudgetLabels(labels){
+      let single=0,cum=0,anyS=false,anyC=false;
+      for(const label of labels){
+        const rv = rowBudget(label);
+        if(rv.single!=null){single+=rv.single; anyS=true;}
+        if(rv.cum!=null){cum+=rv.cum; anyC=true;}
+      }
+      return {single: anyS?single:null, cum: anyC?cum:null};
+    }
+    out.labor = sumBudgetLabels([PL_LABELS.exec,PL_LABELS.salary,PL_LABELS.misc_salary,PL_LABELS.bonus,
+      PL_LABELS.retire,PL_LABELS.sme_retire,PL_LABELS.welfare_stat,PL_LABELS.welfare]);
+    out.ad = sumBudgetLabels([PL_LABELS.ad, PL_LABELS.promo]);
+    out.freight = sumBudgetLabels([PL_LABELS.packing, PL_LABELS.freight]);
+    out.depreciationSga = rowBudget(PL_LABELS.depreciation_sga);
+  } else {
+    out.warnings.push('PL予実比較シートが見つかりませんでした');
+  }
+
+  const crb = getCRBudgetGrid(wb);
+  if(crb){
+    const g = crb.grid;
+    const dateScan = scanDateHeaders(g, [4,3,1,2,5]);
+    const colMap = {};
+    for(const h of dateScan){ colMap[h.y+'-'+h.m]=h.col; }
+    function rowVal(label){
+      const r = findBestValueRow(g, label, colMap);
+      if(r==null) return {single:null,cum:null};
+      return { single: singleMonth(g,r,colMap,targetYM), cum: sumOverMonths(g,r,colMap,monthList) };
+    }
+    out.material = rowVal(CR_LABELS.material);
+    out.cr_labor = rowVal(CR_LABELS.labor);
+    out.mfgCost = rowVal(CR_LABELS.mfgCost);
+    out.depreciationCr = rowVal(CR_LABELS.depreciation);
+  } else {
+    out.warnings.push('CR予実（川名）シートが見つかりませんでした');
+  }
+
+  // チャネル別売上高の予算は「数値管理【売上・本数】」シート内の固定列ブロック（E:P列＝9月始まり、千円単位）
+  // から取得する。このブロックは日付ヘッダーを持たず、E列が常に9月固定なので、専用の列マップを作る。
+  const numObjB = getNumSheetGrid(wb);
+  if(numObjB){
+    const g = numObjB.grid;
+    // E(col5)=Sep, F=Oct, ... P(col16)=Aug, of the same fiscal period as `period`.
+    const fixedCols = ['E','F','G','H','I','J','K','L','M','N','O','P'].map(colLetterToIndex);
+    const fixedMonths = [9,10,11,12,1,2,3,4,5,6,7,8];
+    const colMap = {};
+    for(let i=0;i<12;i++){
+      const cal = fiscalMonthToCalendar(period, fixedMonths[i]);
+      colMap[cal.y+'-'+cal.m] = fixedCols[i];
+    }
+    // restrict label search to rows at/after the budget marker ('予算' in column C) to avoid matching
+    // the actuals section above it, which reuses the same channel-name labels.
+    const budgetMarkerRow = findRowByLabelContains(g, '予算');
+    function rowValAfterBudget(label){
+      const rows = findAllRowsByLabel(g, label).filter(r => budgetMarkerRow? r>budgetMarkerRow : true);
+      if(rows.length===0) return {single:null,cum:null};
+      const r = rows[0];
+      const single = singleMonth(g, r, colMap, targetYM);
+      const cum = sumOverMonths(g, r, colMap, monthList);
+      // Source values are in thousand-yen (千円); convert to plain yen here so that the same
+      // roundManyen() (yen -> 万円) used for actuals also works correctly for budget figures.
+      return {
+        single: single!=null? single*1000 : null,
+        cum: cum!=null? cum*1000 : null
+      };
+    }
+    out.ch_domestic = rowValAfterBudget(NUM_LABELS.ch_domestic);
+    out.ch_president = rowValAfterBudget(NUM_LABELS.ch_president);
+    out.ch_overseas = rowValAfterBudget(NUM_LABELS.ch_overseas);
+    out.ch_oem = rowValAfterBudget(NUM_LABELS.ch_oem);
+    out.ch_ec = rowValAfterBudget(NUM_LABELS.ch_ec);
+    out.ch_amazon = rowValAfterBudget(NUM_LABELS.ch_amazon);
+    out.ch_genryo = rowValAfterBudget(NUM_LABELS.ch_genryo);
+  } else {
+    out.warnings.push('数値管理シート（チャネル別予算）が見つかりませんでした');
+  }
+
+  return out;
+}
+
+function allBudgetCols(blockStart){
+  const o={};
+  let i=0;
+  for(const k in blockStart) o[i++]=blockStart[k];
+  return blockStart;
+}
+function numOrNull(v){ return typeof v==='number'? v: null; }
+
+/* ============================================================
+   REPORT VALUE READER
+============================================================ */
+function readReportValues(wb, sheetName){
+  const grid = getSheetGrid(wb, sheetName);
+  function v(addr){
+    const m = addr.match(/^([A-Z]+)(\d+)$/);
+    const col = colLetterToIndex(m[1]);
+    const row = parseInt(m[2],10);
+    const val = cell(grid, row, col);
+    return typeof val==='number'? val : null;
+  }
+  return {
+    sales:{E:v('E8'),F:v('F8'),G:v('G8'),H:v('H8'),I:v('I8'),J:v('J8')},
+    cogs:{E:v('E9'),F:v('F9'),G:v('G9'),H:v('H9'),I:v('I9'),J:v('J9')},
+    material:{E:v('E10'),F:v('F10'),G:v('G10'),H:v('H10'),I:v('I10'),J:v('J10')},
+    labor:{E:v('E11'),F:v('F11'),G:v('G11'),H:v('H11'),I:v('I11'),J:v('J11')},
+    mfgCost:{E:v('E12'),F:v('F12'),G:v('G12'),H:v('H12'),I:v('I12'),J:v('J12')},
+    deprCr:{E:v('E13'),F:v('F13'),G:v('G13'),H:v('H13'),I:v('I13'),J:v('J13')},
+    grossProfit:{E:v('E14'),F:v('F14'),G:v('G14'),H:v('H14'),I:v('I14'),J:v('J14')},
+    sga:{E:v('E15'),F:v('F15'),G:v('G15'),H:v('H15'),I:v('I15'),J:v('J15')},
+    laborCost:{E:v('E16'),F:v('F16'),G:v('G16'),H:v('H16'),I:v('I16'),J:v('J16')},
+    ad:{E:v('E17'),F:v('F17'),G:v('G17'),H:v('H17'),I:v('I17'),J:v('J17')},
+    freight:{E:v('E18'),F:v('F18'),G:v('G18'),H:v('H18'),I:v('I18'),J:v('J18')},
+    deprSga:{E:v('E19'),F:v('F19'),G:v('G19'),H:v('H19'),I:v('I19'),J:v('J19')},
+    opIncome:{E:v('E21'),F:v('F21'),G:v('G21'),H:v('H21'),I:v('I21'),J:v('J21')},
+    ordIncome:{E:v('E22'),F:v('F22'),G:v('G22'),H:v('H22'),I:v('I22'),J:v('J22')},
+    netIncome:{E:v('E23'),F:v('F23'),G:v('G23'),H:v('H23'),I:v('I23'),J:v('J23')},
+
+    cash:{E:v('E26'),G:v('G26')},
+    receivable:{E:v('E27'),G:v('G27')},
+    payableUnpaid:{E:v('E28'),G:v('G28')},
+    grossMargin:{E:v('E31'),F:v('F31'),G:v('G31'),H:v('H31'),I:v('I31'),J:v('J31')},
+    opMargin:{E:v('E33'),F:v('F33'),G:v('G33'),H:v('H33'),I:v('I33'),J:v('J33')},
+    laborRatio:{E:v('E34'),F:v('F34'),G:v('G34'),H:v('H34'),I:v('I34'),J:v('J34')},
+    ebitdaMargin:{E:v('E35'),F:v('F35'),G:v('G35'),H:v('H35'),I:v('I35'),J:v('J35')},
+    currentRatio:{E:v('E36'),G:v('G36')},
+    equityRatio:{E:v('E37'),G:v('G37')},
+
+    cat_total:{E:v('E40'),F:v('F40'),G:v('G40'),H:v('H40')},
+    cat_seishu:{E:v('E41'),F:v('F41'),G:v('G41'),H:v('H41')},
+    cat_genryo:{E:v('E42'),F:v('F42'),G:v('G42'),H:v('H42')},
+    cat_liqueur:{E:v('E43'),F:v('F43'),G:v('G43'),H:v('H43')},
+    cat_mekko:{E:v('E44'),F:v('F44'),G:v('G44'),H:v('H44')},
+    cat_fukusan:{E:v('E45'),F:v('F45'),G:v('G45'),H:v('H45')},
+    cat_shohin:{E:v('E46'),F:v('F46'),G:v('G46'),H:v('H46')},
+
+    totalBottles:{E:v('E48'),F:v('F48'),G:v('G48'),H:v('H48')},
+    b1800:{E:v('E49'),F:v('F49'),G:v('G49'),H:v('H49')},
+    b720:{E:v('E50'),F:v('F50'),G:v('G50'),H:v('H50')},
+    b300:{E:v('E51'),F:v('F51'),G:v('G51'),H:v('H51')},
+    ratio720:{E:v('E52'),F:v('F52'),G:v('G52'),H:v('H52')},
+    totalVolume:{E:v('E53'),F:v('F53'),G:v('G53'),H:v('H53')},
+    avgPrice:{E:v('E54'),F:v('F54'),G:v('G54'),H:v('H54')},
+
+    ch_domestic:{E:v('E60'),F:v('F60'),G:v('G60'),H:v('H60'),I:v('I60'),J:v('J60')},
+    ch_president:{E:v('E61'),F:v('F61'),G:v('G61'),H:v('H61'),I:v('I61'),J:v('J61')},
+    ch_overseas:{E:v('E62'),F:v('F62'),G:v('G62'),H:v('H62'),I:v('I62'),J:v('J62')},
+    ch_oem:{E:v('E63'),F:v('F63'),G:v('G63'),H:v('H63'),I:v('I63'),J:v('J63')},
+    ch_ec:{E:v('E64'),F:v('F64'),G:v('G64'),H:v('H64'),I:v('I64'),J:v('J64')},
+    ch_amazon:{E:v('E65'),F:v('F65'),G:v('G65'),H:v('H65'),I:v('I65'),J:v('J65')},
+    ch_genryo:{E:v('E66'),F:v('F66'),G:v('G66'),H:v('H66'),I:v('I66'),J:v('J66')},
+  };
+}
+
+/* ============================================================
+   COMPARISON ENGINE
+============================================================ */
+function cmp(label, calc, actual, tolerance){
+  tolerance = tolerance===undefined? 0 : tolerance;
+  if(calc==null && actual==null) return {status:'na', calc, actual};
+  if(calc==null || actual==null) return {status:'na', calc, actual};
+  const diff = Math.abs(calc-actual);
+  return { status: diff<=tolerance? 'ok':'ng', calc, actual, diff: calc-actual };
+}
+
+function buildRows(defs){
+  // defs: [{label, calc, actual, tol}]
+  return defs.map(d=>{
+    const r = cmp(d.label, d.calc, d.actual, d.tol);
+    return Object.assign({label:d.label}, r);
+  });
+}
+
+/* ============================================================
+   RENDER
+============================================================ */
+function renderTable(title, rows, colLabels){
+  const errInSection = rows.filter(r=>r.status==='ng').length;
+  let html = `<div class="section-block"><div class="section-title">${title}${errInSection? ` <span style="color:var(--err);font-weight:700;">— 差分 ${errInSection}件</span>`:''}</div>`;
+  html += `<table class="check-table"><thead><tr><th>項目</th>`;
+  for(const cl of colLabels) html += `<th>${cl}</th>`;
+  html += `<th>差分</th><th></th></tr></thead><tbody>`;
+  for(const row of rows){
+    const trClass = row.status==='ng' ? 'row-err' : '';
+    html += `<tr class="${trClass}">`;
+    html += `<td>${row.label}</td>`;
+    html += `<td>${fmt(row.calc)}</td>`;
+    html += `<td>${fmt(row.actual)}</td>`;
+    html += `<td class="diff-note">${row.status==='ng' ? (row.diff>0?'+':'')+fmt(row.diff) : ''}</td>`;
+    html += `<td class="mark ${row.status}">${markSymbol(row.status)}</td>`;
+    html += `</tr>`;
+  }
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+function fmt(v){
+  if(v==null) return '–';
+  if(Math.abs(v) < 5 && v%1!==0) return v.toFixed(3); // ratios
+  return v.toLocaleString('ja-JP');
+}
+function markSymbol(status){
+  if(status==='ok') return '✓';
+  if(status==='ng') return '✕';
+  return '–';
+}
+
+/* ============================================================
+   RUN
+============================================================ */
+document.getElementById('run-btn').addEventListener('click', runCheck);
+document.getElementById('build-btn').addEventListener('click', runBuild);
+
+function runBuild(){
+  setStatusBuild('');
+  const hidden = document.getElementById('target-month-b');
+  const calendarYear = parseInt(hidden.dataset.calendarYear, 10);
+  const month = parseInt(hidden.dataset.calendarMonth, 10);
+  if(!calendarYear || !month){
+    setStatusBuild('対象月を選択してください', true);
+    return;
+  }
+  const tm = {
+    period: calendarToFiscalPeriod(calendarYear, month),   // fiscal period for data extraction
+    reportLabelYear: calendarToReportLabel(calendarYear, month), // year used in the sheet name
+    month
+  };
+  const btn = document.getElementById('build-btn');
+  btn.disabled = true;
+  document.getElementById('build-label').innerHTML = '<span class="spin"></span> 作成中…';
+
+  setTimeout(()=>{
+    try{
+      doBuild(tm);
+    }catch(err){
+      console.error(err);
+      setStatusBuild('作成中にエラーが発生しました: '+err.message, true);
+    } finally {
+      btn.disabled=false;
+      document.getElementById('build-label').textContent='数値を作成する';
+      updateBuildButton();
+    }
+  }, 50);
+}
+
+function doBuild(tm){
+  const calcCurrent = extractFromWorkbook(state.current, tm.period, tm.month);
+  const calcBudget = extractBudget(state.current, tm.period, tm.month);
+  const calcPrior = state.prior ? extractFromWorkbook(state.prior, tm.period-1, tm.month) : null;
+
+  // EBITDA = 営業利益 + 減価償却費(製) + 減価償却費(販管)
+  function ebitda(obj){
+    if(!obj) return {single:null, cum:null};
+    return {
+      single: addNullable(obj.opIncome?.single, addNullable(obj.depreciationCr?.single, obj.depreciationSga?.single)),
+      cum: addNullable(obj.opIncome?.cum, addNullable(obj.depreciationCr?.cum, obj.depreciationSga?.cum))
+    };
+  }
+  const ebitdaCurrent = ebitda(calcCurrent);
+  const ebitdaBudget = ebitda(calcBudget);
+  const ebitdaPrior = calcPrior ? ebitda(calcPrior) : null;
+
+  // 財務分析 (ratios), computed from already-rounded million-yen figures, matching report formulas
+  function ratios(obj, ebObj){
+    const salesM = roundMillion(obj?.sales?.cum);
+    const grossM = roundMillion(obj?.grossProfit?.cum);
+    const opM = roundMillion(obj?.opIncome?.cum);
+    const laborM = roundMillion(obj?.labor?.cum);
+    const crLaborM = roundMillion(obj?.cr_labor?.cum);
+    const ebM = roundMillion(ebObj?.cum);
+    if(!salesM) return {gross:null, op:null, laborRatio:null, ebitdaMargin:null};
+    return {
+      gross: grossM!=null? grossM/salesM : null,
+      op: opM!=null? opM/salesM : null,
+      laborRatio: (laborM!=null && crLaborM!=null)? (laborM+crLaborM)/salesM : null,
+      ebitdaMargin: ebM!=null? ebM/salesM : null
+    };
+  }
+  const ratiosCurrentCum = ratios(calcCurrent, ebitdaCurrent);
+  const ratiosPriorCum = calcPrior ? ratios(calcPrior, ebitdaPrior) : null;
+
+  renderBuildResults(tm, {
+    current: calcCurrent, budget: calcBudget, prior: calcPrior,
+    ebitdaCurrent, ebitdaBudget, ebitdaPrior,
+    ratiosCurrentCum, ratiosPriorCum
+  });
+}
+
+// numer/denom are already-rounded million-yen (or other unit) figures; returns the ratio
+// expressed as a percent-scale plain number (e.g. 54.8 meaning 54.8%), matching the report's
+// own formula which divides the rounded display cells (not the raw underlying yen values).
+function ratioPct(numer, denom){
+  if(numer==null || denom==null || denom===0) return null;
+  return Math.round((numer/denom)*1000)/10;
+}
+
+function financialRatioRow(label, reportRow, current, prior, budget){
+  return {
+    label, unit:'%', reportRow,
+    E: current ? current.single : null,
+    F: current ? current.cum : null,
+    G: prior ? prior.single : null,
+    H: prior ? prior.cum : null,
+    I: budget ? budget.single : null,
+    J: budget ? budget.cum : null,
+    hasBudget: !!budget,
+    displayFmt: v=>v==null?'':v+'%'
+  };
+}
+
+function buildRow(label, unit, current, prior, budget, transform, reportRow){
+  transform = transform || (v=>v);
+  return {
+    label, unit, reportRow,
+    E: current ? transform(current.single) : null,
+    F: current ? transform(current.cum) : null,
+    G: prior ? transform(prior.single) : null,
+    H: prior ? transform(prior.cum) : null,
+    I: budget ? transform(budget.single) : null,
+    J: budget ? transform(budget.cum) : null,
+    hasBudget: !!budget,
+  };
+}
+
+function renderBuildResults(tm, d){
+  const el = document.getElementById('build-results');
+  el.style.display='block';
+  const {current, budget, prior, ebitdaCurrent, ebitdaBudget, ebitdaPrior, ratiosCurrentCum, ratiosPriorCum} = d;
+
+  const rows = [];
+  const M = roundMillion, MY = roundManyen;
+
+  rows.push({group:'PL（百万円）'});
+  rows.push(buildRow('売上高','百万円', current.sales, prior?.sales, budget.sales, M, 8));
+  rows.push(buildRow('売上原価','百万円', current.cogs, prior?.cogs, budget.cogs, M, 9));
+  rows.push(buildRow('材料費','百万円', current.material, prior?.material, budget.material, M, 10));
+  rows.push(buildRow('労務費','百万円', current.cr_labor, prior?.cr_labor, budget.cr_labor, M, 11));
+  rows.push(buildRow('製造経費','百万円', current.mfgCost, prior?.mfgCost, budget.mfgCost, M, 12));
+  rows.push(buildRow('うち減価償却費(製)','百万円', current.depreciationCr, prior?.depreciationCr, budget.depreciationCr, M, 13));
+  rows.push(buildRow('売上総利益','百万円', current.grossProfit, prior?.grossProfit, budget.grossProfit, M, 14));
+  rows.push(buildRow('販売管理費','百万円', current.sga, prior?.sga, budget.sga, M, 15));
+  rows.push(buildRow('人件費','百万円', current.labor, prior?.labor, budget.labor, M, 16));
+  rows.push(buildRow('広告宣伝費/販促費','百万円', current.ad, prior?.ad, budget.ad, M, 17));
+  rows.push(buildRow('運賃/荷造包装費','百万円', current.freight, prior?.freight, budget.freight, M, 18));
+  rows.push(buildRow('減価償却費(販管)','百万円', current.depreciationSga, prior?.depreciationSga, budget.depreciationSga, M, 19));
+  rows.push(buildRow('営業利益','百万円', current.opIncome, prior?.opIncome, budget.opIncome, M, 21));
+  rows.push(buildRow('経常利益','百万円', current.ordIncome, prior?.ordIncome, budget.ordIncome, M, 22));
+  rows.push(buildRow('当期利益','百万円', current.netIncome, prior?.netIncome, budget.netIncome, M, 23));
+  rows.push(buildRow('EBITDA','百万円', ebitdaCurrent, ebitdaPrior, ebitdaBudget, M, 24));
+
+  rows.push({group:'BS（百万円・予算と期間累計は無し）'});
+  rows.push({label:'現金及び預金', unit:'百万円', reportRow:26, E:M(current.cash), G:prior?M(prior.cash):null});
+  rows.push({label:'売掛金', unit:'百万円', reportRow:27, E:M(current.receivable), G:prior?M(prior.receivable):null});
+  rows.push({label:'買掛金/未払金', unit:'百万円', reportRow:28, E:M(current.payableUnpaid), G:prior?M(prior.payableUnpaid):null});
+
+  rows.push({group:'財務分析'});
+  rows.push(financialRatioRow('粗利率', 31,
+    {single:ratioPct(M(current.grossProfit?.single), M(current.sales?.single)), cum:ratioPct(M(current.grossProfit?.cum), M(current.sales?.cum))},
+    prior?{single:ratioPct(M(prior.grossProfit?.single), M(prior.sales?.single)), cum:ratioPct(M(prior.grossProfit?.cum), M(prior.sales?.cum))}:null,
+    {single:ratioPct(M(budget.grossProfit?.single), M(budget.sales?.single)), cum:ratioPct(M(budget.grossProfit?.cum), M(budget.sales?.cum))}));
+  rows.push(financialRatioRow('営業利益率', 33,
+    {single:ratioPct(M(current.opIncome?.single), M(current.sales?.single)), cum:ratioPct(M(current.opIncome?.cum), M(current.sales?.cum))},
+    prior?{single:ratioPct(M(prior.opIncome?.single), M(prior.sales?.single)), cum:ratioPct(M(prior.opIncome?.cum), M(prior.sales?.cum))}:null,
+    {single:ratioPct(M(budget.opIncome?.single), M(budget.sales?.single)), cum:ratioPct(M(budget.opIncome?.cum), M(budget.sales?.cum))}));
+  rows.push(financialRatioRow('売上高対人件費率', 34,
+    {single:ratioPct(addNullable(M(current.labor?.single),M(current.cr_labor?.single)), M(current.sales?.single)), cum:ratioPct(addNullable(M(current.labor?.cum),M(current.cr_labor?.cum)), M(current.sales?.cum))},
+    prior?{single:ratioPct(addNullable(M(prior.labor?.single),M(prior.cr_labor?.single)), M(prior.sales?.single)), cum:ratioPct(addNullable(M(prior.labor?.cum),M(prior.cr_labor?.cum)), M(prior.sales?.cum))}:null,
+    {single:ratioPct(addNullable(M(budget.labor?.single),M(budget.cr_labor?.single)), M(budget.sales?.single)), cum:ratioPct(addNullable(M(budget.labor?.cum),M(budget.cr_labor?.cum)), M(budget.sales?.cum))}));
+  rows.push(financialRatioRow('EBITDAマージン', 35,
+    {single:ratioPct(M(ebitdaCurrent.single), M(current.sales?.single)), cum:ratioPct(M(ebitdaCurrent.cum), M(current.sales?.cum))},
+    prior?{single:ratioPct(M(ebitdaPrior.single), M(prior.sales?.single)), cum:ratioPct(M(ebitdaPrior.cum), M(prior.sales?.cum))}:null,
+    {single:ratioPct(M(ebitdaBudget.single), M(budget.sales?.single)), cum:ratioPct(M(ebitdaBudget.cum), M(budget.sales?.cum))}));
+  rows.push({label:'流動比率', unit:'(数値のまま)', reportRow:36, E:current.currentRatio!=null?Math.round(current.currentRatio*10)/10:null, G:prior&&prior.currentRatio!=null?Math.round(prior.currentRatio*10)/10:null});
+  rows.push({label:'自己資本比率', unit:'(数値のまま)', reportRow:37, E:current.equityRatio!=null?Math.round(current.equityRatio*10)/10:null, G:prior&&prior.equityRatio!=null?Math.round(prior.equityRatio*10)/10:null});
+
+  rows.push({group:'酒類別売上高（万円）'});
+  rows.push(buildRow('酒類別売上高 合計','万円', current.cat_total, prior?.cat_total, null, MY, 40));
+  rows.push(buildRow('清酒売上高','万円', current.cat_seishu, prior?.cat_seishu, null, MY, 41));
+  rows.push(buildRow('原料米等商品売上高','万円', current.cat_genryo, prior?.cat_genryo, null, MY, 42));
+  rows.push(buildRow('リキュール売上高（梅酒含む）','万円', current.cat_liqueur, prior?.cat_liqueur, null, MY, 43));
+  rows.push(buildRow('マッコリ売上','万円', current.cat_mekko, prior?.cat_mekko, null, MY, 44));
+  rows.push(buildRow('清酒副産品売上高','万円', current.cat_fukusan, prior?.cat_fukusan, null, MY, 45));
+  rows.push(buildRow('商品売上高','万円', current.cat_shohin, prior?.cat_shohin, null, MY, 46));
+
+  rows.push({group:'販売数量/単価'});
+  rows.push(buildRow('清酒総出荷本数','本', current.totalBottles, prior?.totalBottles, null, v=>v, 48));
+  rows.push(buildRow('1,800ml','本', current.b1800, prior?.b1800, null, v=>v, 49));
+  rows.push(buildRow('720ml','本', current.b720, prior?.b720, null, v=>v, 50));
+  rows.push(buildRow('300ml','本', current.b300, prior?.b300, null, v=>v, 51));
+  rows.push({label:'720ml比率', unit:'', reportRow:52,
+    E:pctAsNumber(ratioOf(current.b720?.single,current.totalBottles?.single)), F:pctAsNumber(ratioOf(current.b720?.cum,current.totalBottles?.cum)),
+    G:prior?pctAsNumber(ratioOf(prior.b720?.single,prior.totalBottles?.single)):null, H:prior?pctAsNumber(ratioOf(prior.b720?.cum,prior.totalBottles?.cum)):null,
+    displayFmt:v=>v==null?'':v+'%'});
+  rows.push(buildRow('清酒総蔵出数量','L', current.totalVolume, prior?.totalVolume, null, roundLiter, 53));
+  rows.push({label:'平均蔵出単価(720ml換算)', unit:'円', reportRow:54,
+    E:avgPriceOf(current.cat_seishu?.single, current.totalVolume?.single), F:avgPriceOf(current.cat_seishu?.cum, current.totalVolume?.cum),
+    G:prior?avgPriceOf(prior.cat_seishu?.single, prior.totalVolume?.single):null, H:prior?avgPriceOf(prior.cat_seishu?.cum, prior.totalVolume?.cum):null});
+
+  rows.push({group:'チャネル別売上高（万円）'});
+  rows.push(buildRow('国内営業','万円', current.ch_domestic, prior?.ch_domestic, budget.ch_domestic, MY, 60));
+  rows.push(buildRow('社長室（百貨店・県外問屋スーパー）','万円', current.ch_president, prior?.ch_president, budget.ch_president, MY, 61));
+  rows.push(buildRow('海外営業（未納税含む）','万円', current.ch_overseas, prior?.ch_overseas, budget.ch_overseas, MY, 62));
+  rows.push(buildRow('OEM（Clear：清酒のみ）','万円', current.ch_oem, prior?.ch_oem, budget.ch_oem, MY, 63));
+  rows.push(buildRow('EC（オンラインショップ）','万円', current.ch_ec, prior?.ch_ec, budget.ch_ec, MY, 64));
+  rows.push(buildRow('アマゾンジャパン/セラー','万円', current.ch_amazon, prior?.ch_amazon, budget.ch_amazon, MY, 65));
+  rows.push(buildRow('原料米等商品売上高','万円', current.ch_genryo, prior?.ch_genryo, budget.ch_genryo, MY, 66));
+
+  let html = `<div class="results-head"><h2>作成結果 — R${tm.reportLabelYear}.${tm.month}月</h2></div>`;
+  html += `<div class="copy-bar">
+      <button class="copy-btn" id="copy-build-btn" onclick="copyBuildNumbers()">数字だけコピー</button>
+      <span class="copy-hint">月次レポートのE8セルに貼り付けてください（行・列が自動的に揃います）。貼り付け後は必ず検算モードで確認してください。</span>
+    </div>`;
+  html += `<div class="build-table-wrap"><table class="build-table" id="build-output-table"><thead><tr>
+      <th>項目</th><th>単位</th>
+      <th>当期(単月) E</th><th>当期(累計) F</th>
+      <th>前期(単月) G</th><th>前期(累計) H</th>
+      <th>予算(単月) I</th><th>予算(累計) J</th>
+    </tr></thead><tbody>`;
+  for(const r of rows){
+    if(r.group){
+      html += `<tr class="group-row"><td colspan="8">${r.group}</td></tr>`;
+      continue;
+    }
+    if(r.note){
+      html += `<tr><td>${r.label}</td><td>${r.unit}</td><td colspan="6" style="text-align:left;color:var(--muted);font-family:var(--font-body);">— ${r.note} —</td></tr>`;
+      continue;
+    }
+    const fmt = r.displayFmt || fmtBuild;
+    const iVal = (r.hasBudget && r.I==null) ? 0 : r.I;
+    const jVal = (r.hasBudget && r.J==null) ? 0 : r.J;
+    html += `<tr><td>${r.label}</td><td>${r.unit}</td>
+      <td>${fmt(r.E)}</td><td>${fmt(r.F)}</td>
+      <td>${fmt(r.G)}</td><td>${fmt(r.H)}</td>
+      <td>${fmt(iVal)}</td><td>${fmt(jVal)}</td>
+    </tr>`;
+  }
+  html += `</tbody></table></div>`;
+  el.innerHTML = html;
+  el.dataset.buildRows = JSON.stringify(rows.filter(r=>r.reportRow));
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// Copies ONLY the numeric E~J values, row-aligned to the report's actual row numbers (e.g. row 8
+// for 売上高, row 31 skipped because 粗利率 is formula-driven, etc). Pasting into the report's E8
+// cell will land every value on the correct row/column automatically, with no extra label/unit
+// columns and no row drift from skipped formula-driven rows.
+function copyBuildNumbers(){
+  const el = document.getElementById('build-results');
+  let rows;
+  try{ rows = JSON.parse(el.dataset.buildRows || '[]'); }catch(e){ rows = []; }
+  if(rows.length===0) return;
+
+  const minRow = Math.min(...rows.map(r=>r.reportRow));
+  const maxRow = Math.max(...rows.map(r=>r.reportRow));
+  const byRow = {};
+  for(const r of rows) byRow[r.reportRow] = r;
+
+  const lines = [];
+  for(let row=minRow; row<=maxRow; row++){
+    const r = byRow[row];
+    if(!r){ lines.push(['','','','','',''].join('\t')); continue; }
+    const cols = ['E','F','G','H','I','J'].map(col=>{
+      let val = r[col];
+      if((col==='I'||col==='J') && r.hasBudget && val==null) val = 0;
+      return val==null ? '' : val;
+    });
+    lines.push(cols.join('\t'));
+  }
+  const tsv = lines.join('\n');
+
+  copyTextToClipboard(tsv).then(()=>{
+    const btn = document.getElementById('copy-build-btn');
+    if(btn){
+      const orig = btn.textContent;
+      btn.textContent = 'コピーしました ✓';
+      setTimeout(()=>{ btn.textContent = orig; }, 1800);
+    }
+  }).catch(err=>{
+    console.error('copy failed', err);
+  });
+}
+
+function copyTextToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject)=>{
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      resolve();
+    }catch(err){ reject(err); }
+  });
+}
+
+function pctDisplay(v){ return v==null? '' : (Math.round(v*1000)/10)+'%'; }
+function pctAsNumber(v){ return v==null? null : Math.round(v*1000)/10; }
+
+function fmtBuild(v){
+  if(v==null) return '';
+  if(typeof v==='number') return v.toLocaleString('ja-JP');
+  return v;
+}
+// percentage stored as raw ratio (0.648) -> displayed "64.8%"
+function fmtPctRaw(v){ return v==null? null : (Math.round(v*1000)/10)+'%'; }
+function fmtRatioRaw(v){ return v==null? null : (Math.round(v*1000)/10)+'%'; }
+
+
+function runCheck(){
+  setStatus('');
+  const hidden = document.getElementById('target-month');
+  const calendarYear = parseInt(hidden.dataset.calendarYear, 10);
+  const month = parseInt(hidden.dataset.calendarMonth, 10);
+  if(!calendarYear || !month){
+    setStatus('対象月を選択してください', true);
+    return;
+  }
+  const tm = {
+    period: calendarToFiscalPeriod(calendarYear, month),
+    reportLabelYear: calendarToReportLabel(calendarYear, month),
+    month
+  };
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('run-label').innerHTML = '<span class="spin"></span> 検算中…';
+
+  setTimeout(()=>{
+    try{
+      doRun(tm);
+    }catch(err){
+      console.error(err);
+      setStatus('検算中にエラーが発生しました: '+err.message, true);
+    } finally {
+      btn.disabled=false;
+      document.getElementById('run-label').textContent='検算を実行する';
+      updateRunButton();
+    }
+  }, 50);
+}
+
+function doRun(tm){
+  const reportSheetName = findReportSheet(state.report, tm.reportLabelYear, tm.month);
+  if(!reportSheetName){
+    setStatus(`月次レポートに R${tm.reportLabelYear}.${tm.month}月 のシートが見つかりませんでした`, true);
+    return;
+  }
+  const reportVals = readReportValues(state.report, reportSheetName);
+  const calcCurrent = extractFromWorkbook(state.current, tm.period, tm.month);
+  const calcBudget = extractBudget(state.current, tm.period, tm.month);
+  const calcPrior = state.prior ? extractFromWorkbook(state.prior, tm.period-1, tm.month) : null;
+
+  function ebitda(obj){
+    if(!obj) return {single:null, cum:null};
+    return {
+      single: addNullable(obj.opIncome?.single, addNullable(obj.depreciationCr?.single, obj.depreciationSga?.single)),
+      cum: addNullable(obj.opIncome?.cum, addNullable(obj.depreciationCr?.cum, obj.depreciationSga?.cum))
+    };
+  }
+  const ebitdaCurrent = ebitda(calcCurrent);
+  const ebitdaBudget = ebitda(calcBudget);
+  const ebitdaPrior = calcPrior ? ebitda(calcPrior) : null;
+
+  const M = roundMillion, MY = roundManyen;
+  const rows = [];
+  let totalCells = 0, errCells = 0;
+
+  // checkRow: builds one report-shaped row (E~J) where each populated column carries both
+  // the report's recorded value (shown) and our calculated value (revealed on click if it differs).
+  function checkRow(label, unit, current, prior, budget, transform, reportCell, tol, displayFmt){
+    transform = transform || (v=>v);
+    tol = tol || 0;
+    const calcVals = {
+      E: current ? transform(current.single) : null,
+      F: current ? transform(current.cum) : null,
+      G: prior ? transform(prior.single) : null,
+      H: prior ? transform(prior.cum) : null,
+      I: budget ? transform(budget.single) : null,
+      J: budget ? transform(budget.cum) : null,
+    };
+    const cells = {};
+    for(const col of ['E','F','G','H','I','J']){
+      const actual = reportCell ? reportCell[col] : undefined;
+      const calc = calcVals[col];
+      if(actual===undefined && calc==null){ cells[col]=null; continue; }
+      let status;
+      if(calc==null && (actual==null||actual===undefined)) status = 'na';
+      else if(calc==null || actual==null || actual===undefined) status = 'na';
+      else status = Math.abs(calc-actual) <= tol+1e-9 ? 'ok' : 'ng';
+      if(status!=='na'){ totalCells++; if(status==='ng') errCells++; }
+      cells[col] = { actual: (actual===undefined?null:actual), calc, status };
+    }
+    return {label, unit, cells, displayFmt};
+  }
+
+  rows.push({group:'PL（百万円）'});
+  rows.push(checkRow('売上高','百万円', calcCurrent.sales, calcPrior?.sales, calcBudget.sales, M, reportVals.sales));
+  rows.push(checkRow('売上原価','百万円', calcCurrent.cogs, calcPrior?.cogs, calcBudget.cogs, M, reportVals.cogs));
+  rows.push(checkRow('材料費','百万円', calcCurrent.material, calcPrior?.material, calcBudget.material, M, reportVals.material));
+  rows.push(checkRow('労務費','百万円', calcCurrent.cr_labor, calcPrior?.cr_labor, calcBudget.cr_labor, M, reportVals.labor));
+  rows.push(checkRow('製造経費','百万円', calcCurrent.mfgCost, calcPrior?.mfgCost, calcBudget.mfgCost, M, reportVals.mfgCost));
+  rows.push(checkRow('うち減価償却費(製)','百万円', calcCurrent.depreciationCr, calcPrior?.depreciationCr, calcBudget.depreciationCr, M, reportVals.deprCr));
+  rows.push(checkRow('売上総利益','百万円', calcCurrent.grossProfit, calcPrior?.grossProfit, calcBudget.grossProfit, M, reportVals.grossProfit));
+  rows.push(checkRow('販売管理費','百万円', calcCurrent.sga, calcPrior?.sga, calcBudget.sga, M, reportVals.sga));
+  rows.push(checkRow('人件費','百万円', calcCurrent.labor, calcPrior?.labor, calcBudget.labor, M, reportVals.laborCost));
+  rows.push(checkRow('広告宣伝費/販促費','百万円', calcCurrent.ad, calcPrior?.ad, calcBudget.ad, M, reportVals.ad));
+  rows.push(checkRow('運賃/荷造包装費','百万円', calcCurrent.freight, calcPrior?.freight, calcBudget.freight, M, reportVals.freight));
+  rows.push(checkRow('減価償却費(販管)','百万円', calcCurrent.depreciationSga, calcPrior?.depreciationSga, calcBudget.depreciationSga, M, reportVals.deprSga));
+  rows.push(checkRow('営業利益','百万円', calcCurrent.opIncome, calcPrior?.opIncome, calcBudget.opIncome, M, reportVals.opIncome));
+  rows.push(checkRow('経常利益','百万円', calcCurrent.ordIncome, calcPrior?.ordIncome, calcBudget.ordIncome, M, reportVals.ordIncome));
+  rows.push(checkRow('当期利益','百万円', calcCurrent.netIncome, calcPrior?.netIncome, calcBudget.netIncome, M, reportVals.netIncome));
+
+  rows.push({group:'BS（百万円・予算と期間累計は無し）'});
+  rows.push(checkRow('現金及び預金','百万円', {single:calcCurrent.cash,cum:null}, calcPrior?{single:calcPrior.cash,cum:null}:null, null, M, {E:reportVals.cash.E, G:reportVals.cash.G}));
+  rows.push(checkRow('売掛金','百万円', {single:calcCurrent.receivable,cum:null}, calcPrior?{single:calcPrior.receivable,cum:null}:null, null, M, {E:reportVals.receivable.E, G:reportVals.receivable.G}));
+  rows.push(checkRow('買掛金/未払金','百万円', {single:calcCurrent.payableUnpaid,cum:null}, calcPrior?{single:calcPrior.payableUnpaid,cum:null}:null, null, M, {E:reportVals.payableUnpaid.E, G:reportVals.payableUnpaid.G}));
+  rows.push(checkRow('流動比率','(数値のまま)',
+    {single:current_ratio_round(calcCurrent.currentRatio),cum:null},
+    calcPrior?{single:current_ratio_round(calcPrior.currentRatio),cum:null}:null,
+    null, v=>v, {E:reportVals.currentRatio.E, G:reportVals.currentRatio.G}, 0.1));
+  rows.push(checkRow('自己資本比率','(数値のまま)',
+    {single:current_ratio_round(calcCurrent.equityRatio),cum:null},
+    calcPrior?{single:current_ratio_round(calcPrior.equityRatio),cum:null}:null,
+    null, v=>v, {E:reportVals.equityRatio.E, G:reportVals.equityRatio.G}, 0.1));
+
+  rows.push({group:'財務分析'});
+  rows.push(checkRow('粗利率','%',
+    {single:ratioPct(M(calcCurrent.grossProfit?.single), M(calcCurrent.sales?.single)), cum:ratioPct(M(calcCurrent.grossProfit?.cum), M(calcCurrent.sales?.cum))},
+    calcPrior?{single:ratioPct(M(calcPrior.grossProfit?.single), M(calcPrior.sales?.single)), cum:ratioPct(M(calcPrior.grossProfit?.cum), M(calcPrior.sales?.cum))}:null,
+    {single:ratioPct(M(calcBudget.grossProfit?.single), M(calcBudget.sales?.single)), cum:ratioPct(M(calcBudget.grossProfit?.cum), M(calcBudget.sales?.cum))},
+    v=>v, toPctCell(reportVals.grossMargin), 0.1, v=>v==null?'':v+'%'));
+  rows.push(checkRow('営業利益率','%',
+    {single:ratioPct(M(calcCurrent.opIncome?.single), M(calcCurrent.sales?.single)), cum:ratioPct(M(calcCurrent.opIncome?.cum), M(calcCurrent.sales?.cum))},
+    calcPrior?{single:ratioPct(M(calcPrior.opIncome?.single), M(calcPrior.sales?.single)), cum:ratioPct(M(calcPrior.opIncome?.cum), M(calcPrior.sales?.cum))}:null,
+    {single:ratioPct(M(calcBudget.opIncome?.single), M(calcBudget.sales?.single)), cum:ratioPct(M(calcBudget.opIncome?.cum), M(calcBudget.sales?.cum))},
+    v=>v, toPctCell(reportVals.opMargin), 0.1, v=>v==null?'':v+'%'));
+  rows.push(checkRow('売上高対人件費率','%',
+    {single:ratioPct(addNullable(M(calcCurrent.labor?.single),M(calcCurrent.cr_labor?.single)), M(calcCurrent.sales?.single)), cum:ratioPct(addNullable(M(calcCurrent.labor?.cum),M(calcCurrent.cr_labor?.cum)), M(calcCurrent.sales?.cum))},
+    calcPrior?{single:ratioPct(addNullable(M(calcPrior.labor?.single),M(calcPrior.cr_labor?.single)), M(calcPrior.sales?.single)), cum:ratioPct(addNullable(M(calcPrior.labor?.cum),M(calcPrior.cr_labor?.cum)), M(calcPrior.sales?.cum))}:null,
+    {single:ratioPct(addNullable(M(calcBudget.labor?.single),M(calcBudget.cr_labor?.single)), M(calcBudget.sales?.single)), cum:ratioPct(addNullable(M(calcBudget.labor?.cum),M(calcBudget.cr_labor?.cum)), M(calcBudget.sales?.cum))},
+    v=>v, toPctCell(reportVals.laborRatio), 0.1, v=>v==null?'':v+'%'));
+  rows.push(checkRow('EBITDAマージン','%',
+    {single:ratioPct(M(ebitdaCurrent.single), M(calcCurrent.sales?.single)), cum:ratioPct(M(ebitdaCurrent.cum), M(calcCurrent.sales?.cum))},
+    ebitdaPrior?{single:ratioPct(M(ebitdaPrior.single), M(calcPrior.sales?.single)), cum:ratioPct(M(ebitdaPrior.cum), M(calcPrior.sales?.cum))}:null,
+    {single:ratioPct(M(ebitdaBudget.single), M(calcBudget.sales?.single)), cum:ratioPct(M(ebitdaBudget.cum), M(calcBudget.sales?.cum))},
+    v=>v, toPctCell(reportVals.ebitdaMargin), 0.1, v=>v==null?'':v+'%'));
+
+  rows.push({group:'酒類別売上高（万円）'});
+  rows.push(checkRow('酒類別売上高 合計','万円', calcCurrent.cat_total, calcPrior?.cat_total, null, MY, reportVals.cat_total));
+  rows.push(checkRow('清酒売上高','万円', calcCurrent.cat_seishu, calcPrior?.cat_seishu, null, MY, reportVals.cat_seishu));
+  rows.push(checkRow('原料米等商品売上高','万円', calcCurrent.cat_genryo, calcPrior?.cat_genryo, null, MY, reportVals.cat_genryo));
+  rows.push(checkRow('リキュール売上高（梅酒含む）','万円', calcCurrent.cat_liqueur, calcPrior?.cat_liqueur, null, MY, reportVals.cat_liqueur));
+  rows.push(checkRow('マッコリ売上','万円', calcCurrent.cat_mekko, calcPrior?.cat_mekko, null, MY, reportVals.cat_mekko));
+  rows.push(checkRow('清酒副産品売上高','万円', calcCurrent.cat_fukusan, calcPrior?.cat_fukusan, null, MY, reportVals.cat_fukusan));
+  rows.push(checkRow('商品売上高','万円', calcCurrent.cat_shohin, calcPrior?.cat_shohin, null, MY, reportVals.cat_shohin));
+
+  rows.push({group:'販売数量/単価'});
+  rows.push(checkRow('清酒総出荷本数','本', calcCurrent.totalBottles, calcPrior?.totalBottles, null, v=>v, reportVals.totalBottles));
+  rows.push(checkRow('1,800ml','本', calcCurrent.b1800, calcPrior?.b1800, null, v=>v, reportVals.b1800));
+  rows.push(checkRow('720ml','本', calcCurrent.b720, calcPrior?.b720, null, v=>v, reportVals.b720));
+  rows.push(checkRow('300ml','本', calcCurrent.b300, calcPrior?.b300, null, v=>v, reportVals.b300));
+  rows.push(checkRow('720ml比率','', 
+    {single:ratioOf(calcCurrent.b720?.single,calcCurrent.totalBottles?.single), cum:ratioOf(calcCurrent.b720?.cum,calcCurrent.totalBottles?.cum)},
+    calcPrior?{single:ratioOf(calcPrior.b720?.single,calcPrior.totalBottles?.single), cum:ratioOf(calcPrior.b720?.cum,calcPrior.totalBottles?.cum)}:null,
+    null, v=>v, reportVals.ratio720, 0.0005, pctDisplay));
+  rows.push(checkRow('清酒総蔵出数量','L', calcCurrent.totalVolume, calcPrior?.totalVolume, null, roundLiter, reportVals.totalVolume));
+  rows.push(checkRow('平均蔵出単価(720ml換算)','円',
+    {single:avgPriceOf(calcCurrent.cat_seishu?.single,calcCurrent.totalVolume?.single), cum:avgPriceOf(calcCurrent.cat_seishu?.cum,calcCurrent.totalVolume?.cum)},
+    calcPrior?{single:avgPriceOf(calcPrior.cat_seishu?.single,calcPrior.totalVolume?.single), cum:avgPriceOf(calcPrior.cat_seishu?.cum,calcPrior.totalVolume?.cum)}:null,
+    null, v=>v, reportVals.avgPrice, 1));
+
+  rows.push({group:'チャネル別売上高（万円）'});
+  rows.push(checkRow('国内営業','万円', calcCurrent.ch_domestic, calcPrior?.ch_domestic, calcBudget.ch_domestic, MY, reportVals.ch_domestic));
+  rows.push(checkRow('社長室（百貨店・県外問屋スーパー）','万円', calcCurrent.ch_president, calcPrior?.ch_president, calcBudget.ch_president, MY, reportVals.ch_president));
+  rows.push(checkRow('海外営業（未納税含む）','万円', calcCurrent.ch_overseas, calcPrior?.ch_overseas, calcBudget.ch_overseas, MY, reportVals.ch_overseas));
+  rows.push(checkRow('OEM（Clear：清酒のみ）','万円', calcCurrent.ch_oem, calcPrior?.ch_oem, calcBudget.ch_oem, MY, reportVals.ch_oem));
+  rows.push(checkRow('EC（オンラインショップ）','万円', calcCurrent.ch_ec, calcPrior?.ch_ec, calcBudget.ch_ec, MY, reportVals.ch_ec));
+  rows.push(checkRow('アマゾンジャパン/セラー','万円', calcCurrent.ch_amazon, calcPrior?.ch_amazon, calcBudget.ch_amazon, MY, reportVals.ch_amazon));
+  rows.push(checkRow('原料米等商品売上高','万円', calcCurrent.ch_genryo, calcPrior?.ch_genryo, calcBudget.ch_genryo, MY, reportVals.ch_genryo));
+
+  renderCheckResults(tm, reportSheetName, rows, totalCells, errCells, [calcCurrent, calcBudget, calcPrior].filter(Boolean));
+}
+function current_ratio_round(v){ return v==null? null : Math.round(v*10)/10; }
+function toPctCell(cellObj){
+  const out = {};
+  for(const k in cellObj){ out[k] = pctAsNumber(cellObj[k]); }
+  return out;
+}
+
+function roundLiter(v){ return v==null? null : Math.round(v/1000); }
+function ratioOf(numer, denom){
+  if(numer==null || denom==null || denom===0) return null;
+  return numer/denom;
+}
+function avgPriceOf(salesManyen, volumeLiters){
+  // mirrors report formula: ROUND(清酒売上高(万円)*10/蔵出数量(L)*720, 0)
+  if(salesManyen==null || volumeLiters==null) return null;
+  const salesManyenRounded = Math.round(salesManyen/10000); // to 万円 first, matching E41/F41 source
+  const volL = Math.round(volumeLiters/1000);
+  if(!volL) return null;
+  return Math.round(salesManyenRounded*10/volL*720);
+}
+
+// Order in which groups should appear, mirroring the report's own layout (PL -> BS -> 財務分析 -> その他数値)
+const CHECK_GROUP_ORDER = ['PL（百万円）','BS（百万円・予算と期間累計は無し）','財務分析','酒類別売上高（万円）','販売数量/単価','チャネル別売上高（万円）'];
+
+function renderCheckResults(tm, sheetName, rows, totalCells, errCells, sourceObjs){
+  const el = document.getElementById('results');
+  el.style.display='block';
+  let warnings = [];
+  sourceObjs.forEach(o=>{ if(o.warnings) warnings = warnings.concat(o.warnings); });
+
+  const okCells = totalCells - errCells;
+
+  let html = `<div class="results-head"><h2>検算結果 — ${sheetName.trim()}</h2></div>`;
+  html += `<div class="overall-summary">
+      <div class="big-pill ${errCells===0?'all-ok':'has-err'}">${errCells===0? '✓ 全項目一致':'✕ 差分あり'}</div>
+      <div class="overall-stats">
+        <div class="stat-total"><b>${totalCells}</b>確認セル数</div>
+        <div class="stat-ok"><b>${okCells}</b>一致</div>
+        <div class="stat-err"><b>${errCells}</b>不一致</div>
+      </div>
+    </div>`;
+  html += `<div class="copy-hint">不一致のセルは赤くなります。クリックすると、ファイルから算出した値が展開表示されます。</div>`;
+
+  if(warnings.length){
+    html += `<div class="err-detail">⚠ ${[...new Set(warnings)].join(' / ')}</div>`;
+  }
+
+  // group rows by their preceding {group} marker
+  const groups = [];
+  let cur = null;
+  for(const r of rows){
+    if(r.group){ cur = {name:r.group, rows:[]}; groups.push(cur); continue; }
+    if(cur) cur.rows.push(r);
+  }
+  const ordered = [...CHECK_GROUP_ORDER.filter(g=>groups.find(x=>x.name===g)), ...groups.filter(g=>!CHECK_GROUP_ORDER.includes(g.name)).map(g=>g.name)];
+
+  for(const gname of ordered){
+    const grp = groups.find(g=>g.name===gname);
+    if(!grp) continue;
+    const groupErr = grp.rows.reduce((n,r)=>{
+      if(!r.cells) return n;
+      return n + Object.values(r.cells).filter(c=>c && c.status==='ng').length;
+    }, 0);
+    const openClass = groupErr>0 ? 'open' : '';
+    html += `<div class="group-block ${openClass}">
+      <div class="group-header" onclick="this.parentElement.classList.toggle('open')">
+        <div class="group-header-left">
+          <span class="group-chevron">▶</span>
+          <span class="group-name">${gname}</span>
+        </div>
+        <span class="group-badge ${groupErr>0?'ng':'ok'}">${groupErr>0? '差分 '+groupErr+'件' : '✓ 一致'}</span>
+      </div>
+      <div class="group-body">`;
+    html += `<div class="build-table-wrap"><table class="build-table"><thead><tr>
+        <th>項目</th><th>単位</th>
+        <th>当期(単月) E</th><th>当期(累計) F</th>
+        <th>前期(単月) G</th><th>前期(累計) H</th>
+        <th>予算(単月) I</th><th>予算(累計) J</th>
+      </tr></thead><tbody>`;
+    for(const r of grp.rows){
+      if(r.note){
+        html += `<tr><td>${r.label}</td><td>${r.unit}</td><td colspan="6" style="text-align:left;color:var(--muted);font-family:var(--font-body);">— ${r.note} —</td></tr>`;
+        continue;
+      }
+      html += `<tr><td>${r.label}</td><td>${r.unit}</td>`;
+      for(const col of ['E','F','G','H','I','J']){
+        html += renderCheckCell(r.cells[col], r.displayFmt);
+      }
+      html += `</tr>`;
+    }
+    html += `</tbody></table></div></div></div>`;
+  }
+
+  el.innerHTML = html;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderCheckCell(cellData, displayFmt){
+  const fmt = displayFmt || fmtBuild;
+  if(!cellData || cellData.status==='na'){
+    return `<td>${cellData && cellData.actual!=null ? fmt(cellData.actual) : ''}</td>`;
+  }
+  if(cellData.status==='ok'){
+    return `<td>${fmt(cellData.actual)}</td>`;
+  }
+  // mismatch: red cell, click to reveal the calculated value
+  const id = 'cc' + Math.random().toString(36).slice(2,9);
+  return `<td class="mismatch-cell" onclick="toggleMismatch('${id}')">
+      ${fmt(cellData.actual)}
+      <div class="mismatch-detail" id="${id}" style="display:none;">ファイル算出: ${fmt(cellData.calc)}</div>
+    </td>`;
+}
+
+function toggleMismatch(id){
+  const el = document.getElementById(id);
+  if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+</script>
+</body>
+</html>
