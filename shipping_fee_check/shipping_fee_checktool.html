@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>運送会社 請求×送り状 突合ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans','Yu Gothic',sans-serif;background:#F5F5F3;color:#1a1a1a;font-size:14px;min-height:100vh}
+.header{background:#1a1a1a;color:#fff;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-title{font-size:14px;font-weight:500;letter-spacing:0.03em}
+.header-badge{font-size:11px;background:#fff;color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600}
+.main{max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem 2rem}
+
+/* タブ */
+.tab-bar{display:flex;gap:0;margin-bottom:2rem;border-bottom:2px solid #e0e0e0}
+.tab-btn{cursor:pointer;font-size:13px;font-weight:600;padding:10px 28px;border:none;background:none;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;font-family:inherit;display:flex;align-items:center;gap:7px}
+.tab-btn:hover{color:#333}
+.tab-btn.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+
+/* パネル */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.panel-title{font-size:18px;font-weight:600;margin-bottom:4px;letter-spacing:-0.02em}
+.panel-sub{font-size:12px;color:#888;margin-bottom:1.25rem}
+
+/* サービス種別プルダウン */
+.service-select-row{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px}
+.service-label{font-size:12px;font-weight:600;color:#555;white-space:nowrap}
+.service-select{font-size:13px;font-weight:500;font-family:inherit;border:1px solid #d0d0d0;border-radius:6px;padding:6px 28px 6px 10px;background:#fff;color:#1a1a1a;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;min-width:180px}
+.service-select:focus{outline:none;border-color:#888}
+
+/* アップロードエリア */
+.upload-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+.upload-col-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.drop-zone{border:1.5px dashed #ccc;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#fff;transition:all 0.2s;display:flex;flex-direction:column;align-items:stretch;gap:8px;min-height:110px}
+.drop-zone:hover{border-color:#888;background:#fafafa}
+.drop-zone.drag-over{border-color:#2563eb;background:#eff6ff}
+.drop-zone.loaded{border-style:solid;border-color:#16a34a;background:#f0fdf4}
+.file-list{display:flex;flex-direction:column;gap:5px}
+.file-chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #bbf7d0;border-radius:5px;padding:4px 6px 4px 10px;font-size:12px;color:#166534;font-weight:500}
+.file-chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.file-chip-del{cursor:pointer;color:#16a34a;font-size:16px;line-height:1;border:none;background:none;padding:0 3px;opacity:0.6;transition:all 0.1s;flex-shrink:0;font-weight:700}
+.file-chip-del:hover{opacity:1;color:#dc2626}
+.dz-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 0;flex:1}
+.dz-icon{font-size:22px;color:#aaa}
+.dz-label{font-size:12px;font-weight:600;color:#888}
+.dz-label-loaded{font-size:11px;font-weight:500;color:#16a34a}
+.dz-sub{font-size:10px;color:#bbb}
+input[type=file]{display:none}
+
+/* ボタン */
+.ctrl-bar{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;flex-wrap:wrap}
+.btn{cursor:pointer;font-size:13px;font-weight:500;padding:8px 20px;border-radius:6px;border:none;transition:all 0.1s;font-family:inherit}
+.btn-primary{background:#1a1a1a;color:#fff}
+.btn-primary:hover{background:#333}
+.btn-primary:disabled{background:#ccc;cursor:not-allowed}
+.btn-ghost{background:#fff;color:#1a1a1a;border:1px solid #ddd}
+.btn-ghost:hover:not(:disabled){background:#f5f5f5}
+.btn-ghost:disabled{opacity:0.4;cursor:not-allowed}
+.btn-print{background:#dc2626;color:#fff}
+.btn-print:hover:not(:disabled){background:#b91c1c}
+.btn-print:disabled{opacity:0.4;cursor:not-allowed}
+
+/* サマリー */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem}
+.actual-total-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem}
+.actual-total-row label{font-size:12px;color:#555;font-weight:500;white-space:nowrap}
+.actual-total-input{border:1px solid #d5d5d5;border-radius:5px;padding:6px 10px;font-size:13px;font-family:inherit;width:150px;text-align:right}
+.actual-total-input:focus{outline:none;border-color:#888}
+.actual-diff{font-size:12px;font-weight:600;white-space:nowrap}
+.actual-diff.ok{color:#16a34a}
+.actual-diff.warn{color:#dc2626}
+.tax-note-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 14px;margin-bottom:0.9rem;font-size:12px;color:#78350f}
+.tax-note-row .tax-est-val{font-weight:700;font-size:14px}
+.tax-note-row .tax-note-sub{color:#a16207;font-size:11px}
+.bucket-note-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 14px;margin-bottom:0.9rem;font-size:12px;color:#1e3a8a}
+.bucket-note-row .bucket-item{font-weight:600;margin-right:18px;display:inline-block}
+.bucket-note-row .bucket-item:last-child{margin-right:0}
+.display-col-badge{display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.stat{background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e5e5}
+.stat-label{font-size:10px;color:#888;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
+.stat-val{font-size:22px;font-weight:700}
+.stat-val.c-total{color:#1a1a1a}
+.stat-val.c-matched{color:#16a34a}
+.stat-val.c-bill{color:#dc2626}
+.stat-val.c-slip{color:#d97706}
+.stat-val.c-amount{color:#1a1a1a;font-size:18px}
+.stat-val.c-amount.warn{color:#d97706;font-size:12px;font-weight:600}
+
+/* フィルター */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer;font-family:inherit;transition:all 0.1s;font-weight:500}
+.filter-btn.active{border-color:#1a1a1a;background:#1a1a1a;color:#fff}
+.filter-count{font-size:10px;opacity:0.7;margin-left:2px}
+
+/* テーブル */
+.table-wrap{background:#fff;border-radius:10px;border:1px solid #e5e5e5;overflow:hidden}
+.pagination-bar{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 2px}
+.page-btn{background:#fff;border:1px solid #d5d5d5;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:500;color:#333;cursor:pointer;transition:background 0.1s}
+.page-btn:hover:not(:disabled){background:#f5f5f5}
+.page-btn:disabled{color:#ccc;cursor:not-allowed;border-color:#eee}
+.page-info{font-size:12px;color:#666;min-width:110px;text-align:center}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f8f8f8;padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#555;border-bottom:1px solid #e5e5e5;white-space:nowrap}
+.tbl td{padding:8px 12px;border-bottom:0.5px solid #eee;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.row-matched:hover{background:#f9fafb}
+.tbl tr.row-only-bill{background:#fef2f2}
+.tbl tr.row-only-bill:hover{background:#fee2e2}
+.tbl tr.row-only-slip{background:#fffbeb}
+.tbl tr.row-only-slip:hover{background:#fef3c7}
+.status-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.badge-matched{background:#dcfce7;color:#166534}
+.badge-only-bill{background:#fee2e2;color:#991b1b}
+.badge-only-slip{background:#fef3c7;color:#92400e}
+.note-input{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit;background:transparent;resize:none;overflow:hidden;min-height:30px;transition:border-color 0.1s;-webkit-appearance:none;appearance:none}
+.note-input:focus{outline:none;border-color:#888;background:#fff}
+.note-input::-webkit-inner-spin-button,.note-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.empty-state{text-align:center;padding:2.5rem;color:#999;font-size:13px}
+.amount-cell{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.amount-cell.na{color:#ccc;font-weight:400}
+.reason-wrap{display:flex;flex-direction:column;gap:4px}
+.reason-select{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;transition:border-color 0.1s}
+.reason-select:focus{outline:none;border-color:#888}
+.reason-other{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit;background:transparent;resize:none;overflow:hidden;min-height:28px;transition:border-color 0.1s}
+.reason-other:focus{outline:none;border-color:#888;background:#fff}
+.reason-dash{color:#ccc;font-size:12px}
+
+/* ヘルプボタン */
+.btn-help{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:5px 13px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:background 0.1s}
+.btn-help:hover{background:rgba(255,255,255,0.25)}
+
+/* モーダル */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:600px;max-width:calc(100vw - 2rem);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;flex-shrink:0}
+.modal-header h2{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:2px 4px}
+.modal-close:hover{color:#1a1a1a}
+.modal-body{flex:1;min-height:0;overflow-y:auto;padding:20px}
+.help-section{margin-bottom:20px}
+.help-section:last-child{margin-bottom:0}
+.help-section h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:10px}
+.help-step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
+.help-step-num{flex-shrink:0;width:24px;height:24px;background:#1a1a1a;color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.help-step-text{font-size:13px;line-height:1.6;color:#333}
+.help-step-text b{color:#1a1a1a}
+.help-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.help-table th{background:#f5f5f5;padding:6px 10px;text-align:left;font-weight:600;color:#555;border:1px solid #e5e5e5}
+.help-table td{padding:6px 10px;border:1px solid #e5e5e5;color:#333;line-height:1.5}
+.help-note{font-size:12px;color:#666;background:#fafafa;border-left:3px solid #d0d0d0;padding:8px 12px;border-radius:0 4px 4px 0;line-height:1.6}
+.badge-s{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;white-space:nowrap;vertical-align:middle}
+.bs-matched{background:#dcfce7;color:#166534}
+.bs-bill{background:#fee2e2;color:#991b1b}
+.bs-slip{background:#fef3c7;color:#92400e}
+#print-area{visibility:hidden;height:0;overflow:hidden}
+@page{size:A4 portrait;margin:10mm 12mm}
+@media print{
+  body,html{background:#fff!important}
+  body > *{display:none!important}
+  #print-area{display:block!important;visibility:visible!important;height:auto!important;overflow:visible!important;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;font-size:10px;color:#1a1a1a}
+  .pr-header{background:#1a1a1a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#fff;padding:12px 14px;margin-bottom:12px;border-radius:4px;text-align:center}
+  .pr-title{font-size:14px;font-weight:700}
+  .pr-meta{font-size:8px;color:#bbb;margin-top:4px}
+  .pr-summary{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(80px,1fr))!important;gap:6px;margin-bottom:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact;align-items:stretch}
+  .pr-summary-secondary{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-sum-cell{border:1px solid #e0e0e0;padding:6px 8px;border-radius:4px}
+  .pr-sum-cell-main{border:1.5px solid #bbb}
+  .pr-sum-ok{border-color:#16a34a!important;background:#f0fdf4!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-sum-ng{border-color:#dc2626!important;background:#fef2f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-sum-label{font-size:6.5px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.03em}
+  .pr-sum-val{font-size:15px;font-weight:700}
+  .pr-sum-val.c-total{color:#1a1a1a}
+  .pr-sum-val.c-matched{color:#16a34a}
+  .pr-sum-val.c-bill{color:#dc2626}
+  .pr-sum-val.c-slip{color:#d97706}
+  .pr-sum-val.c-amount{color:#1a1a1a;font-size:12px}
+  .pr-bucket-row{font-size:7.5px;color:#666;background:#f8f8f8;border:1px solid #e5e5e5;border-radius:4px;padding:5px 10px;margin-bottom:10px;line-height:1.8}
+  .pr-section-title{font-size:10px;font-weight:700;margin-bottom:6px;padding-bottom:3px;border-bottom:1.5px solid #1a1a1a}
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:auto}
+  .pr-tbl th{background:#f0f0f0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:5px 8px;text-align:left;font-size:8px;font-weight:700;color:#444;border:0.5px solid #ccc;white-space:nowrap}
+  .pr-tbl td{padding:4px 8px;border:0.5px solid #ddd;vertical-align:middle}
+  .pr-tbl td.pr-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pr-tbl td.pr-date{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pr-tbl td.pr-status{text-align:center;white-space:nowrap}
+  .pr-tbl th:nth-child(1),.pr-tbl td:nth-child(1){width:9%}
+  .pr-tbl th:nth-child(2),.pr-tbl td:nth-child(2){width:6%}
+  .pr-tbl th:nth-child(3),.pr-tbl td:nth-child(3){width:7%}
+  .pr-tbl th:nth-child(4),.pr-tbl td:nth-child(4){width:14%}
+  .pr-tbl th:nth-child(5),.pr-tbl td:nth-child(5){width:14%}
+  .pr-tbl td.pr-code{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pr-tbl td.pr-reason{overflow-wrap:break-word;word-break:normal}
+  .pr-tbl th:last-child,.pr-tbl td.pr-reason{width:32%}
+  .pr-tbl tr.pr-row-bill td{background:#fef2f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-tbl tr.pr-row-slip td{background:#fffbeb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-tbl tr.pr-row-matched td{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-badge{font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:2px;white-space:nowrap;display:inline-block}
+  .pr-badge-bill{background:#fee2e2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#991b1b}
+  .pr-badge-slip{background:#fef3c7!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#92400e}
+  .pr-badge-matched{background:#dcfce7!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#166534}
+  .pr-no-diff{color:#16a34a;font-weight:600;font-size:10px;padding:8px 0}
+  .pr-footer{margin-top:10px;font-size:7px;color:#aaa;text-align:right;border-top:0.5px solid #eee;padding-top:5px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-title">運送会社 請求×送り状 突合ツール</span>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="btn-help" onclick="openHelp()">❓ 使い方</button>
+  </div>
+</div>
+
+<!-- ヘルプモーダル -->
+<div class="modal-overlay" id="help-modal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📖 使い方ガイド</h2>
+      <button class="modal-close" onclick="closeHelp()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="help-section">
+        <h3>事前確認</h3>
+        <div class="help-note" style="color:#dc2626;border-color:#dc2626;background:#fef2f2">
+          CSVは必ず<b>「見出し行あり」</b>で出力してください。見出し行がない場合、列を特定できず突合できません。
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>操作手順</h3>
+        <div class="help-step">
+          <div class="help-step-num">1</div>
+          <div class="help-step-text">画面上部のタブで<b>運送会社を選択</b></div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">2</div>
+          <div class="help-step-text">ヤマト・佐川はサービス種別（通常 / EC など）を<b>プルダウンで選択</b>（PDFタイトルに反映）</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">3</div>
+          <div class="help-step-text"><b>請求CSV・送り状CSV</b>をドラッグ＆ドロップまたはクリックして選択。複数ファイル追加可。間違えた場合は <b>×</b> で個別削除。</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">4</div>
+          <div class="help-step-text">両CSVが揃ったら<b>「突合する」</b>を実行</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">5</div>
+          <div class="help-step-text">差異のある行の<b>要因をプルダウンで選択</b>。「その他」選択時のみテキスト入力欄が表示される。</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">6</div>
+          <div class="help-step-text">請求書合計金額（税込）が手元にある場合は<b>金額欄に入力</b>（任意）。CSV集計値との差額を自動表示。</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">7</div>
+          <div class="help-step-text"><b>「🖨 印刷 / PDFで保存」</b>で印刷ダイアログを起動 → 送信先で「PDFに保存」を選択。<br><span style="font-size:11px;color:#888">※ 色付き背景を印刷に反映するには、ブラウザの印刷設定で「背景のグラフィック」をオンにしてください。</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>突合結果の見方</h3>
+        <table class="help-table">
+          <tr><th style="width:110px">表示</th><th>意味</th></tr>
+          <tr><td><span class="badge-s bs-matched">一致</span></td><td>請求・送り状データ両方に存在（正常）</td></tr>
+          <tr><td><span class="badge-s bs-bill">請求のみ</span></td><td>請求データにあるが送り状データにない</td></tr>
+          <tr><td><span class="badge-s bs-slip">送り状のみ</span></td><td>送り状データにあるが請求データにない</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <h3>各社の照合キー</h3>
+        <table class="help-table">
+          <tr><th>会社</th><th>請求CSVの照合列</th><th>送り状CSVの照合列</th></tr>
+          <tr><td>🟡 ヤマト運輸</td><td>原票No.</td><td>伝票番号</td></tr>
+          <tr><td>🟢 佐川急便</td><td>お問合せNO</td><td>お問い合せ送り状No.</td></tr>
+          <tr><td>🔵 西濃運輸</td><td>原票No.</td><td>お問合せ番号</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <h3>注意事項</h3>
+        <div class="help-note">
+          ・伝票番号のハイフン（-）は自動で除去して比較します。<br>
+          ・文字コードは Shift-JIS／UTF-8 を自動判定。カンマ区切り前提。<br>
+          ・金額・出荷日は請求CSVから自動検出。該当列がない場合は「—」表示。<br>
+          ・消費税はヤマト・西濃が税抜CSVのため10%を自動加算して概算表示。佐川は税込の最終請求額を使用。<br>
+          ・データはページリロードで消去。タブをまたいで各社のデータは独立して保持されます。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('yamato')"><span>🟡</span>ヤマト運輸</button>
+    <button class="tab-btn" onclick="switchTab('sagawa')"><span>🟢</span>佐川急便</button>
+    <button class="tab-btn" onclick="switchTab('seino')"><span>🔵</span>西濃運輸</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-yamato">
+    <div class="panel-title">ヤマト運輸</div>
+    <div class="panel-sub">請求CSV：原票No. ／ 送り状CSV：伝票番号</div>
+    <div id="content-yamato"></div>
+  </div>
+  <div class="tab-panel" id="panel-sagawa">
+    <div class="panel-title">佐川急便</div>
+    <div class="panel-sub">請求CSV：お問合せNO ／ 送り状CSV：お問い合せ送り状No.</div>
+    <div id="content-sagawa"></div>
+  </div>
+  <div class="tab-panel" id="panel-seino">
+    <div class="panel-title">西濃運輸</div>
+    <div class="panel-sub">請求CSV：原票No. ／ 送り状CSV：お問合せ番号</div>
+    <div id="content-seino"></div>
+  </div>
+</div>
+
+<div id="print-area"></div>
+
+<script>
+const CARRIERS = {
+  yamato: {
+    name: 'ヤマト運輸',
+    services: ['通常', 'アマゾンセラー', 'EC'],
+    billKeys: ['原票No','原票NO','原票番号'],
+    slipKeys: ['伝票番号'],
+    amountKeys: ['運賃等合計(税別)','運賃等合計(税込)','運賃等合計','ご請求金額','御請求金額','請求金額(税込)','請求金額','合計金額(税込)','合計金額','税込合計','運賃(税込)','運賃','小計','金額'],
+    dateKeys: ['受付日','出荷日','発送日','出荷年月日','発送年月日','伝票日付','出荷日付','集荷日','取扱日','荷受日'],
+    // 検出した金額列は税抜のため、消費税10%を集計レベルで加算して税込概算を算出する
+    taxRate: 0.10,
+    // 仕訳計上用：運賃（税込）は税込概算合計そのもの（=amountSum + estimatedTax）
+    buckets: [
+      { label: '運賃', displayLabel: '運賃（税込概算）', useEstimatedTaxedTotal: true },
+    ],
+  },
+  sagawa: {
+    name: '佐川急便',
+    services: ['通常', 'EC'],
+    billKeys: ['お問合せNO','お問合せNo'],
+    slipKeys: ['お問い合せ送り状No','お問い合わせ送り状No'],
+    amountKeys: ['運賃請求金額','ご請求金額','御請求金額','請求金額(税込)','請求金額','運賃合計金額','運賃合計','合計金額(税込)','合計金額','税込合計','運賃(税込)','運賃','小計','金額'],
+    dateKeys: ['出荷日','発送日','出荷年月日','発送年月日','伝票日付','出荷日付','集荷日','取扱日','荷受日'],
+    // 運賃請求金額は税抜のため消費税10%を加算する。ただし非課税行(EMS)は課税対象外
+    taxRate: 0.10,
+    // 非課税行の運賃請求金額は消費税対象外（taxExemptとして除外）
+    taxExemptCondition: { key: '税区分', value: '非課税' },
+    // 保険料も消費税対象外として除外（保険料は別途加算されるため）
+    taxExemptKeys: ['保険料'],
+    // 仕訳計上用の内訳：保険料は「運賃保険料」、税区分が非課税の行の請求額は「EMS」として合算する
+    buckets: [
+      { label: '運賃', displayLabel: '運賃（税込概算）', useEstimatedTaxedTotalMinusBuckets: true },
+      { label: '運賃保険料', displayLabel: '運賃保険料（保険料）', keys: ['保険料'] },
+      { label: 'EMS', displayLabel: 'EMS（非課税分）', conditionKeys: ['税区分'], conditionValues: ['非課税'], useMainAmount: true },
+    ],
+    // EMS・運賃保険料の算出根拠を明示するため、税区分と保険料の値をテーブルにも表示する（非課税の行・保険料がある行だけ目立たせる）
+    displayCols: [
+      { label: '税区分', keys: ['税区分'], onlyShowValues: ['非課税'], badge: true },
+      { label: '保険料', keys: ['保険料'], isAmount: true, onlyShowIfNonzero: true },
+    ],
+  },
+  seino: {
+    name: '西濃運輸',
+    services: ['通常'],
+    billKeys: ['原票No','原票NO','原票番号'],
+    slipKeys: ['お問合せ番号'],
+    amountKeys: ['合計金額(税込)','合計金額','合計','運賃等合計','運賃(税込)','ご請求金額','御請求金額','請求金額','運賃','小計','金額'],
+    dateKeys: ['出荷日','発送日','出荷年月日','発送年月日','伝票日付','出荷日付','集荷日','取扱日','荷受日'],
+    // 西濃の請求CSVは「月」「日」が別列（年なし）なので、単一の日付列が無ければこちらを合成して使う
+    dateMonthKeys: ['月'],
+    dateDayKeys: ['日'],
+    // 検出した金額列（合計）は税抜。「内消費税対象外」列を除いた課税対象額に10%を集計レベルで加算する
+    taxRate: 0.10,
+    taxExemptKeys: ['内消費税対象外','消費税対象外','非課税対象額','非課税'],
+    // 仕訳計上用の内訳：「内消費税対象外」列の合計は「運賃保険料」として計上する
+    buckets: [
+      { label: '運賃', displayLabel: '運賃（税込概算）', useEstimatedTaxedTotalMinusBuckets: true },
+      { label: '運賃保険料', displayLabel: '運賃保険料（消費税対象外分）', keys: ['内消費税対象外','消費税対象外','非課税対象額','非課税'] },
+    ],
+    // 運賃保険料の算出根拠を明示するため、内消費税対象外の金額をテーブルにも表示する
+    displayCols: [
+      { label: '内消費税対象外', keys: ['内消費税対象外','消費税対象外','非課税対象額','非課税'], isAmount: true, onlyShowIfNonzero: true },
+    ],
+  },
+};
+
+/* 実際の請求書合計との突合における許容誤差（円）。消費税の端数調整による僅かなズレはここで吸収する */
+const TAX_DIFF_TOLERANCE = 3;
+
+const states = {};
+
+function openHelp() {
+  document.getElementById('help-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeHelp() {
+  document.getElementById('help-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+Object.keys(CARRIERS).forEach(id => {
+  states[id] = { billFiles:[], slipFiles:[], rows:[], filter:'all', amountColFound:true, dateColFound:true, actualTotal:null, calcSumRaw:0, estimatedTax:0, estimatedTaxedTotal:0, bucketTotals:{}, currentPage:1, pageSize:25 };
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  Object.keys(CARRIERS).forEach(id => buildPanel(id));
+});
+
+/* ── パネル生成 ── */
+function buildPanel(id) {
+  const c = CARRIERS[id];
+  const opts = c.services.map((s, i) =>
+    `<option value="${s}"${i===0?' selected':''}>${s}</option>`
+  ).join('');
+
+  // 西濃は選択肢が1つなのでプルダウン非表示
+  const svcRow = c.services.length > 1 ? `
+    <div class="service-select-row">
+      <span class="service-label">📦 サービス種別</span>
+      <select class="service-select" id="svc-${id}">${opts}</select>
+    </div>` : '';
+
+  document.getElementById('content-' + id).innerHTML = `
+    ${svcRow}
+    <div class="upload-row">
+      <div>
+        <div class="upload-col-label">🧾 請求CSV <span style="font-weight:400;color:#aaa;font-size:10px">（複数可）</span></div>
+        <div class="drop-zone" id="dz-${id}-bill"
+          ondragover="doDragOver(event,'${id}','bill')"
+          ondragleave="doDragLeave('${id}','bill')"
+          ondrop="doDrop(event,'${id}','bill')"
+          onclick="document.getElementById('f-${id}-bill').click()">
+          <input type="file" id="f-${id}-bill" accept=".csv" multiple onchange="handleFiles(event,'${id}','bill')">
+          <div class="file-list" id="flist-${id}-bill"></div>
+          <div class="dz-add" id="dzadd-${id}-bill">
+            <div class="dz-icon">＋</div>
+            <div class="dz-label">クリックまたはドラッグ＆ドロップ</div>
+            <div class="dz-sub">${c.billKeys[0]} 列を使用</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="upload-col-label">📋 送り状CSV <span style="font-weight:400;color:#aaa;font-size:10px">（複数可）</span></div>
+        <div class="drop-zone" id="dz-${id}-slip"
+          ondragover="doDragOver(event,'${id}','slip')"
+          ondragleave="doDragLeave('${id}','slip')"
+          ondrop="doDrop(event,'${id}','slip')"
+          onclick="document.getElementById('f-${id}-slip').click()">
+          <input type="file" id="f-${id}-slip" accept=".csv" multiple onchange="handleFiles(event,'${id}','slip')">
+          <div class="file-list" id="flist-${id}-slip"></div>
+          <div class="dz-add" id="dzadd-${id}-slip">
+            <div class="dz-icon">＋</div>
+            <div class="dz-label">クリックまたはドラッグ＆ドロップ</div>
+            <div class="dz-sub">${c.slipKeys[0]} 列を使用</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="actual-total-row">
+      <label for="actual-input-${id}">実際の請求書合計金額（税込）：</label>
+      <input type="text" inputmode="numeric" class="actual-total-input" id="actual-input-${id}"
+        placeholder="例）62,000" autocomplete="off"
+        oninput="onActualTotalInput('${id}', this.value)">
+      <span class="actual-diff" id="actual-diff-${id}"></span>
+    </div>
+    <div class="ctrl-bar">
+      <button class="btn btn-primary" id="btn-match-${id}" onclick="doMatch('${id}')" disabled>突合する</button>
+      <button class="btn btn-print" id="btn-print-${id}" onclick="doPrint('${id}')" disabled>🖨 印刷 / PDFで保存</button>
+      <button class="btn btn-ghost" onclick="doReset('${id}')">リセット</button>
+    </div>
+    <div id="results-${id}" style="display:none">
+      ${c.taxRate ? `
+      <div class="tax-note-row" id="tax-note-${id}" style="display:none">
+        <span>🧾 消費税込み概算合計：</span>
+        <span class="tax-est-val" id="tax-est-${id}">—</span>
+        <span class="tax-note-sub">（税抜 <span id="tax-raw-${id}"></span> ＋ 消費税概算 <span id="tax-amt-${id}"></span>）</span>
+      </div>` : ''}
+      ${c.buckets && c.buckets.length > 0 ? `
+      <div class="bucket-note-row" id="bucket-note-${id}" style="display:none">
+        <span>📋 仕訳区分内訳：</span>
+        <span id="bucket-list-${id}"></span>
+      </div>` : ''}
+      <div class="stats-row">
+        <div class="stat"><div class="stat-label">💰 合計請求金額（CSV集計${c.taxRate ? '・税抜' : ''}）</div><div class="stat-val c-amount" id="cnt-amount-${id}">—</div></div>
+        <div class="stat"><div class="stat-label">総件数</div><div class="stat-val c-total" id="cnt-total-${id}">—</div></div>
+        <div class="stat"><div class="stat-label">✅ 一致</div><div class="stat-val c-matched" id="cnt-matched-${id}">—</div></div>
+        <div class="stat"><div class="stat-label">🔴 請求のみ</div><div class="stat-val c-bill" id="cnt-bill-${id}">—</div></div>
+        <div class="stat"><div class="stat-label">🟡 送り状のみ</div><div class="stat-val c-slip" id="cnt-slip-${id}">—</div></div>
+      </div>
+      <div class="filter-bar">
+        <span style="font-size:12px;color:#888;font-weight:500;margin-right:4px">表示：</span>
+        <button class="filter-btn active" id="fb-all-${id}" onclick="setFilter('${id}','all')">すべて <span class="filter-count" id="fc-all-${id}"></span></button>
+        <button class="filter-btn" id="fb-matched-${id}" onclick="setFilter('${id}','matched')">一致のみ <span class="filter-count" id="fc-matched-${id}"></span></button>
+        <button class="filter-btn" id="fb-diff-${id}" onclick="setFilter('${id}','diff')">差異のみ <span class="filter-count" id="fc-diff-${id}"></span></button>
+        <button class="filter-btn" id="fb-only-bill-${id}" onclick="setFilter('${id}','only-bill')">請求のみ <span class="filter-count" id="fc-only-bill-${id}"></span></button>
+        <button class="filter-btn" id="fb-only-slip-${id}" onclick="setFilter('${id}','only-slip')">送り状のみ <span class="filter-count" id="fc-only-slip-${id}"></span></button>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th style="width:110px">請求金額</th>
+            <th style="width:90px">出荷日</th>
+            <th style="width:88px">状態</th>
+            <th style="width:150px">請求：${c.billKeys[0]}</th>
+            <th style="width:150px">送り状：${c.slipKeys[0]}</th>
+            ${(c.displayCols || []).map(dc => `<th style="width:90px">${esc(dc.label)}</th>`).join('')}
+            <th>差異の要因</th>
+          </tr></thead>
+          <tbody id="tbody-${id}"></tbody>
+        </table>
+      </div>
+      <div class="pagination-bar" id="pagination-${id}">
+        <button class="page-btn" id="page-prev-${id}" onclick="changePage('${id}',-1)">← 前へ</button>
+        <span class="page-info" id="page-info-${id}"></span>
+        <button class="page-btn" id="page-next-${id}" onclick="changePage('${id}',1)">次へ →</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── タブ切り替え ── */
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', Object.keys(CARRIERS)[i] === id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+/* ── 選択中のサービス種別を取得 ── */
+function getService(id) {
+  const el = document.getElementById('svc-' + id);
+  return el ? el.value : CARRIERS[id].services[0];
+}
+
+/* ── ドラッグ＆ドロップ ── */
+function doDragOver(e, id, type) { e.preventDefault(); document.getElementById('dz-'+id+'-'+type).classList.add('drag-over'); }
+function doDragLeave(id, type) { document.getElementById('dz-'+id+'-'+type).classList.remove('drag-over'); }
+function doDrop(e, id, type) {
+  e.preventDefault(); doDragLeave(id, type);
+  if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files), id, type);
+}
+function handleFiles(e, id, type) {
+  addFiles(Array.from(e.target.files), id, type);
+  e.target.value = '';
+}
+
+function addFiles(files, id, type) {
+  const key = type + 'Files';
+  files.forEach(file => {
+    if (!file.name.endsWith('.csv')) return;
+    if (states[id][key].some(f => f.name === file.name)) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = decodeCsvBuffer(new Uint8Array(e.target.result));
+      states[id][key].push({ name: file.name, text });
+      renderFileList(id, type);
+      checkReady(id);
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/* ── 文字コード自動判定デコード（UTF-8 BOM / UTF-8 / Shift-JIS） ── */
+function decodeCsvBuffer(buf) {
+  // UTF-8 BOM付き
+  if (buf.length >= 3 && buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
+    return new TextDecoder('utf-8').decode(buf.subarray(3));
+  }
+  // BOMなしUTF-8（厳密デコードが成功すればUTF-8とみなす）
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+  } catch (e) {
+    // それ以外はShift-JIS（Windows-31J）として読む
+    return new TextDecoder('shift-jis').decode(buf);
+  }
+}
+
+/* ── ファイルリスト表示 ── */
+function renderFileList(id, type) {
+  const key = type + 'Files';
+  const files = states[id][key];
+  const list  = document.getElementById('flist-' + id + '-' + type);
+  const dz    = document.getElementById('dz-' + id + '-' + type);
+  const add   = document.getElementById('dzadd-' + id + '-' + type);
+
+  list.innerHTML = '';
+  files.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `
+      <span style="font-size:13px">✓</span>
+      <span class="file-chip-name" title="${esc(f.name)}">${esc(f.name)}</span>
+      <button class="file-chip-del" onclick="event.stopPropagation();removeFile('${id}','${type}',${i})" title="削除">×</button>
+    `;
+    list.appendChild(chip);
+  });
+
+  if (files.length > 0) {
+    dz.classList.add('loaded');
+    add.querySelector('.dz-icon').textContent = '＋';
+    add.querySelector('.dz-label').textContent = 'さらに追加';
+    add.querySelector('.dz-label').className = 'dz-label-loaded';
+    const sub = add.querySelector('.dz-sub');
+    if (sub) sub.style.display = 'none';
+  } else {
+    dz.classList.remove('loaded');
+    add.querySelector('.dz-icon').textContent = '＋';
+    add.querySelector('.dz-label').textContent = 'クリックまたはドラッグ＆ドロップ';
+    add.querySelector('.dz-label').className = 'dz-label';
+    const sub = add.querySelector('.dz-sub');
+    if (sub) sub.style.display = '';
+  }
+}
+
+function removeFile(id, type, idx) {
+  states[id][type + 'Files'].splice(idx, 1);
+  renderFileList(id, type);
+  checkReady(id);
+  if (states[id].rows.length > 0) {
+    states[id].rows = [];
+    document.getElementById('results-' + id).style.display = 'none';
+    document.getElementById('btn-print-' + id).disabled = true;
+  }
+}
+
+function checkReady(id) {
+  const s = states[id];
+  document.getElementById('btn-match-' + id).disabled = !(s.billFiles.length > 0 && s.slipFiles.length > 0);
+}
+
+/* ── CSV パース ── */
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  return lines.map(l => {
+    const cols = []; let cur = '', inQ = false;
+    for (let i = 0; i < l.length; i++) {
+      const c = l[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+function normalize(v) { return String(v).replace(/-/g, '').trim(); }
+
+function parseAmount(v) {
+  if (v === undefined || v === null) return null;
+  const cleaned = String(v).replace(/[¥￥,、\s]/g, '').replace(/円$/, '').trim();
+  if (cleaned === '' || isNaN(Number(cleaned))) return null;
+  return Number(cleaned);
+}
+
+function formatYen(n) {
+  if (n === null || n === undefined || isNaN(n)) return null;
+  return '¥' + n.toLocaleString('ja-JP');
+}
+
+/* 出荷日を「5/1」のような表記に正規化（0501, 05/01, 20260501 などに対応） */
+function formatShipDate(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (m) return `${parseInt(m[1],10)}/${parseInt(m[2],10)}`;
+  m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (m) return `${m[1]}/${parseInt(m[2],10)}/${parseInt(m[3],10)}`;
+  m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (m) return `${m[1]}/${parseInt(m[2],10)}/${parseInt(m[3],10)}`;
+  m = s.match(/^(\d{2})(\d{2})$/);
+  if (m) return `${parseInt(m[1],10)}/${parseInt(m[2],10)}`;
+  return s;
+}
+
+function findColIndex(headers, keywords) {
+  for (const kw of keywords) {
+    const idx = headers.findIndex(h => String(h).replace(/\s/g,'').includes(kw.replace(/\s/g,'')));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+/* ── 突合 ── */
+function doMatch(id) {
+  const s = states[id];
+  const carrier = CARRIERS[id];
+
+  const billMap = new Map();
+  let amountColFound = true;
+  let dateColFound = true;
+  for (const f of s.billFiles) {
+    const rows = parseCSV(f.text);
+    const idx = findColIndex(rows[0], carrier.billKeys);
+    if (idx < 0) { alert(`「${f.name}」から「${carrier.billKeys[0]}」列が見つかりませんでした。`); return; }
+    const amtIdx = findColIndex(rows[0], carrier.amountKeys);
+    if (amtIdx < 0) amountColFound = false;
+    const exemptIdx = carrier.taxExemptKeys ? findColIndex(rows[0], carrier.taxExemptKeys) : -1;
+    const exemptCondColIdx = carrier.taxExemptCondition ? findColIndex(rows[0], [carrier.taxExemptCondition.key]) : -1;
+    const bucketDefs = (carrier.buckets || [])
+      .filter(b => !b.useEstimatedTaxedTotal && !b.useEstimatedTaxedTotalMinusBuckets)
+      .map(b => {
+        if (b.conditionKeys) {
+          return { ...b, colIdx: findColIndex(rows[0], b.conditionKeys) };
+        }
+        return { ...b, colIdx: findColIndex(rows[0], b.keys) };
+      });
+    const displayColDefs = (carrier.displayCols || []).map(dc => ({ ...dc, colIdx: findColIndex(rows[0], dc.keys) }));
+    const dateIdx = findColIndex(rows[0], carrier.dateKeys);
+    let monthIdx = -1, dayIdx = -1;
+    if (dateIdx < 0 && carrier.dateMonthKeys && carrier.dateDayKeys) {
+      monthIdx = findColIndex(rows[0], carrier.dateMonthKeys);
+      dayIdx = findColIndex(rows[0], carrier.dateDayKeys);
+    }
+    if (dateIdx < 0 && !(monthIdx >= 0 && dayIdx >= 0)) dateColFound = false;
+    for (let i = 1; i < rows.length; i++) {
+      const raw = rows[i][idx];
+      if (!raw || raw === '') continue;
+      const norm = normalize(raw);
+      if (!billMap.has(norm)) {
+        const amount = amtIdx >= 0 ? parseAmount(rows[i][amtIdx]) : null;
+        // 消費税対象外の計算：
+        //   1) taxExemptCondition に合致する行はamount全体を対象外
+        //   2) taxExemptKeys で指定した列の値を対象外（西濃の内消費税対象外列、佐川の保険料列）
+        let exempt = 0;
+        if (exemptCondColIdx >= 0 && carrier.taxExemptCondition) {
+          const condVal = (rows[i][exemptCondColIdx] || '').trim();
+          if (condVal === carrier.taxExemptCondition.value) {
+            exempt += (amount || 0);
+          }
+        }
+        if (exemptIdx >= 0) {
+          exempt += (parseAmount(rows[i][exemptIdx]) || 0);
+        }
+        const buckets = {};
+        for (const b of bucketDefs) {
+          let val = 0;
+          if (b.conditionKeys) {
+            if (b.colIdx >= 0) {
+              const condVal = (rows[i][b.colIdx] || '').trim();
+              if (b.conditionValues.includes(condVal)) {
+                val = b.useMainAmount ? (amount || 0) : (b.colIdx >= 0 ? (parseAmount(rows[i][b.colIdx]) || 0) : 0);
+              }
+            }
+          } else {
+            val = b.colIdx >= 0 ? (parseAmount(rows[i][b.colIdx]) || 0) : 0;
+          }
+          buckets[b.label] = val;
+        }
+        const displayValues = {};
+        for (const dc of displayColDefs) {
+          displayValues[dc.label] = dc.colIdx >= 0 ? (rows[i][dc.colIdx] || '') : '';
+        }
+        let shipDate = '';
+        if (dateIdx >= 0) {
+          shipDate = rows[i][dateIdx] || '';
+        } else if (monthIdx >= 0 && dayIdx >= 0) {
+          const m = (rows[i][monthIdx] || '').trim();
+          const d = (rows[i][dayIdx] || '').trim();
+          if (m || d) shipDate = `${m}/${d}`;
+        }
+        billMap.set(norm, { raw, amount, exempt, buckets, displayValues, shipDate });
+      }
+    }
+  }
+  s.amountColFound = amountColFound;
+  s.dateColFound = dateColFound;
+
+  const slipMap = new Map();
+  for (const f of s.slipFiles) {
+    const rows = parseCSV(f.text);
+    const idx = findColIndex(rows[0], carrier.slipKeys);
+    if (idx < 0) { alert(`「${f.name}」から「${carrier.slipKeys[0]}」列が見つかりませんでした。`); return; }
+    for (let i = 1; i < rows.length; i++) {
+      const raw = rows[i][idx];
+      if (!raw || raw === '') continue;
+      const norm = normalize(raw);
+      if (!slipMap.has(norm)) slipMap.set(norm, raw);
+    }
+  }
+
+  const allNorms = new Set([...billMap.keys(), ...slipMap.keys()]);
+  s.rows = [];
+  for (const norm of allNorms) {
+    const inBill = billMap.has(norm), inSlip = slipMap.has(norm);
+    const billEntry = billMap.get(norm);
+    s.rows.push({
+      norm,
+      billRaw: billEntry ? billEntry.raw : '',
+      billAmount: billEntry ? billEntry.amount : null,
+      billExempt: billEntry ? billEntry.exempt : 0,
+      billBuckets: billEntry ? billEntry.buckets : {},
+      billDisplay: billEntry ? billEntry.displayValues : {},
+      billShipDate: billEntry ? billEntry.shipDate : '',
+      slipRaw: slipMap.get(norm) || '',
+      status: inBill && inSlip ? 'matched' : inBill ? 'only-bill' : 'only-slip',
+      reason: '',
+      reasonOther: ''
+    });
+  }
+
+  const matched  = s.rows.filter(r => r.status === 'matched').length;
+  const onlyBill = s.rows.filter(r => r.status === 'only-bill').length;
+  const onlySlip = s.rows.filter(r => r.status === 'only-slip').length;
+  const total    = s.rows.length;
+  const amountSum = s.rows.reduce((sum, r) => sum + (typeof r.billAmount === 'number' ? r.billAmount : 0), 0);
+
+  // 消費税込み概算合計（集計レベルで一度だけ計算：実際の請求書の税計算方式に合わせる）
+  s.calcSumRaw = amountSum;
+  if (carrier.taxRate) {
+    const exemptSum = s.rows.reduce((sum, r) => sum + (typeof r.billExempt === 'number' ? r.billExempt : 0), 0);
+    const taxableSum = amountSum - exemptSum;
+    s.estimatedTax = Math.round(taxableSum * carrier.taxRate);
+    s.estimatedTaxedTotal = amountSum + s.estimatedTax;
+  } else {
+    s.estimatedTax = 0;
+    s.estimatedTaxedTotal = amountSum;
+  }
+
+  const amountEl = document.getElementById('cnt-amount-' + id);
+  if (amountColFound) {
+    amountEl.textContent = formatYen(amountSum);
+    amountEl.classList.remove('warn');
+  } else {
+    amountEl.textContent = '金額列なし';
+    amountEl.classList.add('warn');
+  }
+
+  const taxNoteEl = document.getElementById('tax-note-' + id);
+  if (taxNoteEl) {
+    if (carrier.taxRate && amountColFound) {
+      taxNoteEl.style.display = 'flex';
+      document.getElementById('tax-raw-'  + id).textContent = formatYen(amountSum);
+      document.getElementById('tax-amt-'  + id).textContent = formatYen(s.estimatedTax);
+      document.getElementById('tax-est-'  + id).textContent = formatYen(s.estimatedTaxedTotal);
+    } else {
+      taxNoteEl.style.display = 'none';
+    }
+  }
+
+  // 仕訳計上用の内訳（運賃保険料・EMSなど）を集計
+  s.bucketTotals = {};
+  // まず通常のbucket（keys/conditionKeys指定）を集計
+  (carrier.buckets || []).forEach(b => {
+    if (b.useEstimatedTaxedTotal || b.useEstimatedTaxedTotalMinusBuckets) return;
+    s.bucketTotals[b.label] = s.rows.reduce((sum, r) => sum + ((r.billBuckets && typeof r.billBuckets[b.label] === 'number') ? r.billBuckets[b.label] : 0), 0);
+  });
+  // 次に「税込概算合計から他のbucketを引いた残りを運賃とする」タイプを集計
+  (carrier.buckets || []).forEach(b => {
+    if (b.useEstimatedTaxedTotal) {
+      s.bucketTotals[b.label] = s.estimatedTaxedTotal;
+    } else if (b.useEstimatedTaxedTotalMinusBuckets) {
+      const otherSum = (carrier.buckets || []).filter(ob => !ob.useEstimatedTaxedTotal && !ob.useEstimatedTaxedTotalMinusBuckets)
+        .reduce((sum, ob) => sum + (s.bucketTotals[ob.label] || 0), 0);
+      s.bucketTotals[b.label] = s.estimatedTaxedTotal - otherSum;
+    }
+  });
+  const bucketNoteEl = document.getElementById('bucket-note-' + id);
+  if (bucketNoteEl) {
+    if (carrier.buckets && carrier.buckets.length > 0) {
+      bucketNoteEl.style.display = 'flex';
+      const listEl = document.getElementById('bucket-list-' + id);
+      listEl.innerHTML = carrier.buckets.map(b =>
+        `<span class="bucket-item"><b>${esc(b.displayLabel || b.label)}</b>：${esc(formatYen(s.bucketTotals[b.label]) || '¥0')}</span>`
+      ).join('');
+    } else {
+      bucketNoteEl.style.display = 'none';
+    }
+  }
+
+  document.getElementById('cnt-total-'    + id).textContent = total.toLocaleString();
+  document.getElementById('cnt-matched-'  + id).textContent = matched.toLocaleString();
+  document.getElementById('cnt-bill-'     + id).textContent = onlyBill.toLocaleString();
+  document.getElementById('cnt-slip-'     + id).textContent = onlySlip.toLocaleString();
+  document.getElementById('fc-all-'       + id).textContent = total;
+  document.getElementById('fc-matched-'   + id).textContent = matched;
+  document.getElementById('fc-diff-'      + id).textContent = onlyBill + onlySlip;
+  document.getElementById('fc-only-bill-' + id).textContent = onlyBill;
+  document.getElementById('fc-only-slip-' + id).textContent = onlySlip;
+
+  s.filter = 'all';
+  s.currentPage = 1;
+  updateFilterBtns(id);
+  renderTable(id);
+  updateActualDiff(id);
+  document.getElementById('results-'   + id).style.display = 'block';
+  document.getElementById('btn-print-' + id).disabled = false;
+}
+
+function setFilter(id, f) { states[id].filter = f; states[id].currentPage = 1; updateFilterBtns(id); renderTable(id); }
+
+function changePage(id, delta) {
+  const s = states[id];
+  s.currentPage = Math.max(1, s.currentPage + delta);
+  renderTable(id);
+}
+
+function updateFilterBtns(id) {
+  ['all','matched','diff','only-bill','only-slip'].forEach(f => {
+    document.getElementById('fb-' + f + '-' + id).classList.toggle('active', states[id].filter === f);
+  });
+}
+
+function renderTable(id) {
+  const s = states[id];
+  const carrier = CARRIERS[id];
+  const tbody = document.getElementById('tbody-' + id);
+  let visible = s.rows;
+  if (s.filter === 'matched')    visible = s.rows.filter(r => r.status === 'matched');
+  else if (s.filter === 'diff')  visible = s.rows.filter(r => r.status !== 'matched');
+  else if (s.filter === 'only-bill') visible = s.rows.filter(r => r.status === 'only-bill');
+  else if (s.filter === 'only-slip') visible = s.rows.filter(r => r.status === 'only-slip');
+
+  const colCount = 6 + (carrier.displayCols || []).length;
+  const pagBar = document.getElementById('pagination-' + id);
+  if (visible.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">表示する件数がありません</td></tr>`;
+    if (pagBar) pagBar.style.display = 'none';
+    return;
+  }
+
+  const pageSize = s.pageSize;
+  const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
+  if (s.currentPage > totalPages) s.currentPage = totalPages;
+  if (s.currentPage < 1) s.currentPage = 1;
+  const startIdx = (s.currentPage - 1) * pageSize;
+  const pageRows = visible.slice(startIdx, startIdx + pageSize);
+
+  if (pagBar) {
+    if (totalPages > 1) {
+      pagBar.style.display = 'flex';
+      document.getElementById('page-info-' + id).textContent = `${s.currentPage} / ${totalPages}ページ（全${visible.length}件）`;
+      document.getElementById('page-prev-' + id).disabled = s.currentPage <= 1;
+      document.getElementById('page-next-' + id).disabled = s.currentPage >= totalPages;
+    } else {
+      pagBar.style.display = 'none';
+    }
+  }
+
+  tbody.innerHTML = '';
+  pageRows.forEach(row => {
+    const gi = s.rows.indexOf(row);
+    const tr = document.createElement('tr');
+    tr.className = 'row-' + row.status;
+    let badge = '';
+    if (row.status === 'matched')      badge = '<span class="status-badge badge-matched">一致</span>';
+    else if (row.status === 'only-bill') badge = '<span class="status-badge badge-only-bill">請求のみ</span>';
+    else badge = '<span class="status-badge badge-only-slip">送り状のみ</span>';
+
+    const amtText = formatYen(row.billAmount);
+    const amountCell = amtText
+      ? `<td class="amount-cell">${amtText}</td>`
+      : `<td class="amount-cell na">—</td>`;
+
+    let reasonCell;
+    if (row.status === 'matched') {
+      reasonCell = `<td><span class="reason-dash">—</span></td>`;
+    } else {
+      const opts = ['', '着払', '手書き伝票', 'ﾁｬｰﾀｰ', 'EMS', '出荷無し', 'その他'].map(v => {
+        const label = v === '' ? '要因を選択…' : v;
+        return `<option value="${v}"${row.reason===v?' selected':''}>${label}</option>`;
+      }).join('');
+      const otherVisible = row.reason === 'その他';
+      reasonCell = `
+        <td>
+          <div class="reason-wrap">
+            <select class="reason-select" onchange="setReason('${id}',${gi},this.value)">${opts}</select>
+            <input type="text" class="reason-other" id="reason-other-${id}-${gi}"
+              style="display:${otherVisible?'block':'none'}"
+              placeholder="理由を入力…" autocomplete="off"
+              value="${esc(row.reasonOther)}"
+              onchange="states['${id}'].rows[${gi}].reasonOther=this.value">
+          </div>
+        </td>`;
+    }
+
+    const dateText = formatShipDate(row.billShipDate);
+    const dateCell = dateText
+      ? `<td style="font-size:12px;white-space:nowrap">${esc(dateText)}</td>`
+      : `<td style="font-size:12px;color:#ccc">—</td>`;
+
+    const displayCellsHtml = (carrier.displayCols || []).map(dc => {
+      const content = displayColCellHtml(dc, row);
+      return `<td style="font-size:12px;white-space:nowrap;text-align:${dc.isAmount?'right':'left'}">${content || '<span style=\'color:#ccc\'>—</span>'}</td>`;
+    }).join('');
+
+    tr.innerHTML = `
+      ${amountCell}
+      ${dateCell}
+      <td>${badge}</td>
+      <td style="font-size:12px;color:${row.billRaw?'#1a1a1a':'#ccc'}">${esc(row.billRaw||'—')}</td>
+      <td style="font-size:12px;color:${row.slipRaw?'#1a1a1a':'#ccc'}">${esc(row.slipRaw||'—')}</td>
+      ${displayCellsHtml}
+      ${reasonCell}
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function setReason(id, gi, value) {
+  const row = states[id].rows[gi];
+  row.reason = value;
+  if (value !== 'その他') row.reasonOther = '';
+  renderTable(id);
+}
+
+function reasonText(row) {
+  if (row.status === 'matched') return '';
+  if (!row.reason) return '';
+  if (row.reason === 'その他') return row.reasonOther || 'その他';
+  return row.reason;
+}
+
+function autoResize(el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* displayCols（税区分・内消費税対象外など補助列）のセル内容を生成 */
+function displayColCellHtml(dc, row) {
+  const raw = (row.billDisplay && row.billDisplay[dc.label]) || '';
+  if (dc.isAmount) {
+    const num = parseAmount(raw);
+    if (!num || (dc.onlyShowIfNonzero && num === 0)) return '';
+    return `<span style="font-variant-numeric:tabular-nums">${esc(formatYen(num))}</span>`;
+  }
+  const trimmed = String(raw).trim();
+  if (dc.onlyShowValues && !dc.onlyShowValues.includes(trimmed)) return '';
+  if (!trimmed) return '';
+  if (dc.badge) return `<span class="display-col-badge">${esc(trimmed)}</span>`;
+  return esc(trimmed);
+}
+
+/* ── 実際の請求書合計金額（税込）の入力と差額表示 ── */
+function onActualTotalInput(id, value) {
+  const s = states[id];
+  const parsed = parseAmount(value);
+  s.actualTotal = parsed;
+  updateActualDiff(id);
+}
+
+function calcAmountSum(id) {
+  const s = states[id];
+  // 消費税率が設定されている会社は、税込概算合計を基準に比較する（doMatchで算出済み）
+  return (typeof s.estimatedTaxedTotal === 'number') ? s.estimatedTaxedTotal : s.rows.reduce((sum, r) => sum + (typeof r.billAmount === 'number' ? r.billAmount : 0), 0);
+}
+
+function updateActualDiff(id) {
+  const s = states[id];
+  const diffEl = document.getElementById('actual-diff-' + id);
+  if (!diffEl) return;
+  if (s.actualTotal === null) { diffEl.textContent = ''; diffEl.className = 'actual-diff'; return; }
+  if (s.rows.length === 0) { diffEl.textContent = '（突合すると税込概算合計との差額が表示されます）'; diffEl.className = 'actual-diff'; return; }
+  const calcSum = calcAmountSum(id);
+  const diff = s.actualTotal - calcSum;
+  const label = CARRIERS[id].taxRate ? '消費税込み概算合計' : 'CSV集計';
+  if (diff === 0) {
+    diffEl.textContent = `${label}：${formatYen(calcSum)} ／ 差額：¥0（完全一致）`;
+    diffEl.className = 'actual-diff ok';
+  } else if (Math.abs(diff) <= TAX_DIFF_TOLERANCE) {
+    const sign = diff > 0 ? '+' : '';
+    diffEl.textContent = `${label}：${formatYen(calcSum)} ／ 差額：${sign}${diff.toLocaleString('ja-JP')}円（誤差の範囲内・消費税の端数調整と考えられます）`;
+    diffEl.className = 'actual-diff ok';
+  } else {
+    const sign = diff > 0 ? '+' : '';
+    diffEl.textContent = `${label}：${formatYen(calcSum)} ／ 差額：${sign}${diff.toLocaleString('ja-JP')}円`;
+    diffEl.className = 'actual-diff warn';
+  }
+}
+
+/* ── 印刷 ── */
+function doPrint(id) {
+  const s = states[id];
+  const carrier = CARRIERS[id];
+  const service = getService(id);
+  const now = new Date();
+  const ts = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const matched  = s.rows.filter(r => r.status==='matched').length;
+  const onlyBill = s.rows.filter(r => r.status==='only-bill').length;
+  const onlySlip = s.rows.filter(r => r.status==='only-slip').length;
+  const total    = s.rows.length;
+  const amountSum = s.rows.reduce((sum, r) => sum + (typeof r.billAmount === 'number' ? r.billAmount : 0), 0);
+  const amountText = s.amountColFound ? formatYen(amountSum) : '金額列なし';
+  const hasTax = !!carrier.taxRate && s.amountColFound;
+  const calcBaseline = hasTax ? s.estimatedTaxedTotal : amountSum;
+  const hasActual = s.actualTotal !== null;
+  const actualDiff = hasActual ? s.actualTotal - calcBaseline : null;
+  const diffOk = hasActual && Math.abs(actualDiff) <= TAX_DIFF_TOLERANCE;
+
+  // 並び替え：請求書差異（請求のみ）→ 送り状差異（送り状のみ）→ 一致
+  const order = { 'only-bill': 0, 'only-slip': 1, 'matched': 2 };
+  const sortedRows = [...s.rows].sort((a, b) => order[a.status] - order[b.status]);
+
+  const billNames = s.billFiles.map(f => f.name).join('、');
+  const slipNames = s.slipFiles.map(f => f.name).join('、');
+
+  // タイトル：会社名 ＋ サービス種別（通常以外は括弧で付記）
+  const titleService = service !== '通常' ? `（${service}）` : '';
+  const printTitle = `${carrier.name}${titleService}　請求×送り状 突合レポート（全件）`;
+
+  // 仕訳内訳をまとめたテキスト（小さく1行で表示用）
+  const bucketCols = (carrier.buckets && carrier.buckets.length > 0)
+    ? carrier.buckets.map(b => `${esc(b.displayLabel || b.label)}：${esc(formatYen(s.bucketTotals[b.label]) || '¥0')}`).join('　　')
+    : null;
+
+  let html = `
+    <div class="pr-header">
+      <div class="pr-title">${esc(printTitle)}</div>
+      <div class="pr-meta">作成日時：${ts}　　請求CSV：${esc(billNames)}　／　送り状CSV：${esc(slipNames)}</div>
+    </div>
+    <div class="pr-summary">
+      <div class="pr-sum-cell pr-sum-cell-main"><div class="pr-sum-label">合計請求金額（CSV集計${hasTax?'・税抜':''}）</div><div class="pr-sum-val c-amount">${esc(amountText)}</div></div>
+      ${hasTax ? `<div class="pr-sum-cell pr-sum-cell-main"><div class="pr-sum-label">消費税込み概算合計</div><div class="pr-sum-val c-amount">${esc(formatYen(s.estimatedTaxedTotal))}</div></div>` : ''}
+      ${hasActual ? `<div class="pr-sum-cell pr-sum-cell-main ${actualDiff===0?'pr-sum-ok':diffOk?'pr-sum-ok':'pr-sum-ng'}"><div class="pr-sum-label">実際の請求書合計（税込）</div><div class="pr-sum-val c-amount">${esc(formatYen(s.actualTotal))}</div></div>
+      <div class="pr-sum-cell pr-sum-cell-main ${actualDiff===0?'pr-sum-ok':diffOk?'pr-sum-ok':'pr-sum-ng'}"><div class="pr-sum-label">${hasTax?'税込概算':'CSV集計'}との差額</div><div class="pr-sum-val ${actualDiff===0?'c-matched':diffOk?'c-matched':'c-bill'}">${esc((actualDiff>0?'+':'') + actualDiff.toLocaleString('ja-JP') + '円' + (diffOk && actualDiff!==0 ? '（誤差の範囲内）' : ''))}</div></div>` : ''}
+      <div class="pr-sum-cell"><div class="pr-sum-label">総件数</div><div class="pr-sum-val c-total">${total}</div></div>
+      <div class="pr-sum-cell"><div class="pr-sum-label">一致</div><div class="pr-sum-val c-matched">${matched}</div></div>
+      <div class="pr-sum-cell"><div class="pr-sum-label">請求のみ（未着荷）</div><div class="pr-sum-val c-bill">${onlyBill}</div></div>
+      <div class="pr-sum-cell"><div class="pr-sum-label">送り状のみ（未請求）</div><div class="pr-sum-val c-slip">${onlySlip}</div></div>
+    </div>
+    ${bucketCols ? `<div class="pr-bucket-row">仕訳内訳　${bucketCols}</div>` : ''}
+    <div class="pr-section-title">全件一覧（請求書差異 → 送り状差異 → 一致の順）</div>`;
+
+  if (sortedRows.length === 0) {
+    html += `<div class="pr-no-diff">データがありません</div>`;
+  } else {
+    html += `<table class="pr-tbl"><thead><tr>
+      <th>請求金額</th>
+      <th>出荷日</th>
+      <th>状態</th>
+      <th>請求：${carrier.billKeys[0]}</th>
+      <th>送り状：${carrier.slipKeys[0]}</th>
+      ${(carrier.displayCols || []).map(dc => `<th>${esc(dc.label)}</th>`).join('')}
+      <th>差異の要因</th>
+    </tr></thead><tbody>`;
+    sortedRows.forEach(row => {
+      const rc = row.status==='only-bill' ? 'pr-row-bill' : row.status==='only-slip' ? 'pr-row-slip' : 'pr-row-matched';
+      const badge = row.status==='only-bill'
+        ? '<span class="pr-badge pr-badge-bill">請求のみ</span>'
+        : row.status==='only-slip'
+        ? '<span class="pr-badge pr-badge-slip">送り状のみ</span>'
+        : '<span class="pr-badge pr-badge-matched">一致</span>';
+      const amtText = formatYen(row.billAmount) || '—';
+      const dateText = formatShipDate(row.billShipDate) || '—';
+      const displayCellsHtml = (carrier.displayCols || []).map(dc => {
+        const content = displayColCellHtml(dc, row);
+        return `<td class="pr-code" style="text-align:${dc.isAmount?'right':'left'}">${content || '—'}</td>`;
+      }).join('');
+      html += `<tr class="${rc}"><td class="pr-amount">${esc(amtText)}</td><td class="pr-date">${esc(dateText)}</td><td class="pr-status">${badge}</td><td class="pr-code">${esc(row.billRaw||'—')}</td><td class="pr-code">${esc(row.slipRaw||'—')}</td>${displayCellsHtml}<td class="pr-reason">${esc(reasonText(row))}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `<div class="pr-footer">${esc(carrier.name + titleService)} 突合ツール ／ ${ts}</div>`;
+
+  const pa = document.getElementById('print-area');
+  pa.innerHTML = html;
+  setTimeout(() => {
+    window.print();
+    const cleanup = () => { pa.innerHTML = ''; };
+    window.onafterprint = cleanup;
+    setTimeout(cleanup, 1000);
+  }, 50);
+}
+
+/* ── リセット ── */
+function doReset(id) {
+  // 状態を初期化
+  const s = states[id];
+  s.billFiles = []; s.slipFiles = []; s.rows = [];
+  s.amountColFound = true; s.dateColFound = true;
+  s.actualTotal = null; s.calcSumRaw = 0;
+  s.estimatedTax = 0; s.estimatedTaxedTotal = 0;
+  s.bucketTotals = {}; s.currentPage = 1;
+  s.filter = 'all';
+  // パネルをまるごと再生成（DOM不整合を根本から解消）
+  buildPanel(id);
+}
+</script>
+</body>
+</html>
