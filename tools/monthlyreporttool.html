@@ -1202,7 +1202,26 @@ function sheetCRBudget(wb){
 function getSheetGrid(wb, sheetName){
   const ws = wb.Sheets[sheetName];
   if(!ws) return null;
-  return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  if(!ws['!ref']) return [];
+  // IMPORTANT: do NOT use XLSX.utils.sheet_to_json(ws,{header:1}) here. Its array-indexing
+  // anchor point is not reliably column A — it can vary sheet-by-sheet in ways tied to the
+  // sheet's !ref, and even passing an explicit `range` option does not reliably force it back
+  // to column A. That inconsistency silently shifted every column-letter lookup in this file
+  // by one column on certain sheets. To make column indices unambiguous, build the grid
+  // ourselves by reading each cell directly by its address (A1, B1, ...), so array index 0
+  // ALWAYS means column A, with no dependency on the sheet's used range.
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  const grid = [];
+  for(let r = 0; r <= range.e.r; r++){
+    const row = [];
+    for(let c = 0; c <= range.e.c; c++){
+      const addr = XLSX.utils.encode_cell({r, c});
+      const cellObj = ws[addr];
+      row.push(cellObj && cellObj.v !== undefined ? cellObj.v : null);
+    }
+    grid.push(row);
+  }
+  return grid;
 }
 
 function cell(grid, row, col){
@@ -2257,7 +2276,7 @@ function doRun(tm){
 
   // checkRow: builds one report-shaped row (E~J) where each populated column carries both
   // the report's recorded value (shown) and our calculated value (revealed on click if it differs).
-  function checkRow(label, unit, current, prior, budget, transform, reportCell, tol, displayFmt){
+  function checkRow(label, unit, current, prior, budget, transform, reportCell, tol, displayFmt, autoScalePercent){
     transform = transform || (v=>v);
     tol = tol || 0;
     const calcVals = {
@@ -2270,8 +2289,29 @@ function doRun(tm){
     };
     const cells = {};
     for(const col of ['E','F','G','H','I','J']){
-      const actual = reportCell ? reportCell[col] : undefined;
+      let actual = reportCell ? reportCell[col] : undefined;
       const calc = calcVals[col];
+      if(autoScalePercent && actual!=null && actual!==undefined && calc!=null){
+        // Google Sheets sometimes exports a custom "62.4%"-style text-suffix format as a real
+        // multiplicative Excel percentage format instead, which leaves the underlying stored
+        // number unchanged (62.4) but makes Excel display/round-trip it as if it meant 6240%.
+        // Rather than ask the person to fix spreadsheet formatting, auto-detect and correct for
+        // this (or the mirror case of a 0-1 decimal ratio) by picking whichever scale factor
+        // brings the report's raw number closest to our own calculated percentage-points value.
+        const candidates = [1, 100, 0.01];
+        let best = actual, bestDiff = Math.abs(actual - calc);
+        for(const factor of candidates){
+          const scaled = actual * factor;
+          const diff = Math.abs(scaled - calc);
+          if(diff < bestDiff){ bestDiff = diff; best = scaled; }
+        }
+        // Round to a precision appropriate for the value's own scale: percentage-points values
+        // (tens/hundreds, e.g. 62.4) only need 1 decimal, but 0-1 ratio values need more decimals
+        // to preserve meaningful precision (e.g. 0.5942, not 0.6).
+        const decimals = Math.abs(best) < 3 ? 4 : 1;
+        const mult = Math.pow(10, decimals);
+        actual = Math.round(best*mult)/mult;
+      }
       if(actual===undefined && calc==null){ cells[col]=null; continue; }
       let status;
       if(calc==null && (actual==null||actual===undefined)) status = 'na';
@@ -2307,33 +2347,33 @@ function doRun(tm){
   rows.push(checkRow('流動比率','(数値のまま)',
     {single:current_ratio_round(calcCurrent.currentRatio),cum:null},
     calcPrior?{single:current_ratio_round(calcPrior.currentRatio),cum:null}:null,
-    null, v=>v, {E:reportVals.currentRatio.E, G:reportVals.currentRatio.G}, 0.1));
+    null, v=>v, {E:reportVals.currentRatio.E, G:reportVals.currentRatio.G}, 0.1, null, true));
   rows.push(checkRow('自己資本比率','(数値のまま)',
     {single:current_ratio_round(calcCurrent.equityRatio),cum:null},
     calcPrior?{single:current_ratio_round(calcPrior.equityRatio),cum:null}:null,
-    null, v=>v, {E:reportVals.equityRatio.E, G:reportVals.equityRatio.G}, 0.1));
+    null, v=>v, {E:reportVals.equityRatio.E, G:reportVals.equityRatio.G}, 0.1, null, true));
 
   rows.push({group:'財務分析'});
   rows.push(checkRow('粗利率','%',
     {single:ratioPct(M(calcCurrent.grossProfit?.single), M(calcCurrent.sales?.single)), cum:ratioPct(M(calcCurrent.grossProfit?.cum), M(calcCurrent.sales?.cum))},
     calcPrior?{single:ratioPct(M(calcPrior.grossProfit?.single), M(calcPrior.sales?.single)), cum:ratioPct(M(calcPrior.grossProfit?.cum), M(calcPrior.sales?.cum))}:null,
     {single:ratioPct(M(calcBudget.grossProfit?.single), M(calcBudget.sales?.single)), cum:ratioPct(M(calcBudget.grossProfit?.cum), M(calcBudget.sales?.cum))},
-    v=>v, toPctCell(reportVals.grossMargin), 0.1, v=>v==null?'':v+'%'));
+    v=>v, toPctCell(reportVals.grossMargin), 0.1, v=>v==null?'':v+'%', true));
   rows.push(checkRow('営業利益率','%',
     {single:ratioPct(M(calcCurrent.opIncome?.single), M(calcCurrent.sales?.single)), cum:ratioPct(M(calcCurrent.opIncome?.cum), M(calcCurrent.sales?.cum))},
     calcPrior?{single:ratioPct(M(calcPrior.opIncome?.single), M(calcPrior.sales?.single)), cum:ratioPct(M(calcPrior.opIncome?.cum), M(calcPrior.sales?.cum))}:null,
     {single:ratioPct(M(calcBudget.opIncome?.single), M(calcBudget.sales?.single)), cum:ratioPct(M(calcBudget.opIncome?.cum), M(calcBudget.sales?.cum))},
-    v=>v, toPctCell(reportVals.opMargin), 0.1, v=>v==null?'':v+'%'));
+    v=>v, toPctCell(reportVals.opMargin), 0.1, v=>v==null?'':v+'%', true));
   rows.push(checkRow('売上高対人件費率','%',
     {single:ratioPct(addNullable(M(calcCurrent.labor?.single),M(calcCurrent.cr_labor?.single)), M(calcCurrent.sales?.single)), cum:ratioPct(addNullable(M(calcCurrent.labor?.cum),M(calcCurrent.cr_labor?.cum)), M(calcCurrent.sales?.cum))},
     calcPrior?{single:ratioPct(addNullable(M(calcPrior.labor?.single),M(calcPrior.cr_labor?.single)), M(calcPrior.sales?.single)), cum:ratioPct(addNullable(M(calcPrior.labor?.cum),M(calcPrior.cr_labor?.cum)), M(calcPrior.sales?.cum))}:null,
     {single:ratioPct(addNullable(M(calcBudget.labor?.single),M(calcBudget.cr_labor?.single)), M(calcBudget.sales?.single)), cum:ratioPct(addNullable(M(calcBudget.labor?.cum),M(calcBudget.cr_labor?.cum)), M(calcBudget.sales?.cum))},
-    v=>v, toPctCell(reportVals.laborRatio), 0.1, v=>v==null?'':v+'%'));
+    v=>v, toPctCell(reportVals.laborRatio), 0.1, v=>v==null?'':v+'%', true));
   rows.push(checkRow('EBITDAマージン','%',
     {single:ratioPct(M(ebitdaCurrent.single), M(calcCurrent.sales?.single)), cum:ratioPct(M(ebitdaCurrent.cum), M(calcCurrent.sales?.cum))},
     ebitdaPrior?{single:ratioPct(M(ebitdaPrior.single), M(calcPrior.sales?.single)), cum:ratioPct(M(ebitdaPrior.cum), M(calcPrior.sales?.cum))}:null,
     {single:ratioPct(M(ebitdaBudget.single), M(calcBudget.sales?.single)), cum:ratioPct(M(ebitdaBudget.cum), M(calcBudget.sales?.cum))},
-    v=>v, toPctCell(reportVals.ebitdaMargin), 0.1, v=>v==null?'':v+'%'));
+    v=>v, toPctCell(reportVals.ebitdaMargin), 0.1, v=>v==null?'':v+'%', true));
 
   rows.push({group:'酒類別売上高（万円）'});
   rows.push(checkRow('酒類別売上高 合計','万円', calcCurrent.cat_total, calcPrior?.cat_total, null, MY, reportVals.cat_total));
@@ -2352,7 +2392,7 @@ function doRun(tm){
   rows.push(checkRow('720ml比率','', 
     {single:ratioOf(calcCurrent.b720?.single,calcCurrent.totalBottles?.single), cum:ratioOf(calcCurrent.b720?.cum,calcCurrent.totalBottles?.cum)},
     calcPrior?{single:ratioOf(calcPrior.b720?.single,calcPrior.totalBottles?.single), cum:ratioOf(calcPrior.b720?.cum,calcPrior.totalBottles?.cum)}:null,
-    null, v=>v, reportVals.ratio720, 0.0005, pctDisplay));
+    null, v=>v, reportVals.ratio720, 0.0005, pctDisplay, true));
   rows.push(checkRow('清酒総蔵出数量','L', calcCurrent.totalVolume, calcPrior?.totalVolume, null, roundLiter, reportVals.totalVolume));
   rows.push(checkRow('平均蔵出単価(720ml換算)','円',
     {single:avgPriceOf(calcCurrent.cat_seishu?.single,calcCurrent.totalVolume?.single), cum:avgPriceOf(calcCurrent.cat_seishu?.cum,calcCurrent.totalVolume?.cum)},
