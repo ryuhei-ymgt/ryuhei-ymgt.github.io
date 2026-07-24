@@ -2422,13 +2422,14 @@ function ratioOf(numer, denom){
   if(numer==null || denom==null || denom===0) return null;
   return numer/denom;
 }
-function avgPriceOf(salesManyen, volumeLiters){
-  // mirrors report formula: ROUND(清酒売上高(万円)*10/蔵出数量(L)*720, 0)
-  if(salesManyen==null || volumeLiters==null) return null;
-  const salesManyenRounded = Math.round(salesManyen/10000); // to 万円 first, matching E41/F41 source
-  const volL = Math.round(volumeLiters/1000);
-  if(!volL) return null;
-  return Math.round(salesManyenRounded*10/volL*720);
+function avgPriceOf(salesYen, volumeMl){
+  // Mirrors the 数値管理 sheet's own formula exactly: ROUND(清酒売上高(生の円)*720/蔵出数量(生のml), 0).
+  // IMPORTANT: do NOT pre-round sales to 万円 or volume to kL before dividing — that two-step
+  // rounding (round to 万円, round to kL, THEN divide) introduces a small discrepancy from the
+  // sheet's single-step calculation on raw values (e.g. produced 2408 where the sheet's own
+  // formula on the same underlying data gives 2407).
+  if(salesYen==null || volumeMl==null || volumeMl===0) return null;
+  return Math.round(salesYen*720/volumeMl);
 }
 
 // Order in which groups should appear, mirroring the report's own layout (PL -> BS -> 財務分析 -> その他数値)
