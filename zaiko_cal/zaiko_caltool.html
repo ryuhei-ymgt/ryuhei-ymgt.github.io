@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>製品在庫評価ツール</title>
+<style>
+  :root{
+    --paper:#F7F5EF;
+    --paper-2:#EFEBE0;
+    --ink:#242220;
+    --ink-soft:#5B564E;
+    --line:#D9D3C4;
+    --navy:#2B3A4A;
+    --navy-2:#3E5266;
+    --amber:#A6631B;
+    --amber-soft:#F1E1CC;
+    --red:#9B3B34;
+    --red-soft:#F4E2DF;
+    --green:#3E6B4F;
+    --green-soft:#E3ECE5;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;
+    line-height:1.6;
+  }
+  .app-header{
+    background:var(--navy);
+    color:#EFE9DC;
+    padding:22px 28px 0 28px;
+  }
+  .app-header .title-row{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:16px;
+  }
+  .app-header h1{
+    font-size:19px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:.02em;
+  }
+  .app-header .subtitle{
+    font-size:12px;
+    color:#B9C3CC;
+  }
+  .brew-mark{
+    width:26px;height:26px;flex:none;
+  }
+  nav.tabs{
+    display:flex;
+    gap:2px;
+  }
+  nav.tabs button{
+    appearance:none;
+    border:none;
+    background:transparent;
+    color:#C7CFD6;
+    padding:10px 18px 12px 18px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  nav.tabs button .step-num{
+    font-size:10px;
+    width:16px;height:16px;
+    border-radius:50%;
+    border:1px solid #7C8894;
+    display:flex;align-items:center;justify-content:center;
+    color:#9AA5AF;
+  }
+  nav.tabs button.active{
+    color:#FFFFFF;
+    border-bottom-color:var(--amber);
+  }
+  nav.tabs button.active .step-num{
+    border-color:var(--amber);
+    color:var(--amber);
+    background:rgba(166,99,27,.15);
+  }
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:26px 28px 80px 28px;
+  }
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{
+    background:#FFFFFF;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:18px;
+  }
+  .card h2{
+    font-size:15px;
+    margin:0 0 4px 0;
+    color:var(--navy);
+  }
+  .card .desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0 0 16px 0;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.5px;
+  }
+  th,td{
+    border-bottom:1px solid var(--line);
+    padding:7px 8px;
+    text-align:left;
+    vertical-align:middle;
+  }
+  th{
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    border-bottom:2px solid var(--line);
+  }
+  td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums;}
+  input[type=text], input[type=number], select{
+    width:100%;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    font-size:12.5px;
+    font-family:inherit;
+    background:#FFFEFC;
+  }
+  input:focus, select:focus{
+    outline:2px solid var(--navy-2);
+    outline-offset:1px;
+  }
+  input[readonly]{ background:var(--paper-2); color:var(--ink-soft); }
+  button.btn{
+    appearance:none;
+    border:1px solid var(--navy);
+    background:var(--navy);
+    color:#fff;
+    padding:9px 18px;
+    border-radius:var(--radius);
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  button.btn:hover{ background:var(--navy-2); }
+  button.btn.secondary{
+    background:transparent;
+    color:var(--navy);
+  }
+  button.btn.secondary:hover{ background:var(--paper-2); }
+  button.btn.small{ padding:5px 11px; font-size:12px; }
+  button.btn.danger{ border-color:var(--red); color:var(--red); background:transparent; }
+  button.btn.danger:hover{ background:var(--red-soft); }
+  .row-flex{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .master-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:900px){ .master-grid{grid-template-columns:1fr;} }
+  .pill{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .pill.own{ background:var(--green-soft); color:var(--green); }
+  .pill.buy{ background:var(--amber-soft); color:var(--amber); }
+  .pill.warn{ background:var(--red-soft); color:var(--red); }
+  .toggle-group{ display:inline-flex; border:1px solid var(--navy); border-radius:var(--radius); overflow:hidden; }
+  .toggle-group button{
+    appearance:none; border:none; background:#fff; color:var(--navy);
+    padding:8px 16px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .toggle-group button.active{ background:var(--navy); color:#fff; }
+  .status-bar{
+    font-size:11.5px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:6px;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; }
+  .empty-state{
+    text-align:center; padding:40px 20px; color:var(--ink-soft); font-size:13px;
+  }
+  .form-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .form-fields{ display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; }
+  .field label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; font-weight:600;}
+  .field.full{ grid-column:1 / -1; }
+  .total-band{
+    background:var(--navy); color:#fff; border-radius:var(--radius);
+    padding:16px 20px; display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .total-band .amount{ font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .flag-row td{ background:var(--red-soft); }
+  .flag-cell{ background:var(--amber-soft); font-weight:600; }
+  .footnote{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; }
+  .file-drop{
+    border:1.5px dashed var(--line); border-radius:var(--radius);
+    padding:24px; text-align:center; color:var(--ink-soft); font-size:12.5px;
+  }
+  @media print{
+    .app-header nav.tabs, .no-print { display:none !important; }
+    body{ background:#fff; }
+    .card{ border:none; padding:0; margin-bottom:22px; }
+    main{ padding:0; max-width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="title-row">
+    <svg class="brew-mark" viewBox="0 0 24 24" fill="none">
+      <path d="M6 3h12l-1.2 6.5a6 6 0 0 1-3 4.2v6.3H8.2v-6.3a6 6 0 0 1-3-4.2L4 3h2z" stroke="#EFE9DC" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M9 12.5h6" stroke="#A6631B" stroke-width="1.3"/>
+    </svg>
+    <div>
+      <h1>製品在庫評価ツール</h1>
+      <div class="subtitle">清酒 瓶詰め製品 期末評価（簡便法・今期限り版）／作業データはファイル書き出し・読み込みで受け渡しします</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="master"><span class="step-num">1</span>マスタ設定</button>
+    <button class="tab-btn" data-tab="import"><span class="step-num">2</span>在庫データ取込</button>
+    <button class="tab-btn" data-tab="input"><span class="step-num">3</span>品目別入力</button>
+    <button class="tab-btn" data-tab="output"><span class="step-num">4</span>一覧・出力</button>
+    <button class="tab-btn" data-tab="save"><span class="step-num">5</span>保存・引継ぎ</button>
+    <button class="tab-btn" data-tab="guide"><span class="step-num">6</span>運用ガイド</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ TAB 1: MASTER ============ -->
+  <section class="panel active" id="panel-master">
+    <div class="card">
+      <h2>詰口費用マスタ</h2>
+      <p class="desc">容量別の1本あたり詰口費用。品目入力時に容量から自動参照されます。</p>
+      <table id="tsume-table">
+        <thead><tr><th>容量</th><th class="num">詰口費用単価（円/本）</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="row-flex" style="margin-top:12px;">
+        <button class="btn secondary small" id="tsume-add">＋ 容量を追加</button>
+        <button class="btn small" id="tsume-save">保存</button>
+        <span class="status-bar" id="tsume-status"></span>
+      </div>
+    </div>
+
+    <div class="master-grid">
+      <div class="card">
+        <h2>瓶マスタ</h2>
+        <p class="desc">容量ごとに壜の詳細（名称・仕様）と単価を登録します。品目入力時は、その品目の容量に一致する壜だけがプルダウンに表示されます。</p>
+        <table id="bin-table">
+          <thead><tr><th>容量</th><th>壜の詳細</th><th class="num">単価（円/本）</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="footnote">容量は在庫データ取込後、取込済みの容量から選択できます（未取込の場合は標準の5容量）。</p>
+        <div class="row-flex" style="margin-top:12px;">
+          <button class="btn secondary small" id="bin-add">＋ 瓶の種類を追加</button>
+          <button class="btn small" id="bin-save">保存</button>
+          <span class="status-bar" id="bin-status"></span>
+        </div>
+        <div class="file-drop" style="margin-top:14px;">
+          <input type="file" id="bin-import-input" accept=".csv,.xlsx,.xls">
+          <p style="margin:10px 0 0 0;">Excel／CSVから取込（列順：容量(ml)／壜の詳細／単価、1行目は見出し行として無視）</p>
+          <p class="footnote" id="bin-import-status"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>キャップマスタ</h2>
+        <p class="desc">入力時に種類を選択すると単価が自動参照されます。</p>
+        <table id="cap-table">
+          <thead><tr><th>種類名</th><th class="num">単価（円/本）</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="row-flex" style="margin-top:12px;">
+          <button class="btn secondary small" id="cap-add">＋ キャップの種類を追加</button>
+          <button class="btn small" id="cap-save">保存</button>
+          <span class="status-bar" id="cap-status"></span>
+        </div>
+        <div class="file-drop" style="margin-top:14px;">
+          <input type="file" id="cap-import-input" accept=".csv,.xlsx,.xls">
+          <p style="margin:10px 0 0 0;">Excel／CSVから取込（列順：種類名／単価、1行目は見出し行として無視）</p>
+          <p class="footnote" id="cap-import-status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2: IMPORT ============ -->
+  <section class="panel" id="panel-import">
+    <div class="card">
+      <h2>① 前期データの読み込み（任意・引継ぎ用）</h2>
+      <p class="desc">
+        前期に書き出した「作業データ（JSON）」を読み込むと、マスタ（詰口費用・瓶・キャップ）が引き継がれます。
+        続けて②で今期のCSVを取り込むと、<strong>前期・今期の両方に存在する商品（商品コードが一致するもの）について、①単価・瓶・キャップの選択が自動的に引き継がれます。</strong>
+        新規商品や、前期データを使わない場合はそのまま②に進んでください。
+      </p>
+      <div class="file-drop">
+        <input type="file" id="carryforward-input" accept=".json">
+        <p style="margin:10px 0 0 0;">前期の「作業データ（JSON）」ファイルを選択してください</p>
+      </div>
+      <div class="row-flex" style="margin-top:14px;">
+        <span class="status-bar" id="carryforward-status"></span>
+        <button class="btn secondary small" id="carryforward-clear" style="display:none;">引継ぎ情報をクリア</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>② 在庫一覧表（CSV）取込</h2>
+      <p class="desc">
+        列構成：商品名（AS）／容量（AT）／度数（AV）／在庫本数（AZ）／酒種コード（BO）。
+        酒種コードが 0〜100 の行のみ清酒として取り込みます（梅酒・資材行は自動除外）。文字コードは Shift-JIS を想定しています。
+      </p>
+      <div class="file-drop">
+        <input type="file" id="csv-input" accept=".csv">
+        <p style="margin:10px 0 0 0;">在庫一覧表CSVを選択してください</p>
+      </div>
+      <div class="row-flex" style="margin-top:14px;">
+        <span class="status-bar" id="import-status"></span>
+      </div>
+    </div>
+
+    <div class="card" id="import-preview-card" style="display:none;">
+      <h2>取込結果プレビュー（清酒のみ）</h2>
+      <p class="desc" id="import-count"></p>
+      <table>
+        <thead><tr><th>商品コード</th><th>商品名</th><th class="num">容量(ml)</th><th class="num">度数(%)</th><th class="num">在庫本数</th><th>引継ぎ</th></tr></thead>
+        <tbody id="import-preview-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <!-- ============ TAB 3: INPUT ============ -->
+  <section class="panel" id="panel-input">
+    <div class="card" id="input-empty" style="display:none;">
+      <div class="empty-state">先に「② 在庫データ取込」でCSVを取り込んでください。</div>
+    </div>
+
+    <div id="input-body" style="display:none;">
+      <div class="card">
+        <div class="row-flex" style="justify-content:space-between;">
+          <div class="toggle-group">
+            <button id="mode-table-btn" class="active">表形式で入力</button>
+            <button id="mode-form-btn">フォーム形式で入力</button>
+          </div>
+          <span class="status-bar" id="input-status"><span class="dot"></span>入力中（書き出すまでこの画面に保持されます）</span>
+        </div>
+      </div>
+
+      <!-- table mode -->
+      <div class="card" id="input-table-view">
+        <table>
+          <thead>
+            <tr>
+              <th>商品コード</th><th>商品名</th><th class="num">容量</th><th class="num">度数</th><th class="num">本数</th>
+              <th>区分</th>
+              <th>①単価(円/L)<br>／仕入単価(円/本)</th>
+              <th>瓶</th><th>キャップ</th>
+              <th class="num">ラベル代（合計額）</th>
+              <th class="num">その他（金額）</th><th>その他（内容）</th>
+              <th class="num">評価額</th>
+            </tr>
+          </thead>
+          <tbody id="input-table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- form mode -->
+      <div class="card" id="input-form-view" style="display:none;">
+        <div class="form-nav">
+          <button class="btn secondary small" id="form-prev">← 前の品目</button>
+          <div>
+            <strong id="form-progress"></strong>
+            <div class="footnote" id="form-item-title"></div>
+          </div>
+          <button class="btn secondary small" id="form-next">次の品目 →</button>
+        </div>
+        <div class="row-flex" style="margin-bottom:14px;">
+          <div class="field" style="min-width:220px;">
+            <label>区分</label>
+            <select id="f-sourceType"></select>
+          </div>
+        </div>
+        <div class="form-fields" id="form-fields-own">
+          <div class="field"><label>①20度換算の製造単価（円/L）</label><input type="number" id="f-unitPricePerL"></div>
+          <div class="field"><label>瓶の種類</label><select id="f-binId"></select></div>
+          <div class="field"><label>キャップの種類</label><select id="f-capId"></select></div>
+          <div class="field"><label>詰口費用単価（自動参照）</label><input type="text" id="f-tsumeAuto" readonly></div>
+        </div>
+        <div class="form-fields" id="form-fields-buy" style="display:none;">
+          <div class="field"><label>仕入単価（円/本）</label><input type="number" id="f-purchaseUnitPrice"></div>
+        </div>
+        <div class="form-fields" style="margin-top:8px;">
+          <div class="field full"><label>ラベル貼付費用（該当時のみ・合計額）</label><input type="number" id="f-labelTotal"></div>
+          <div class="field"><label>その他（任意・金額）</label><input type="number" id="f-otherAmount"></div>
+          <div class="field"><label>その他（具体的な内容）</label><input type="text" id="f-otherNote" placeholder="例：運搬費、特殊資材費 等"></div>
+        </div>
+        <div class="total-band" style="margin-top:18px;">
+          <span>この品目の評価額</span>
+          <span class="amount" id="f-item-total">¥0</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 4: OUTPUT ============ -->
+  <section class="panel" id="panel-output">
+    <div class="card" id="output-empty" style="display:none;">
+      <div class="empty-state">先に「② 在庫データ取込」「③ 品目別入力」を行ってください。</div>
+    </div>
+
+    <div id="output-body" style="display:none;">
+      <div class="card" id="flag-card" style="display:none;">
+        <h2>要確認：未確定・未入力の品目</h2>
+        <p class="desc">区分未設定、単価未入力、マスタ未整備などにより評価額が確定していない品目です。</p>
+        <table>
+          <thead><tr><th>商品名</th><th>不足内容</th></tr></thead>
+          <tbody id="flag-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="row-flex" style="justify-content:space-between;">
+          <h2 style="margin:0;">在庫評価 一覧</h2>
+          <button class="btn no-print" id="print-btn">PDF出力（印刷）</button>
+        </div>
+        <table style="margin-top:14px;">
+          <thead>
+            <tr>
+              <th>商品名</th><th class="num">容量</th><th class="num">本数</th><th>区分</th>
+              <th class="num">液量評価額／仕入額</th>
+              <th class="num">瓶代</th><th class="num">キャップ代</th>
+              <th class="num">詰口費用</th><th class="num">ラベル代</th><th class="num">その他</th>
+              <th class="num">評価額</th>
+            </tr>
+          </thead>
+          <tbody id="output-table-body"></tbody>
+        </table>
+        <div class="total-band" style="margin-top:16px;">
+          <span>清酒 製品在庫 評価額 合計</span>
+          <span class="amount" id="grand-total">¥0</span>
+        </div>
+        <p class="footnote">端数処理：品目単位で四捨五入。今期限りの簡便評価（来期は改良版で再構築予定）。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 5: SAVE & HANDOFF ============ -->
+  <section class="panel" id="panel-save">
+    <div class="card">
+      <h2>作業データの書き出し（JSON）</h2>
+      <p class="desc">
+        マスタ・取込済み在庫・入力内容をすべて含む「作業データ」を1ファイルに書き出します。
+        このファイルを他の担当者に渡し、下の「作業データの読み込み」で開けば、内容がそのまま復元・確認できます。
+        来期に本ツールを使う際の「前期データ」としても、このファイルをそのまま使えます。
+      </p>
+      <div class="row-flex">
+        <button class="btn" id="export-workdata-btn">作業データを書き出す（.json）</button>
+        <span class="status-bar" id="export-workdata-status"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>作業データの読み込み（復元）</h2>
+      <p class="desc">他の担当者から受け取った作業データ（.json）を読み込み、マスタ・在庫・入力内容をすべて復元します。現在の画面上の内容は上書きされます。</p>
+      <div class="file-drop">
+        <input type="file" id="import-workdata-input" accept=".json">
+        <p style="margin:10px 0 0 0;">作業データ（.json）を選択してください</p>
+      </div>
+      <div class="row-flex" style="margin-top:14px;">
+        <span class="status-bar" id="import-workdata-status"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>評価結果レポートの書き出し（CSV）</h2>
+      <p class="desc">品目ごとの内訳・評価額と合計額を、Excel等で開けるCSV形式で書き出します（人が確認・回覧するための一覧で、読み込み用ではありません）。</p>
+      <div class="row-flex">
+        <button class="btn secondary" id="export-csv-btn">評価結果をCSVで書き出す</button>
+        <span class="status-bar" id="export-csv-status"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 6: OPERATION GUIDE ============ -->
+  <section class="panel" id="panel-guide">
+    <div class="card">
+      <h2>このツールの使い方（初回・期末評価）</h2>
+      <p class="desc">はじめてこのツールを使う場合（期末評価など）の基本の流れです。</p>
+      <table>
+        <thead><tr><th style="width:60px;">手順</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td>①</td><td>「① マスタ設定」で、詰口費用・瓶・キャップの各マスタを登録する</td></tr>
+          <tr><td>②</td><td>「② 在庫データ取込」で、在庫一覧表（CSV）を取り込む（清酒のみ自動抽出）</td></tr>
+          <tr><td>③</td><td>「③ 品目別入力」で、品目ごとに区分（自社／仕入）・①単価・瓶・キャップ・ラベル代・その他を入力する</td></tr>
+          <tr><td>④</td><td>「④ 一覧・出力」で評価額と合計を確認する（未確定の品目は赤色でフラグ表示される）</td></tr>
+          <tr><td>⑤</td><td>「⑤ 保存・引継ぎ」で作業データ（.json）を書き出す　→ このファイルが次回の「前期データ」になる</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>月次運用の流れ（2回目以降）</h2>
+      <p class="desc">前回の作業データがある状態で、翌月・翌期の評価を行う場合の流れです。</p>
+      <table>
+        <thead><tr><th style="width:60px;">手順</th><th>操作</th><th>ポイント</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>①</td>
+            <td>「② 在庫データ取込」の<strong>「① 前期データの読み込み」</strong>から、前回書き出した作業データ(.json)を読み込む</td>
+            <td>マスタ（詰口費用・瓶・キャップ）と、品目別の引継ぎ情報（区分・①単価・瓶・キャップの選択）が読み込まれる</td>
+          </tr>
+          <tr>
+            <td>②</td>
+            <td>「① マスタ設定」を開き、<strong>価格改定があった項目（瓶代・キャップ代・詰口費用単価）を修正して保存</strong>する</td>
+            <td class="flag-cell">価格は品目側ではなくマスタ側だけで管理されているため、ここを直せば参照している全品目に自動反映される</td>
+          </tr>
+          <tr>
+            <td>③</td>
+            <td>「② 在庫データ取込」の<strong>「② 在庫一覧表（CSV）取込」</strong>で、当月の在庫一覧表CSVを取り込む</td>
+            <td>商品コードが一致する品目は、①単価・瓶・キャップの選択が自動で引き継がれる（②で直した単価もそのまま反映される）</td>
+          </tr>
+          <tr>
+            <td>④</td>
+            <td>「③ 品目別入力」で内容を確認する</td>
+            <td class="flag-cell"><strong>①20度換算単価（銘柄別の製造単価）は品目ごとの直接入力のため、マスタ化されていない。変更があれば必ずここで手動修正すること。</strong>新規品目もここで入力する</td>
+          </tr>
+          <tr>
+            <td>⑤</td>
+            <td>「④ 一覧・出力」で、未確定の品目（赤色フラグ）や評価額の異常値がないか確認する</td>
+            <td>例月と大きく乖離している品目がないかもあわせて確認する</td>
+          </tr>
+          <tr>
+            <td>⑥</td>
+            <td>「⑤ 保存・引継ぎ」で当月分の作業データ(.json)を書き出す</td>
+            <td>これが翌月の「前期データ」になる。評価結果CSVもあわせて書き出しておくと、月次の記録として残しやすい</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="footnote">②（マスタの価格改定）と③（当月CSV取込）は、どちらを先に行っても計算結果は同じです。ただし価格改定の直し忘れを防ぐため、前期データ読込直後にマスタを見直す運用を習慣化することをおすすめします。</p>
+    </div>
+
+    <div class="card">
+      <h2>注意点：①20度換算単価（製造単価）について</h2>
+      <p class="desc">
+        瓶代・キャップ代・詰口費用はマスタで一元管理されており、単価変更はマスタ側を直すだけで全品目に反映されます。
+        一方、<strong>①20度換算単価だけは銘柄ごとに品目側へ直接入力する値</strong>のため、マスタ化されていません。
+        価格・原価に変動があった銘柄は、「③ 品目別入力」で個別に確認・修正する運用としてください。
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let masters = { tsumeguchi:{}, bin:[], cap:[] };
+let items = []; // {code,name,capacity,degree,qty,sourceType,unitPricePerL,binId,capId,labelTotal,otherAmount,otherNote,purchaseUnitPrice}
+let currentFormIndex = 0;
+let carryForwardMap = null; // { [code]: {sourceType,unitPricePerL,binId,capId,purchaseUnitPrice} } 前期データ引継ぎ用
+
+const DEFAULT_TSUME_CAPACITIES = [1800,720,500,300,180];
+
+function initDefaultMasters(){
+  masters.tsumeguchi = Object.fromEntries(DEFAULT_TSUME_CAPACITIES.map(cap=>[cap, 0]));
+  masters.bin = [];
+  masters.cap = [];
+}
+
+// ============================================================
+// FILE EXPORT / IMPORT（作業データの書き出し・読み込み）
+// ============================================================
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+function buildWorkData(){
+  return {
+    exportedAt: new Date().toISOString(),
+    formatVersion: 1,
+    masters: masters,
+    items: items
+  };
+}
+
+function exportWorkData(){
+  const data = buildWorkData();
+  const dateStr = new Date().toISOString().slice(0,10);
+  downloadFile(`在庫評価_作業データ_${dateStr}.json`, JSON.stringify(data, null, 2), 'application/json');
+}
+
+function importWorkData(file, onDone){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      masters = data.masters || { tsumeguchi:{}, bin:[], cap:[] };
+      items = data.items || [];
+      onDone(null);
+    }catch(err){
+      onDone(err);
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function importCarryForwardFile(file, onDone){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      // マスタは前期のものをそのまま引き継ぐ（今期に合わせて後から編集可能）
+      masters = data.masters || masters;
+      const map = {};
+      (data.items || []).forEach(it=>{
+        map[it.code] = {
+          sourceType: it.sourceType,
+          unitPricePerL: it.unitPricePerL,
+          binId: it.binId,
+          capId: it.capId,
+          purchaseUnitPrice: it.purchaseUnitPrice
+          // labelTotal は引き継がない（ラベル代はその期の実額のため）
+        };
+      });
+      carryForwardMap = map;
+      onDone(null, Object.keys(map).length);
+    }catch(err){
+      onDone(err);
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function exportResultsCsv(){
+  const header = ['商品コード','商品名','容量(ml)','度数(%)','在庫本数','区分','液量評価額または仕入額','瓶代','キャップ代','詰口費用','ラベル代','その他（金額）','その他（内容）','評価額'];
+  const rows = [header];
+  let grand = 0;
+  items.forEach(it=>{
+    const calc = calcItem(it);
+    grand += calc.total;
+    const typeLabel = it.sourceType==='own' ? '自社製造' : it.sourceType==='buy' ? '仕入品' : '未設定';
+    rows.push([
+      it.code, it.name, it.capacity, it.degree, it.qty, typeLabel,
+      Math.round(calc.liquidOrPurchase),
+      it.sourceType==='own' ? Math.round(calc.binTotal) : '',
+      it.sourceType==='own' ? Math.round(calc.capTotal) : '',
+      it.sourceType==='own' ? Math.round(calc.tsumeTotal) : '',
+      Math.round(calc.labelTotal),
+      Math.round(calc.otherAmount),
+      it.otherNote || '',
+      calc.total
+    ]);
+  });
+  rows.push(['','','','','','','','','','','','','合計', grand]);
+  const csv = rows.map(r=>r.map(v=>{
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const bom = '\uFEFF'; // Excelでの文字化け防止
+  const dateStr = new Date().toISOString().slice(0,10);
+  downloadFile(`在庫評価_結果_${dateStr}.csv`, bom + csv, 'text/csv;charset=utf-8');
+}
+
+// ============================================================
+// CSV PARSE
+// ============================================================
+const IDX = { CODE:43, NAME:44, CAPACITY:45, DEGREE:47, QTY:51, SAKETYPE:66 };
+
+function parseCsvLine(line){
+  const out = [];
+  let cur = '';
+  let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(line[i+1] === '"'){ cur+='"'; i++; }
+        else{ inQuotes = false; }
+      } else { cur += c; }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ out.push(cur); cur=''; }
+      else { cur += c; }
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+function decodeBuffer(buf){
+  const labels = ['shift_jis','sjis','shift-jis'];
+  for(const label of labels){
+    try{
+      const decoder = new TextDecoder(label);
+      const text = decoder.decode(buf);
+      if(!text.includes('\uFFFD')) return text;
+    }catch(e){}
+  }
+  try{ return new TextDecoder('utf-8').decode(buf); }catch(e){ return ''; }
+}
+
+function handleCsvFile(file){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const text = decodeBuffer(e.target.result);
+    const lines = text.split(/\r\n|\n|\r/).filter(l=>l.trim().length>0);
+    const parsedItems = [];
+    for(const line of lines){
+      const cols = parseCsvLine(line);
+      if(cols.length <= IDX.SAKETYPE) continue;
+      const saketypeRaw = (cols[IDX.SAKETYPE]||'').trim();
+      const saketypeNum = parseInt(saketypeRaw, 10);
+      if(isNaN(saketypeNum) || saketypeNum < 0 || saketypeNum > 100) continue;
+
+      const code = (cols[IDX.CODE]||'').trim();
+      const name = (cols[IDX.NAME]||'').trim();
+      const capacity = parseFloat(cols[IDX.CAPACITY]) || 0;
+      const degree = parseFloat(cols[IDX.DEGREE]) || 0;
+      const qty = parseFloat(cols[IDX.QTY]) || 0;
+      if(!code || !name) continue;
+
+      parsedItems.push({ code, name, capacity, degree, qty, saketype: saketypeRaw });
+    }
+
+    // merge with existing items (same-session優先), 次に前期引継ぎデータ、それも無ければ空欄
+    const existingByCode = Object.fromEntries(items.map(it=>[it.code, it]));
+    let carryForwardHits = 0;
+    const merged = parsedItems.map(p=>{
+      const prev = existingByCode[p.code];
+      const carried = !prev && carryForwardMap ? carryForwardMap[p.code] : null;
+      if(carried) carryForwardHits++;
+      const src = prev || carried;
+      return {
+        code: p.code, name: p.name, capacity: p.capacity, degree: p.degree, qty: p.qty,
+        sourceType: src ? src.sourceType : '',
+        unitPricePerL: src ? src.unitPricePerL : null,
+        binId: src ? src.binId : null,
+        capId: src ? src.capId : null,
+        labelTotal: prev ? prev.labelTotal : 0,
+        otherAmount: prev ? prev.otherAmount : 0,
+        otherNote: prev ? prev.otherNote : '',
+        purchaseUnitPrice: src ? src.purchaseUnitPrice : null,
+        _carriedForward: !!carried
+      };
+    });
+    items = merged;
+
+    // ensure tsumeguchi master has entries for all capacities seen
+    const capacitiesSeen = [...new Set(items.map(it=>it.capacity))];
+    capacitiesSeen.forEach(cap=>{
+      if(!(cap in masters.tsumeguchi)) masters.tsumeguchi[cap] = 0;
+    });
+
+    let statusMsg = `${parsedItems.length} 件の清酒品目を取り込みました。`;
+    if(carryForwardMap) statusMsg += ` うち ${carryForwardHits} 件は前期データから単価等を引き継ぎました。`;
+    document.getElementById('import-status').textContent = statusMsg;
+    renderImportPreview();
+    renderTsumeTable();
+    renderInputTab();
+    renderOutputTab();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============================================================
+// CALCULATION
+// ============================================================
+function calcItem(item){
+  const missing = [];
+  if(item.sourceType !== 'own' && item.sourceType !== 'buy'){
+    missing.push('区分（自社／仕入）が未設定');
+  }
+  let liquidOrPurchase = 0, binTotal = 0, capTotal = 0, tsumeTotal = 0, labelTotal = Number(item.labelTotal)||0;
+  const otherAmount = Number(item.otherAmount)||0;
+
+  if(item.sourceType === 'buy'){
+    if(item.purchaseUnitPrice === null || item.purchaseUnitPrice === undefined || item.purchaseUnitPrice === ''){
+      missing.push('仕入単価が未入力');
+    } else {
+      liquidOrPurchase = Number(item.purchaseUnitPrice) * item.qty;
+    }
+  } else if(item.sourceType === 'own'){
+    if(item.unitPricePerL === null || item.unitPricePerL === undefined || item.unitPricePerL === ''){
+      missing.push('①20度換算単価が未入力');
+    } else {
+      const litersConverted = (item.capacity/1000) * item.qty * (item.degree/20);
+      liquidOrPurchase = litersConverted * Number(item.unitPricePerL);
+    }
+    if(!item.binId){ missing.push('瓶の種類が未選択'); }
+    else{
+      const bin = masters.bin.find(b=>b.id===item.binId);
+      if(bin) binTotal = bin.price * item.qty; else missing.push('選択された瓶マスタが見つかりません');
+    }
+    if(!item.capId){ missing.push('キャップの種類が未選択'); }
+    else{
+      const cap = masters.cap.find(c=>c.id===item.capId);
+      if(cap) capTotal = cap.price * item.qty; else missing.push('選択されたキャップマスタが見つかりません');
+    }
+    const tsumePrice = masters.tsumeguchi[item.capacity];
+    if(tsumePrice === undefined || tsumePrice === null || tsumePrice === 0){
+      missing.push('詰口費用マスタが未設定（容量 ' + item.capacity + 'ml）');
+    } else {
+      tsumeTotal = tsumePrice * item.qty;
+    }
+  }
+
+  const rawTotal = liquidOrPurchase + binTotal + capTotal + tsumeTotal + labelTotal + otherAmount;
+  const total = Math.round(rawTotal);
+  return { liquidOrPurchase, binTotal, capTotal, tsumeTotal, labelTotal, otherAmount, total, missing };
+}
+
+function yen(n){
+  if(!isFinite(n)) n = 0;
+  return '¥' + Math.round(n).toLocaleString('ja-JP');
+}
+function num(n){
+  if(!isFinite(n)) n = 0;
+  return Math.round(n).toLocaleString('ja-JP');
+}
+
+// ============================================================
+// RENDER: MASTER TAB
+// ============================================================
+function renderTsumeTable(){
+  const tbody = document.querySelector('#tsume-table tbody');
+  tbody.innerHTML = '';
+  const capacities = Object.keys(masters.tsumeguchi).map(Number).sort((a,b)=>b-a);
+  capacities.forEach(cap=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${cap} ml</td>
+      <td class="num"><input type="number" data-cap="${cap}" class="tsume-price" value="${masters.tsumeguchi[cap]}"></td>
+      <td><button class="btn danger small tsume-del" data-cap="${cap}">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.tsume-del').forEach(btn=>{
+    btn.onclick = ()=>{ delete masters.tsumeguchi[btn.dataset.cap]; renderTsumeTable(); };
+  });
+}
+
+function knownCapacities(){
+  const fromItems = [...new Set(items.map(it=>it.capacity))].filter(c=>c>0);
+  const fromTsume = Object.keys(masters.tsumeguchi).map(Number);
+  const all = [...new Set([...fromItems, ...fromTsume, ...DEFAULT_TSUME_CAPACITIES])];
+  return all.sort((a,b)=>b-a);
+}
+
+function capacitySelectOptions(selected){
+  return knownCapacities().map(cap=>`<option value="${cap}" ${Number(selected)===cap?'selected':''}>${cap} ml</option>`).join('');
+}
+
+function renderBinTable(){
+  const tbody = document.querySelector('#bin-table tbody');
+  tbody.innerHTML = '';
+  masters.bin.forEach((b,idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><select class="bin-capacity" data-idx="${idx}">${capacitySelectOptions(b.capacity)}</select></td>
+      <td><input type="text" class="bin-name" data-idx="${idx}" value="${escapeHtml(b.name)}" placeholder="例：茶瓶・A社製 等"></td>
+      <td class="num"><input type="number" class="bin-price" data-idx="${idx}" value="${b.price}"></td>
+      <td><button class="btn danger small bin-del" data-idx="${idx}">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.bin-del').forEach(btn=>{
+    btn.onclick = ()=>{ masters.bin.splice(Number(btn.dataset.idx),1); renderBinTable(); };
+  });
+}
+
+function renderCapTable(){
+  const tbody = document.querySelector('#cap-table tbody');
+  tbody.innerHTML = '';
+  masters.cap.forEach((c,idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="cap-name" data-idx="${idx}" value="${escapeHtml(c.name)}"></td>
+      <td class="num"><input type="number" class="cap-price" data-idx="${idx}" value="${c.price}"></td>
+      <td><button class="btn danger small cap-del" data-idx="${idx}">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.cap-del').forEach(btn=>{
+    btn.onclick = ()=>{ masters.cap.splice(Number(btn.dataset.idx),1); renderCapTable(); };
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function genId(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+
+// ============================================================
+// SPREADSHEET IMPORT (Excel/CSV) — 瓶マスタ・キャップマスタ用
+// ============================================================
+function readSpreadsheet(file, onRows){
+  const name = file.name.toLowerCase();
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      if(name.endsWith('.csv')){
+        const text = decodeBuffer(e.target.result);
+        const rows = text.split(/\r\n|\n|\r/).filter(l=>l.trim().length>0).map(parseCsvLine);
+        onRows(rows, null);
+      } else {
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        onRows(rows, null);
+      }
+    }catch(err){
+      onRows(null, err);
+    }
+  };
+  reader.onerror = ()=> onRows(null, new Error('read error'));
+  reader.readAsArrayBuffer(file);
+}
+
+function importBinSpreadsheet(file){
+  readSpreadsheet(file, (rows, err)=>{
+    const statusEl = document.getElementById('bin-import-status');
+    if(err || !rows){ statusEl.textContent = '読み込みに失敗しました。ファイル形式をご確認ください。'; return; }
+    const dataRows = rows.slice(1); // 1行目は見出しとして無視
+    let added = 0, updated = 0;
+    dataRows.forEach(row=>{
+      const capacity = parseFloat(row[0]);
+      const detail = String(row[1] ?? '').trim();
+      const price = parseFloat(row[2]) || 0;
+      if(!capacity || !detail) return;
+      const existing = masters.bin.find(b=> Number(b.capacity)===capacity && b.name.trim()===detail);
+      if(existing){ existing.price = price; updated++; }
+      else{ masters.bin.push({id:genId(), capacity, name:detail, price}); added++; }
+    });
+    statusEl.textContent = `取込完了：新規 ${added} 件、更新 ${updated} 件`;
+    renderBinTable();
+    renderInputTab(); renderOutputTab();
+  });
+}
+
+function importCapSpreadsheet(file){
+  readSpreadsheet(file, (rows, err)=>{
+    const statusEl = document.getElementById('cap-import-status');
+    if(err || !rows){ statusEl.textContent = '読み込みに失敗しました。ファイル形式をご確認ください。'; return; }
+    const dataRows = rows.slice(1); // 1行目は見出しとして無視
+    let added = 0, updated = 0;
+    dataRows.forEach(row=>{
+      const detail = String(row[0] ?? '').trim();
+      const price = parseFloat(row[1]) || 0;
+      if(!detail) return;
+      const existing = masters.cap.find(c=> c.name.trim()===detail);
+      if(existing){ existing.price = price; updated++; }
+      else{ masters.cap.push({id:genId(), name:detail, price}); added++; }
+    });
+    statusEl.textContent = `取込完了：新規 ${added} 件、更新 ${updated} 件`;
+    renderCapTable();
+    renderInputTab(); renderOutputTab();
+  });
+}
+
+// ============================================================
+// RENDER: IMPORT TAB
+// ============================================================
+function renderImportPreview(){
+  const card = document.getElementById('import-preview-card');
+  const body = document.getElementById('import-preview-body');
+  if(items.length === 0){ card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  document.getElementById('import-count').textContent = `${items.length} 件`;
+  body.innerHTML = items.map(it=>`
+    <tr>
+      <td>${escapeHtml(it.code)}</td>
+      <td>${escapeHtml(it.name)}</td>
+      <td class="num">${num(it.capacity)}</td>
+      <td class="num">${it.degree}</td>
+      <td class="num">${num(it.qty)}</td>
+      <td>${it._carriedForward ? '<span class="pill own">引継ぎ済</span>' : ''}</td>
+    </tr>
+  `).join('');
+}
+
+// ============================================================
+// RENDER: INPUT TAB
+// ============================================================
+let inputMode = 'table';
+
+function binOptions(selectedId, capacity){
+  const matches = masters.bin.filter(b=> !capacity || Number(b.capacity)===Number(capacity));
+  if(matches.length === 0){
+    return '<option value="">該当容量の瓶マスタが未登録です</option>';
+  }
+  let opt = '<option value="">選択してください</option>';
+  matches.forEach(b=>{
+    opt += `<option value="${b.id}" ${b.id===selectedId?'selected':''}>${escapeHtml(b.name)}（¥${num(b.price)}）</option>`;
+  });
+  return opt;
+}
+function capOptions(selectedId){
+  let opt = '<option value="">選択してください</option>';
+  masters.cap.forEach(c=>{
+    opt += `<option value="${c.id}" ${c.id===selectedId?'selected':''}>${escapeHtml(c.name)}（¥${num(c.price)}）</option>`;
+  });
+  return opt;
+}
+
+function renderInputTab(){
+  const empty = document.getElementById('input-empty');
+  const body = document.getElementById('input-body');
+  if(items.length === 0){ empty.style.display='block'; body.style.display='none'; return; }
+  empty.style.display='none'; body.style.display='block';
+
+  if(inputMode === 'table') renderInputTable();
+  else renderInputForm();
+}
+
+function renderInputTable(){
+  document.getElementById('input-table-view').style.display = 'block';
+  document.getElementById('input-form-view').style.display = 'none';
+  document.getElementById('mode-table-btn').classList.add('active');
+  document.getElementById('mode-form-btn').classList.remove('active');
+
+  const tbody = document.getElementById('input-table-body');
+  tbody.innerHTML = items.map((it,idx)=>{
+    const calc = calcItem(it);
+    const isOwn = it.sourceType === 'own';
+    const isBuy = it.sourceType === 'buy';
+    return `
+    <tr data-idx="${idx}" class="${calc.missing.length? 'flag-row':''}">
+      <td>${escapeHtml(it.code)}</td>
+      <td>${escapeHtml(it.name)}</td>
+      <td class="num">${num(it.capacity)}ml</td>
+      <td class="num">${it.degree}%</td>
+      <td class="num">${num(it.qty)}</td>
+      <td>
+        <select class="row-sourceType" data-idx="${idx}">
+          <option value="" ${!it.sourceType?'selected':''}>未選択</option>
+          <option value="own" ${isOwn?'selected':''}>自社製造</option>
+          <option value="buy" ${isBuy?'selected':''}>仕入品</option>
+        </select>
+      </td>
+      <td>
+        ${isBuy
+          ? `<input type="number" class="row-purchaseUnitPrice" data-idx="${idx}" value="${it.purchaseUnitPrice ?? ''}" placeholder="仕入単価/本">`
+          : `<input type="number" class="row-unitPricePerL" data-idx="${idx}" value="${it.unitPricePerL ?? ''}" placeholder="①単価/L" ${isOwn?'':'disabled'}>`
+        }
+      </td>
+      <td>${isOwn ? `<select class="row-binId" data-idx="${idx}">${binOptions(it.binId, it.capacity)}</select>` : '－'}</td>
+      <td>${isOwn ? `<select class="row-capId" data-idx="${idx}">${capOptions(it.capId)}</select>` : '－'}</td>
+      <td class="num"><input type="number" class="row-labelTotal" data-idx="${idx}" value="${it.labelTotal ?? 0}"></td>
+      <td class="num"><input type="number" class="row-otherAmount" data-idx="${idx}" value="${it.otherAmount ?? 0}"></td>
+      <td><input type="text" class="row-otherNote" data-idx="${idx}" value="${escapeHtml(it.otherNote ?? '')}" placeholder="内容"></td>
+      <td class="num"><strong>${yen(calc.total)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  attachTableRowEvents();
+}
+
+function attachTableRowEvents(){
+  const tbody = document.getElementById('input-table-body');
+  tbody.querySelectorAll('.row-sourceType').forEach(el=>{
+    el.onchange = ()=>{ items[el.dataset.idx].sourceType = el.value; onItemsChanged(); };
+  });
+  tbody.querySelectorAll('.row-purchaseUnitPrice').forEach(el=>{
+    el.oninput = ()=>{ items[el.dataset.idx].purchaseUnitPrice = el.value===''?null:Number(el.value); onItemsChanged(true); };
+  });
+  tbody.querySelectorAll('.row-unitPricePerL').forEach(el=>{
+    el.oninput = ()=>{ items[el.dataset.idx].unitPricePerL = el.value===''?null:Number(el.value); onItemsChanged(true); };
+  });
+  tbody.querySelectorAll('.row-binId').forEach(el=>{
+    el.onchange = ()=>{ items[el.dataset.idx].binId = el.value||null; onItemsChanged(); };
+  });
+  tbody.querySelectorAll('.row-capId').forEach(el=>{
+    el.onchange = ()=>{ items[el.dataset.idx].capId = el.value||null; onItemsChanged(); };
+  });
+  tbody.querySelectorAll('.row-labelTotal').forEach(el=>{
+    el.oninput = ()=>{ items[el.dataset.idx].labelTotal = el.value===''?0:Number(el.value); onItemsChanged(true); };
+  });
+  tbody.querySelectorAll('.row-otherAmount').forEach(el=>{
+    el.oninput = ()=>{ items[el.dataset.idx].otherAmount = el.value===''?0:Number(el.value); onItemsChanged(true); };
+  });
+  tbody.querySelectorAll('.row-otherNote').forEach(el=>{
+    el.oninput = ()=>{ items[el.dataset.idx].otherNote = el.value; };
+  });
+}
+
+// light re-render (skipRebuildFull=true avoids full innerHTML rebuild to keep focus while typing)
+function onItemsChanged(skipRebuildFull){
+  if(inputMode === 'table'){
+    if(!skipRebuildFull) renderInputTable();
+    else{
+      // just update the total cell + flag styling for changed row without losing focus
+      const tbody = document.getElementById('input-table-body');
+      items.forEach((it,idx)=>{
+        const tr = tbody.querySelector(`tr[data-idx="${idx}"]`);
+        if(!tr) return;
+        const calc = calcItem(it);
+        tr.classList.toggle('flag-row', calc.missing.length>0);
+        const cell = tr.querySelector('td:last-child strong');
+        if(cell) cell.textContent = yen(calc.total);
+      });
+    }
+  } else {
+    renderFormTotal();
+  }
+  renderOutputTab();
+}
+
+// ---- form mode ----
+function renderInputForm(){
+  document.getElementById('input-table-view').style.display = 'none';
+  document.getElementById('input-form-view').style.display = 'block';
+  document.getElementById('mode-form-btn').classList.add('active');
+  document.getElementById('mode-table-btn').classList.remove('active');
+
+  if(currentFormIndex >= items.length) currentFormIndex = items.length-1;
+  if(currentFormIndex < 0) currentFormIndex = 0;
+  const it = items[currentFormIndex];
+
+  document.getElementById('form-progress').textContent = `品目 ${currentFormIndex+1} / ${items.length}`;
+  document.getElementById('form-item-title').textContent = `商品コード：${it.code} ／ ${it.name}（${num(it.capacity)}ml／度数${it.degree}%／在庫${num(it.qty)}本）`;
+
+  const sourceSel = document.getElementById('f-sourceType');
+  sourceSel.innerHTML = `
+    <option value="" ${!it.sourceType?'selected':''}>未選択</option>
+    <option value="own" ${it.sourceType==='own'?'selected':''}>自社製造品</option>
+    <option value="buy" ${it.sourceType==='buy'?'selected':''}>仕入品</option>
+  `;
+  document.getElementById('form-fields-own').style.display = it.sourceType==='own' ? 'grid' : 'none';
+  document.getElementById('form-fields-buy').style.display = it.sourceType==='buy' ? 'grid' : 'none';
+
+  document.getElementById('f-unitPricePerL').value = it.unitPricePerL ?? '';
+  document.getElementById('f-binId').innerHTML = binOptions(it.binId, it.capacity);
+  document.getElementById('f-capId').innerHTML = capOptions(it.capId);
+  const tsumePrice = masters.tsumeguchi[it.capacity];
+  document.getElementById('f-tsumeAuto').value = (tsumePrice!==undefined && tsumePrice!==null) ? `¥${num(tsumePrice)} / 本（容量${it.capacity}ml）` : '未設定';
+  document.getElementById('f-purchaseUnitPrice').value = it.purchaseUnitPrice ?? '';
+  document.getElementById('f-labelTotal').value = it.labelTotal ?? 0;
+  document.getElementById('f-otherAmount').value = it.otherAmount ?? 0;
+  document.getElementById('f-otherNote').value = it.otherNote ?? '';
+
+  renderFormTotal();
+}
+
+function renderFormTotal(){
+  const it = items[currentFormIndex];
+  if(!it) return;
+  const calc = calcItem(it);
+  document.getElementById('f-item-total').textContent = yen(calc.total);
+}
+
+function attachFormEvents(){
+  document.getElementById('f-sourceType').onchange = (e)=>{
+    items[currentFormIndex].sourceType = e.target.value;
+    renderInputForm(); onItemsChanged(true);
+  };
+  document.getElementById('f-unitPricePerL').oninput = (e)=>{
+    items[currentFormIndex].unitPricePerL = e.target.value===''?null:Number(e.target.value);
+    onItemsChanged(true);
+  };
+  document.getElementById('f-binId').onchange = (e)=>{
+    items[currentFormIndex].binId = e.target.value||null;
+    onItemsChanged(true);
+  };
+  document.getElementById('f-capId').onchange = (e)=>{
+    items[currentFormIndex].capId = e.target.value||null;
+    onItemsChanged(true);
+  };
+  document.getElementById('f-purchaseUnitPrice').oninput = (e)=>{
+    items[currentFormIndex].purchaseUnitPrice = e.target.value===''?null:Number(e.target.value);
+    onItemsChanged(true);
+  };
+  document.getElementById('f-labelTotal').oninput = (e)=>{
+    items[currentFormIndex].labelTotal = e.target.value===''?0:Number(e.target.value);
+    onItemsChanged(true);
+  };
+  document.getElementById('f-otherAmount').oninput = (e)=>{
+    items[currentFormIndex].otherAmount = e.target.value===''?0:Number(e.target.value);
+    onItemsChanged(true);
+  };
+  document.getElementById('f-otherNote').oninput = (e)=>{
+    items[currentFormIndex].otherNote = e.target.value;
+  };
+  document.getElementById('form-prev').onclick = ()=>{ currentFormIndex = Math.max(0,currentFormIndex-1); renderInputForm(); };
+  document.getElementById('form-next').onclick = ()=>{ currentFormIndex = Math.min(items.length-1,currentFormIndex+1); renderInputForm(); };
+}
+
+// ============================================================
+// RENDER: OUTPUT TAB
+// ============================================================
+function renderOutputTab(){
+  const empty = document.getElementById('output-empty');
+  const body = document.getElementById('output-body');
+  if(items.length === 0){ empty.style.display='block'; body.style.display='none'; return; }
+  empty.style.display='none'; body.style.display='block';
+
+  let grand = 0;
+  const flagged = [];
+  const rows = items.map(it=>{
+    const calc = calcItem(it);
+    grand += calc.total;
+    if(calc.missing.length) flagged.push({name:it.name, missing:calc.missing.join(' / ')});
+    const typeLabel = it.sourceType==='own' ? '<span class="pill own">自社</span>'
+      : it.sourceType==='buy' ? '<span class="pill buy">仕入</span>'
+      : '<span class="pill warn">未設定</span>';
+    return `
+      <tr class="${calc.missing.length?'flag-row':''}">
+        <td>${escapeHtml(it.name)}</td>
+        <td class="num">${num(it.capacity)}ml</td>
+        <td class="num">${num(it.qty)}</td>
+        <td>${typeLabel}</td>
+        <td class="num">${yen(calc.liquidOrPurchase)}</td>
+        <td class="num">${it.sourceType==='own'?yen(calc.binTotal):'－'}</td>
+        <td class="num">${it.sourceType==='own'?yen(calc.capTotal):'－'}</td>
+        <td class="num">${it.sourceType==='own'?yen(calc.tsumeTotal):'－'}</td>
+        <td class="num">${yen(calc.labelTotal)}</td>
+        <td class="num" ${it.otherNote ? `title="${escapeHtml(it.otherNote)}"`:''}>${yen(calc.otherAmount)}</td>
+        <td class="num"><strong>${yen(calc.total)}</strong></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('output-table-body').innerHTML = rows;
+  document.getElementById('grand-total').textContent = yen(grand);
+
+  const flagCard = document.getElementById('flag-card');
+  if(flagged.length){
+    flagCard.style.display = 'block';
+    document.getElementById('flag-body').innerHTML = flagged.map(f=>`<tr><td>${escapeHtml(f.name)}</td><td>${escapeHtml(f.missing)}</td></tr>`).join('');
+  } else {
+    flagCard.style.display = 'none';
+  }
+}
+
+// ============================================================
+// TAB NAVIGATION
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'input') renderInputTab();
+    if(btn.dataset.tab === 'output') renderOutputTab();
+  });
+});
+
+// ============================================================
+// MASTER TAB EVENTS
+// ============================================================
+document.getElementById('tsume-add').onclick = ()=>{
+  const cap = prompt('容量(ml)を入力してください（例：1800）');
+  if(!cap) return;
+  masters.tsumeguchi[Number(cap)] = 0;
+  renderTsumeTable();
+};
+document.getElementById('tsume-save').onclick = ()=>{
+  document.querySelectorAll('.tsume-price').forEach(el=>{
+    masters.tsumeguchi[el.dataset.cap] = Number(el.value)||0;
+  });
+  document.getElementById('tsume-status').innerHTML = '<span class="dot"></span>反映しました';
+  renderInputTab(); renderOutputTab();
+};
+
+document.getElementById('bin-add').onclick = ()=>{
+  const defaultCap = knownCapacities()[0] || 720;
+  masters.bin.push({id:genId(), capacity:defaultCap, name:'新しい瓶', price:0});
+  renderBinTable();
+};
+document.getElementById('bin-save').onclick = ()=>{
+  document.querySelectorAll('.bin-capacity').forEach(el=>{ masters.bin[Number(el.dataset.idx)].capacity = Number(el.value)||0; });
+  document.querySelectorAll('.bin-name').forEach(el=>{ masters.bin[Number(el.dataset.idx)].name = el.value; });
+  document.querySelectorAll('.bin-price').forEach(el=>{ masters.bin[Number(el.dataset.idx)].price = Number(el.value)||0; });
+  document.getElementById('bin-status').innerHTML = '<span class="dot"></span>反映しました';
+  renderInputTab(); renderOutputTab();
+};
+
+document.getElementById('cap-add').onclick = ()=>{
+  masters.cap.push({id:genId(), name:'新しいキャップ', price:0});
+  renderCapTable();
+};
+document.getElementById('cap-save').onclick = ()=>{
+  document.querySelectorAll('.cap-name').forEach(el=>{ masters.cap[Number(el.dataset.idx)].name = el.value; });
+  document.querySelectorAll('.cap-price').forEach(el=>{ masters.cap[Number(el.dataset.idx)].price = Number(el.value)||0; });
+  document.getElementById('cap-status').innerHTML = '<span class="dot"></span>反映しました';
+  renderInputTab(); renderOutputTab();
+};
+
+document.getElementById('bin-import-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('bin-import-status').textContent = '読み込み中...';
+  importBinSpreadsheet(file);
+  e.target.value = '';
+});
+document.getElementById('cap-import-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('cap-import-status').textContent = '読み込み中...';
+  importCapSpreadsheet(file);
+  e.target.value = '';
+});
+
+// ============================================================
+// IMPORT TAB EVENTS
+// ============================================================
+document.getElementById('csv-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('import-status').textContent = '読み込み中...';
+  handleCsvFile(file);
+});
+
+// ============================================================
+// INPUT MODE TOGGLE
+// ============================================================
+document.getElementById('mode-table-btn').onclick = ()=>{ inputMode='table'; renderInputTab(); };
+document.getElementById('mode-form-btn').onclick = ()=>{ inputMode='form'; renderInputTab(); attachFormEvents(); };
+
+// ============================================================
+// PRINT
+// ============================================================
+document.getElementById('print-btn').onclick = ()=>{
+  window.print();
+};
+
+// ============================================================
+// CARRY-FORWARD (前期データ引継ぎ)
+// ============================================================
+document.getElementById('carryforward-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('carryforward-status').textContent = '読み込み中...';
+  importCarryForwardFile(file, (err, count)=>{
+    if(err){
+      document.getElementById('carryforward-status').textContent = 'ファイルの読み込みに失敗しました。作業データ（.json）を選択してください。';
+      return;
+    }
+    document.getElementById('carryforward-status').textContent = `前期データを読み込みました（${count}件の商品情報を引継ぎ元として保持）。続けて②で今期のCSVを取り込んでください。`;
+    document.getElementById('carryforward-clear').style.display = 'inline-block';
+    renderTsumeTable(); renderBinTable(); renderCapTable();
+  });
+});
+document.getElementById('carryforward-clear').onclick = ()=>{
+  carryForwardMap = null;
+  document.getElementById('carryforward-status').textContent = '引継ぎ情報をクリアしました。';
+  document.getElementById('carryforward-clear').style.display = 'none';
+};
+
+// ============================================================
+// SAVE & HANDOFF TAB EVENTS
+// ============================================================
+document.getElementById('export-workdata-btn').onclick = ()=>{
+  exportWorkData();
+  document.getElementById('export-workdata-status').innerHTML = '<span class="dot"></span>書き出しました';
+};
+document.getElementById('import-workdata-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('import-workdata-status').textContent = '読み込み中...';
+  importWorkData(file, (err)=>{
+    if(err){
+      document.getElementById('import-workdata-status').textContent = 'ファイルの読み込みに失敗しました。正しい作業データ（.json）を選択してください。';
+      return;
+    }
+    document.getElementById('import-workdata-status').textContent = `復元しました（品目数：${items.length}件）。`;
+    renderTsumeTable(); renderBinTable(); renderCapTable();
+    renderImportPreview(); renderInputTab(); renderOutputTab();
+  });
+});
+document.getElementById('export-csv-btn').onclick = ()=>{
+  exportResultsCsv();
+  document.getElementById('export-csv-status').innerHTML = '<span class="dot"></span>書き出しました';
+};
+
+// ============================================================
+// INIT
+// ============================================================
+(function init(){
+  initDefaultMasters();
+  renderTsumeTable();
+  renderBinTable();
+  renderCapTable();
+  renderImportPreview();
+  renderInputTab();
+  renderOutputTab();
+  attachFormEvents();
+})();
+</script>
+
+</body>
+</html>
