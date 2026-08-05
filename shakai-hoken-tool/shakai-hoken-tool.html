@@ -120,6 +120,27 @@ tbody tr:hover td{background:var(--surface2);}
 .chips input[value="本人負担"]:checked+label{background:#d97706;border-color:#d97706;color:#fff;}
 .chips input[value="集計対象外"]:checked+label{background:#94a3b8;border-color:#94a3b8;color:#fff;}
 
+/* 給与・賞与ボタン専用：大きくして選択状態を明確に */
+.kyuyo-group{display:flex;gap:10px;flex-wrap:wrap;}
+.kyuyo-group input[type=radio]{display:none;}
+.kyuyo-group label{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 22px;
+  border:2px solid var(--border2);border-radius:var(--r-lg);
+  cursor:pointer;font-size:14px;font-weight:700;
+  color:var(--text-muted);background:var(--surface);
+  transition:.15s;user-select:none;
+}
+.kyuyo-group label:hover{border-color:var(--accent-mid);background:var(--surface2);}
+.kyuyo-group input[value="給与"]:checked+label{
+  background:#dbeafe;border-color:#2563eb;color:#1e40af;
+  box-shadow:0 0 0 3px rgba(37,99,235,.15);
+}
+.kyuyo-group input[value="賞与"]:checked+label{
+  background:#fef3c7;border-color:#d97706;color:#92400e;
+  box-shadow:0 0 0 3px rgba(217,119,6,.15);
+}
+
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;}
 .b-genka{background:#dbeafe;color:#1e40af;}
 .b-hankan{background:#f3e8ff;color:#7e22ce;}
@@ -302,6 +323,17 @@ tbody tr:hover td{background:var(--surface2);}
     <div class="alert a-info">
       給与システムから出力した社保CSV（<b>1行目に部門名、1列目に項目名</b>が並ぶ形式）をアップロードしてください。
     </div>
+
+    <div class="fgroup" style="margin-bottom:18px;">
+      <label class="flabel">給与 / 賞与の区分</label>
+      <div class="kyuyo-group">
+        <input type="radio" name="kyuyo-type" id="kt-kyuyo" value="給与" checked onchange="S.kyuyoType=this.value">
+        <label for="kt-kyuyo">💴 給与</label>
+        <input type="radio" name="kyuyo-type" id="kt-shoyo" value="賞与" onchange="S.kyuyoType=this.value">
+        <label for="kt-shoyo">🎁 賞与</label>
+      </div>
+    </div>
+
     <div class="dropzone" id="dz" onclick="document.getElementById('fi').click()" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
       <div class="dz-icon">📂</div>
       <div class="dz-ttl">クリック または ドラッグ＆ドロップ</div>
@@ -397,14 +429,35 @@ tbody tr:hover td{background:var(--surface2);}
   <div class="card" style="max-width:500px;">
     <div class="card-ttl">社保支払額（総額）の入力</div>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">給与システム上で確認できる「社保支払額（本人負担＋会社負担の合計）」を入力してください。CSV集計値との差分確認に使います。</p>
+
+    <div class="fgroup">
+      <label class="flabel">給与 / 賞与</label>
+      <div id="sc4-kyuyo-badge" style="font-size:14px;font-weight:800;padding:6px 0;"></div>
+    </div>
+
     <div class="fgroup">
       <label class="flabel">対象年月</label>
-      <input type="text" id="f-month" placeholder="例：2026年5月" style="max-width:200px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="f-year" style="width:100px;">
+        </select>
+        <span style="font-weight:700;">年</span>
+        <select id="f-month-sel" style="width:75px;">
+          <option value="1">1月</option><option value="2">2月</option>
+          <option value="3">3月</option><option value="4">4月</option>
+          <option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option>
+          <option value="9">9月</option><option value="10">10月</option>
+          <option value="11">11月</option><option value="12">12月</option>
+        </select>
+        <span style="font-weight:700;">月</span>
+      </div>
     </div>
+
     <div class="fgroup">
-      <label class="flabel">作成者</label>
-      <input type="text" id="f-creator" placeholder="氏名または部署名" style="max-width:200px;">
+      <label class="flabel">作成者 <span style="font-weight:400;color:var(--text-light);">（任意）</span></label>
+      <input type="text" id="f-creator" placeholder="氏名または部署名（省略可）" style="max-width:220px;">
     </div>
+
     <div class="fgroup">
       <label class="flabel">社保支払額（本人負担＋会社負担の合計）【円】</label>
       <input type="number" id="f-systotal" placeholder="例：1117934" style="max-width:240px;font-size:16px;font-weight:800;">
@@ -535,6 +588,7 @@ const S = {
   itemKubun:{},    // {項目名:'会社負担'|'本人負担'|'集計対象外'}
   summary:[],      // [{dept,kubun,honninAmt,csvAmt,corr,final}]
   sysTotal:0,      // 社保支払額（本人負担＋会社負担の合計）
+  kyuyoType:'給与', // '給与'|'賞与'
   aggMode:'dept',  // 'dept'=部門別明細 / 'kubun'=区分で集約
   month:'', creator:'',
   gasUrl:'', gasOk:false
@@ -942,13 +996,40 @@ function collectItem(){
 /* ── STEP 4 ── */
 function showKaishaHint(){
   collectItem();
+
+  // 給与/賞与バッジ表示
+  const kt = S.kyuyoType || '給与';
+  // STEP1のラジオボタンから最新値を取得
+  const ktEl = document.querySelector('input[name="kyuyo-type"]:checked');
+  if(ktEl) S.kyuyoType = ktEl.value;
+  document.getElementById('sc4-kyuyo-badge').innerHTML =
+    S.kyuyoType === '賞与'
+      ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-size:13px;">🎁 賞与</span>'
+      : '<span class="badge" style="background:#dbeafe;color:#1e40af;font-size:13px;">💴 給与</span>';
+
+  // 年月セレクトの初期化（初回のみ）
+  const yearSel = document.getElementById('f-year');
+  if(yearSel.options.length === 0){
+    const now = new Date();
+    const curY = now.getFullYear();
+    for(let y = curY - 2; y <= curY + 1; y++){
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y + '年';
+      if(y === curY) opt.selected = true;
+      yearSel.appendChild(opt);
+    }
+    // 現在月をデフォルト選択
+    document.getElementById('f-month-sel').value = now.getMonth() + 1;
+  }
+
+  // ヒント表示
   const kaishaTotal=S.items.filter(i=>S.itemKubun[i.name]==='会社負担').reduce((s,i)=>s+i.total,0);
-  const honninTotal=S.items.filter(i=>S.itemKubun[i.name]==='本人負担').reduce((s,i)=>s+i.total,0);
+  const honninTot=S.items.filter(i=>S.itemKubun[i.name]==='本人負担').reduce((s,i)=>s+i.total,0);
   const el=document.getElementById('csv-kaisha-hint');
   el.style.display='block';
   el.innerHTML=`
     ℹ 現在の項目設定に基づくCSV集計（全部門合計・参考）：<br>
-    　本人負担：<b>${fmt(honninTotal)}円</b>　会社負担：<b>${fmt(kaishaTotal)}円</b>　合計：<b>${fmt(honninTotal+kaishaTotal)}円</b>
+    　本人負担：<b>${fmt(honninTot)}円</b>　会社負担：<b>${fmt(kaishaTotal)}円</b>　合計：<b>${fmt(honninTot+kaishaTotal)}円</b>
   `;
 }
 
@@ -957,8 +1038,12 @@ function doCalcAndGo5(){
   collectDept();
   collectItem();
   S.sysTotal=parseInt(document.getElementById('f-systotal').value)||0;
-  S.month=document.getElementById('f-month').value.trim();
-  S.creator=document.getElementById('f-creator').value.trim();
+  // 年月セレクトから組み立て
+  const yr = document.getElementById('f-year').value;
+  const mo = document.getElementById('f-month-sel').value;
+  S.month = yr + '年' + mo + '月';
+  S.creator=document.getElementById('f-creator').value.trim(); // 任意
+  S.kyuyoType = (document.querySelector('input[name="kyuyo-type"]:checked')||{}).value || '給与';
 
   // aggModeをラジオボタンから読み取る
   const modeEl=document.querySelector('input[name="agg-mode"]:checked');
@@ -1081,8 +1166,8 @@ function renderStep6(){
   const isKubun=S.aggMode==='kubun';
   document.getElementById('sc6-summary').innerHTML=`
     <div class="sc"><div class="sc-label">対象月</div><div class="sc-val" style="font-size:17px;">${S.month||'—'}</div></div>
+    <div class="sc"><div class="sc-label">給与 / 賞与</div><div class="sc-val" style="font-size:17px;">${S.kyuyoType||'給与'}</div></div>
     <div class="sc"><div class="sc-label">社保支払額（給与システム）</div><div class="sc-val">${fmtD(S.sysTotal)}円</div></div>
-    <div class="sc"><div class="sc-label">本人負担 CSV合計</div><div class="sc-val">${fmtD(honninTot)}円</div></div>
     <div class="sc ${finTot===kaishaTarget?'ok':''}"><div class="sc-label">確定額（会社負担）</div><div class="sc-val">${fmtD(finTot)}円</div></div>
   `;
   // STEP6テーブルに hide-dept6 クラスを付け外して列を制御
@@ -1115,7 +1200,7 @@ async function genPDF(){
   const csvTot=csvTotal(),honninTot=honninTotal(),finTot=finalTotal();
   const diff=S.sysTotal-(csvTot+honninTot);
   document.getElementById('pm-month').textContent='対象月：'+(S.month||'—');
-  document.getElementById('pm-creator').textContent='　作成者：'+(S.creator||'—');
+  document.getElementById('pm-creator').textContent='　種別：'+(S.kyuyoType||'給与')+(S.creator?'　作成者：'+S.creator:'');
   document.getElementById('pm-date').textContent='　作成日：'+new Date().toLocaleDateString('ja-JP');
   document.getElementById('pm-sys').textContent=fmtD(S.sysTotal)+'円';
   document.getElementById('pm-honnin').textContent=fmtD(honninTot)+'円';
@@ -1174,7 +1259,7 @@ async function genPDF(){
         yOff+=sH;
       }
     }
-    const fname=(S.month||'社保計上').replace(/[\/\\:*?"<>|]/g,'')+'.pdf';
+    const fname=(S.month||'社保計上').replace(/[\/\\:*?"<>|]/g,'')+'_'+(S.kyuyoType||'給与')+'.pdf';
     pdf.save(fname);
     btn.innerHTML='✅ ダウンロード完了';
     setTimeout(()=>{btn.innerHTML='📄 PDF生成・ダウンロード';btn.disabled=false;},3000);
@@ -1223,22 +1308,25 @@ function goStep(n){
 function startOver(){
   if(!confirm('最初からやり直しますか？部門・項目の設定は保持されます。'))return;
   S.items=[];S.depts=[];S.summary=[];
-  S.sysTotal=0;S.month='';S.creator='';
+  S.sysTotal=0;S.month='';S.creator='';S.kyuyoType='給与';
   document.getElementById('dz').style.display='block';
   document.getElementById('csv-result').style.display='none';
   document.getElementById('fi').value='';
   document.getElementById('btn12').disabled=true;
   document.getElementById('btn-clear-csv').style.display='none';
+  document.getElementById('kt-kyuyo').checked=true;
   goStep(1);
 }
 
 function clearCSV(){
   S.items=[];S.depts=[];S.summary=[];
+  S.kyuyoType='給与';
   document.getElementById('dz').style.display='block';
   document.getElementById('csv-result').style.display='none';
   document.getElementById('fi').value='';
   document.getElementById('btn12').disabled=true;
   document.getElementById('btn-clear-csv').style.display='none';
+  document.getElementById('kt-kyuyo').checked=true;
 }
 
 /* ── UTILS ── */
