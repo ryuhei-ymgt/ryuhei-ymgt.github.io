@@ -134,12 +134,26 @@
   td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums;}
   input[type=text], input[type=number], select{
     width:100%;
+    min-width:88px;
     padding:6px 8px;
     border:1px solid var(--line);
     border-radius:var(--radius);
     font-size:12.5px;
     font-family:inherit;
     background:#FFFEFC;
+  }
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .table-scroll table{
+    min-width:1500px;
+  }
+  .table-scroll th, .table-scroll td{
+    white-space:nowrap;
+  }
+  .table-scroll td select, .table-scroll td input{
+    white-space:normal;
   }
   input:focus, select:focus{
     outline:2px solid var(--navy-2);
@@ -368,6 +382,7 @@
 
       <!-- table mode -->
       <div class="card" id="input-table-view">
+        <div class="table-scroll">
         <table>
           <thead>
             <tr>
@@ -382,6 +397,7 @@
           </thead>
           <tbody id="input-table-body"></tbody>
         </table>
+        </div>
       </div>
 
       <!-- form mode -->
@@ -443,6 +459,7 @@
           <h2 style="margin:0;">在庫評価 一覧</h2>
           <button class="btn no-print" id="print-btn">PDF出力（印刷）</button>
         </div>
+        <div class="table-scroll">
         <table style="margin-top:14px;">
           <thead>
             <tr>
@@ -455,8 +472,9 @@
           </thead>
           <tbody id="output-table-body"></tbody>
         </table>
+        </div>
         <div class="total-band" style="margin-top:16px;">
-          <span>清酒 製品在庫 評価額 合計</span>
+          <span>清酒・リキュール 製品在庫 評価額 合計</span>
           <span class="amount" id="grand-total">¥0</span>
         </div>
         <p class="footnote">端数処理：品目単位で四捨五入。今期限りの簡便評価（来期は改良版で再構築予定）。</p>
