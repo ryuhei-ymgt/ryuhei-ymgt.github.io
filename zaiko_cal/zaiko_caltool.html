@@ -327,7 +327,7 @@
       <h2>② 在庫一覧表（CSV）取込</h2>
       <p class="desc">
         列構成：商品名（AS）／容量（AT）／度数（AV）／在庫本数（AZ）／酒種コード（BO）。
-        酒種コードが 0〜100 の行のみ清酒として取り込みます（梅酒・資材行は自動除外）。文字コードは Shift-JIS を想定しています。
+        酒種コードが 0〜100 の行は清酒、800 の行はリキュール（梅酒等）として取り込みます（それ以外の資材行等は自動除外）。文字コードは Shift-JIS を想定しています。
       </p>
       <div class="file-drop">
         <input type="file" id="csv-input" accept=".csv">
@@ -339,10 +339,10 @@
     </div>
 
     <div class="card" id="import-preview-card" style="display:none;">
-      <h2>取込結果プレビュー（清酒のみ）</h2>
+      <h2>取込結果プレビュー（清酒・リキュール）</h2>
       <p class="desc" id="import-count"></p>
       <table>
-        <thead><tr><th>商品コード</th><th>商品名</th><th class="num">容量(ml)</th><th class="num">度数(%)</th><th class="num">在庫本数</th><th>引継ぎ</th></tr></thead>
+        <thead><tr><th>商品コード</th><th>商品名</th><th>酒類区分</th><th class="num">容量(ml)</th><th class="num">度数(%)</th><th class="num">在庫本数</th><th>引継ぎ</th></tr></thead>
         <tbody id="import-preview-body"></tbody>
       </table>
     </div>
@@ -371,7 +371,7 @@
         <table>
           <thead>
             <tr>
-              <th>商品コード</th><th>商品名</th><th class="num">容量</th><th class="num">度数</th><th class="num">本数</th>
+              <th>商品コード</th><th>商品名</th><th>酒類</th><th class="num">容量</th><th class="num">度数</th><th class="num">本数</th>
               <th>区分</th>
               <th>①単価(円/L)<br>／仕入単価(円/本)</th>
               <th>瓶</th><th>キャップ</th>
@@ -446,7 +446,7 @@
         <table style="margin-top:14px;">
           <thead>
             <tr>
-              <th>商品名</th><th class="num">容量</th><th class="num">本数</th><th>区分</th>
+              <th>商品名</th><th>酒類</th><th class="num">容量</th><th class="num">本数</th><th>区分</th>
               <th class="num">液量評価額／仕入額</th>
               <th class="num">瓶代</th><th class="num">キャップ代</th>
               <th class="num">詰口費用</th><th class="num">ラベル代</th><th class="num">その他</th>
@@ -510,7 +510,7 @@
         <thead><tr><th style="width:60px;">手順</th><th>操作</th></tr></thead>
         <tbody>
           <tr><td>①</td><td>「① マスタ設定」で、詰口費用・瓶・キャップの各マスタを登録する</td></tr>
-          <tr><td>②</td><td>「② 在庫データ取込」で、在庫一覧表（CSV）を取り込む（清酒のみ自動抽出）</td></tr>
+          <tr><td>②</td><td>「② 在庫データ取込」で、在庫一覧表（CSV）を取り込む（清酒・リキュールを自動抽出）</td></tr>
           <tr><td>③</td><td>「③ 品目別入力」で、品目ごとに区分（自社／仕入）・①単価・瓶・キャップ・ラベル代・その他を入力する</td></tr>
           <tr><td>④</td><td>「④ 一覧・出力」で評価額と合計を確認する（未確定の品目は赤色でフラグ表示される）</td></tr>
           <tr><td>⑤</td><td>「⑤ 保存・引継ぎ」で作業データ（.json）を書き出す　→ このファイルが次回の「前期データ」になる</td></tr>
@@ -659,7 +659,7 @@ function importCarryForwardFile(file, onDone){
 }
 
 function exportResultsCsv(){
-  const header = ['商品コード','商品名','容量(ml)','度数(%)','在庫本数','区分','液量評価額または仕入額','瓶代','キャップ代','詰口費用','ラベル代','その他（金額）','その他（内容）','評価額'];
+  const header = ['商品コード','商品名','酒類区分','容量(ml)','度数(%)','在庫本数','区分','液量評価額または仕入額','瓶代','キャップ代','詰口費用','ラベル代','その他（金額）','その他（内容）','評価額'];
   const rows = [header];
   let grand = 0;
   items.forEach(it=>{
@@ -667,7 +667,7 @@ function exportResultsCsv(){
     grand += calc.total;
     const typeLabel = it.sourceType==='own' ? '自社製造' : it.sourceType==='buy' ? '仕入品' : '未設定';
     rows.push([
-      it.code, it.name, it.capacity, it.degree, it.qty, typeLabel,
+      it.code, it.name, it.category || '', it.capacity, it.degree, it.qty, typeLabel,
       Math.round(calc.liquidOrPurchase),
       it.sourceType==='own' ? Math.round(calc.binTotal) : '',
       it.sourceType==='own' ? Math.round(calc.capTotal) : '',
@@ -678,7 +678,7 @@ function exportResultsCsv(){
       calc.total
     ]);
   });
-  rows.push(['','','','','','','','','','','','','合計', grand]);
+  rows.push(['','','','','','','','','','','','','','合計', grand]);
   const csv = rows.map(r=>r.map(v=>{
     const s = String(v ?? '');
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
@@ -737,7 +737,10 @@ function handleCsvFile(file){
       if(cols.length <= IDX.SAKETYPE) continue;
       const saketypeRaw = (cols[IDX.SAKETYPE]||'').trim();
       const saketypeNum = parseInt(saketypeRaw, 10);
-      if(isNaN(saketypeNum) || saketypeNum < 0 || saketypeNum > 100) continue;
+      const isSeishu = !isNaN(saketypeNum) && saketypeNum >= 0 && saketypeNum <= 100;
+      const isLiqueur = saketypeNum === 800;
+      if(!isSeishu && !isLiqueur) continue;
+      const category = isSeishu ? '清酒' : 'リキュール';
 
       const code = (cols[IDX.CODE]||'').trim();
       const name = (cols[IDX.NAME]||'').trim();
@@ -746,7 +749,7 @@ function handleCsvFile(file){
       const qty = parseFloat(cols[IDX.QTY]) || 0;
       if(!code || !name) continue;
 
-      parsedItems.push({ code, name, capacity, degree, qty, saketype: saketypeRaw });
+      parsedItems.push({ code, name, capacity, degree, qty, saketype: saketypeRaw, category });
     }
 
     // merge with existing items (same-session優先), 次に前期引継ぎデータ、それも無ければ空欄
@@ -758,7 +761,7 @@ function handleCsvFile(file){
       if(carried) carryForwardHits++;
       const src = prev || carried;
       return {
-        code: p.code, name: p.name, capacity: p.capacity, degree: p.degree, qty: p.qty,
+        code: p.code, name: p.name, capacity: p.capacity, degree: p.degree, qty: p.qty, category: p.category,
         sourceType: src ? src.sourceType : '',
         unitPricePerL: src ? src.unitPricePerL : null,
         binId: src ? src.binId : null,
@@ -778,7 +781,7 @@ function handleCsvFile(file){
       if(!(cap in masters.tsumeguchi)) masters.tsumeguchi[cap] = 0;
     });
 
-    let statusMsg = `${parsedItems.length} 件の清酒品目を取り込みました。`;
+    let statusMsg = `${parsedItems.length} 件の品目を取り込みました（清酒・リキュール）。`;
     if(carryForwardMap) statusMsg += ` うち ${carryForwardHits} 件は前期データから単価等を引き継ぎました。`;
     document.getElementById('import-status').textContent = statusMsg;
     renderImportPreview();
@@ -993,11 +996,14 @@ function renderImportPreview(){
   const body = document.getElementById('import-preview-body');
   if(items.length === 0){ card.style.display = 'none'; return; }
   card.style.display = 'block';
-  document.getElementById('import-count').textContent = `${items.length} 件`;
+  const seishuCount = items.filter(it=>it.category==='清酒').length;
+  const liqueurCount = items.filter(it=>it.category==='リキュール').length;
+  document.getElementById('import-count').textContent = `${items.length} 件（清酒 ${seishuCount} 件／リキュール ${liqueurCount} 件）`;
   body.innerHTML = items.map(it=>`
     <tr>
       <td>${escapeHtml(it.code)}</td>
       <td>${escapeHtml(it.name)}</td>
+      <td>${escapeHtml(it.category || '')}</td>
       <td class="num">${num(it.capacity)}</td>
       <td class="num">${it.degree}</td>
       <td class="num">${num(it.qty)}</td>
@@ -1055,6 +1061,7 @@ function renderInputTable(){
     <tr data-idx="${idx}" class="${calc.missing.length? 'flag-row':''}">
       <td>${escapeHtml(it.code)}</td>
       <td>${escapeHtml(it.name)}</td>
+      <td>${escapeHtml(it.category || '')}</td>
       <td class="num">${num(it.capacity)}ml</td>
       <td class="num">${it.degree}%</td>
       <td class="num">${num(it.qty)}</td>
@@ -1145,7 +1152,7 @@ function renderInputForm(){
   const it = items[currentFormIndex];
 
   document.getElementById('form-progress').textContent = `品目 ${currentFormIndex+1} / ${items.length}`;
-  document.getElementById('form-item-title').textContent = `商品コード：${it.code} ／ ${it.name}（${num(it.capacity)}ml／度数${it.degree}%／在庫${num(it.qty)}本）`;
+  document.getElementById('form-item-title').textContent = `商品コード：${it.code} ／ ${it.name}（${it.category || ''}／${num(it.capacity)}ml／度数${it.degree}%／在庫${num(it.qty)}本）`;
 
   const sourceSel = document.getElementById('f-sourceType');
   sourceSel.innerHTML = `
@@ -1233,6 +1240,7 @@ function renderOutputTab(){
     return `
       <tr class="${calc.missing.length?'flag-row':''}">
         <td>${escapeHtml(it.name)}</td>
+        <td>${escapeHtml(it.category || '')}</td>
         <td class="num">${num(it.capacity)}ml</td>
         <td class="num">${num(it.qty)}</td>
         <td>${typeLabel}</td>
