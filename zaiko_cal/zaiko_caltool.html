@@ -158,23 +158,31 @@
   /* 品目別入力：商品コード〜本数の6列を左に固定し、それより右だけ横スクロールする */
   #input-table-view .table-scroll table{ table-layout:fixed; }
   #input-table-view .table-scroll th, #input-table-view .table-scroll td{ white-space:normal; }
-  #input-table-view .table-scroll th:nth-child(-n+6),
-  #input-table-view .table-scroll td:nth-child(-n+6){
+  #input-table-view .table-scroll th.frozen-col,
+  #input-table-view .table-scroll td.frozen-col{
     position:sticky;
     background:#FFFFFF;
     z-index:2;
   }
-  #input-table-view .table-scroll th:nth-child(-n+6){ z-index:3; background:#FFFFFF; }
-  #input-table-view .table-scroll tr.flag-row td:nth-child(-n+6){ background:var(--red-soft); }
-  #input-table-view .table-scroll th:nth-child(1), #input-table-view .table-scroll td:nth-child(1){ left:0px; width:88px; }
-  #input-table-view .table-scroll th:nth-child(2), #input-table-view .table-scroll td:nth-child(2){ left:88px; width:200px; }
-  #input-table-view .table-scroll th:nth-child(3), #input-table-view .table-scroll td:nth-child(3){ left:288px; width:56px; }
-  #input-table-view .table-scroll th:nth-child(4), #input-table-view .table-scroll td:nth-child(4){ left:344px; width:64px; }
-  #input-table-view .table-scroll th:nth-child(5), #input-table-view .table-scroll td:nth-child(5){ left:408px; width:56px; }
-  #input-table-view .table-scroll th:nth-child(6), #input-table-view .table-scroll td:nth-child(6){
-    left:464px; width:64px;
+  #input-table-view .table-scroll th.frozen-col{ z-index:3; background:#FFFFFF; }
+  #input-table-view .table-scroll tr.flag-row td.frozen-col{ background:var(--red-soft); }
+  #input-table-view .table-scroll .frozen-col-last{
     box-shadow: 3px 0 4px -2px rgba(0,0,0,.18);
   }
+  #column-visibility-panel summary{
+    cursor:pointer; font-size:12.5px; font-weight:700; color:var(--navy);
+    list-style:none;
+  }
+  #column-visibility-panel summary::-webkit-details-marker{ display:none; }
+  #column-visibility-panel summary:before{ content:"▸ "; }
+  #column-visibility-panel[open] summary:before{ content:"▾ "; }
+  #column-visibility-checks label{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:12px; color:var(--ink-soft);
+    border:1px solid var(--line); border-radius:20px;
+    padding:4px 10px; background:#fff;
+  }
+  #column-visibility-checks input[type=checkbox]{ width:auto; }
   input:focus, select:focus{
     outline:2px solid var(--navy-2);
     outline-offset:1px;
@@ -402,19 +410,13 @@
 
       <!-- table mode -->
       <div class="card" id="input-table-view">
+        <details id="column-visibility-panel">
+          <summary>表示する列を選択</summary>
+          <div class="row-flex" id="column-visibility-checks" style="margin-top:10px;"></div>
+        </details>
         <div class="table-scroll">
         <table>
-          <thead>
-            <tr>
-              <th>商品コード</th><th>商品名</th><th>酒類</th><th class="num">容量</th><th class="num">度数</th><th class="num">本数</th>
-              <th>区分</th>
-              <th>①単価(円/L)<br>／仕入単価(円/本)</th>
-              <th>瓶</th><th>キャップ</th>
-              <th class="num">ラベル代（合計額）</th>
-              <th class="num">その他（金額）</th><th>その他（内容）</th>
-              <th class="num">評価額</th>
-            </tr>
-          </thead>
+          <thead id="input-table-head"></thead>
           <tbody id="input-table-body"></tbody>
         </table>
         </div>
@@ -1074,6 +1076,72 @@ function capOptions(selectedId){
   return opt;
 }
 
+// ============================================================
+// COLUMN DEFINITIONS（表示・非表示の切替対象）
+// ============================================================
+const COLUMN_DEFS = [
+  { key:'code', label:'商品コード', frozen:true, mandatory:true, width:88,
+    cell:(it)=> escapeHtml(it.code) },
+  { key:'name', label:'商品名', frozen:true, width:200,
+    cell:(it)=> escapeHtml(it.name) },
+  { key:'category', label:'酒類', frozen:true, width:56,
+    cell:(it)=> escapeHtml(it.category || '') },
+  { key:'capacity', label:'容量', frozen:true, width:64, numeric:true,
+    cell:(it)=> num(it.capacity)+'ml' },
+  { key:'degree', label:'度数', frozen:true, width:56, numeric:true,
+    cell:(it)=> it.degree+'%' },
+  { key:'qty', label:'本数', frozen:true, width:64, numeric:true,
+    cell:(it)=> num(it.qty) },
+  { key:'sourceType', label:'区分', frozen:false,
+    cell:(it, idx)=>{
+      const isOwn = it.sourceType==='own', isBuy = it.sourceType==='buy';
+      return `<select class="row-sourceType" data-idx="${idx}">
+        <option value="" ${!it.sourceType?'selected':''}>未選択</option>
+        <option value="own" ${isOwn?'selected':''}>自社製造</option>
+        <option value="buy" ${isBuy?'selected':''}>仕入品</option>
+      </select>`;
+    }},
+  { key:'unitPrice', label:'①単価(円/L)<br>／仕入単価(円/本)', frozen:false,
+    cell:(it, idx)=>{
+      const isOwn = it.sourceType==='own', isBuy = it.sourceType==='buy';
+      return isBuy
+        ? `<input type="number" class="row-purchaseUnitPrice" data-idx="${idx}" value="${it.purchaseUnitPrice ?? ''}" placeholder="仕入単価/本">`
+        : `<input type="number" class="row-unitPricePerL" data-idx="${idx}" value="${it.unitPricePerL ?? ''}" placeholder="①単価/L" ${isOwn?'':'disabled'}>`;
+    }},
+  { key:'bin', label:'瓶', frozen:false,
+    cell:(it, idx)=> it.sourceType==='own' ? `<select class="row-binId" data-idx="${idx}">${binOptions(it.binId, it.capacity)}</select>` : '－' },
+  { key:'cap', label:'キャップ', frozen:false,
+    cell:(it, idx)=> it.sourceType==='own' ? `<select class="row-capId" data-idx="${idx}">${capOptions(it.capId)}</select>` : '－' },
+  { key:'labelTotal', label:'ラベル代（合計額）', frozen:false, numeric:true,
+    cell:(it, idx)=> `<input type="number" class="row-labelTotal" data-idx="${idx}" value="${it.labelTotal ?? 0}">` },
+  { key:'otherAmount', label:'その他（金額）', frozen:false, numeric:true,
+    cell:(it, idx)=> `<input type="number" class="row-otherAmount" data-idx="${idx}" value="${it.otherAmount ?? 0}">` },
+  { key:'otherNote', label:'その他（内容）', frozen:false,
+    cell:(it, idx)=> `<input type="text" class="row-otherNote" data-idx="${idx}" value="${escapeHtml(it.otherNote ?? '')}" placeholder="内容">` },
+  { key:'total', label:'評価額', frozen:false, mandatory:true, numeric:true,
+    cell:(it, idx, calc)=> `<strong>${yen(calc.total)}</strong>` }
+];
+
+let columnVisibility = {};
+COLUMN_DEFS.forEach(c=>{ columnVisibility[c.key] = true; });
+
+function visibleColumns(){ return COLUMN_DEFS.filter(c=> columnVisibility[c.key]); }
+
+function renderColumnVisibilityPanel(){
+  const container = document.getElementById('column-visibility-checks');
+  if(!container) return;
+  container.innerHTML = COLUMN_DEFS.map(c=>{
+    const labelText = c.label.replace('<br>', ' ');
+    return `<label><input type="checkbox" data-colkey="${c.key}" ${columnVisibility[c.key]?'checked':''} ${c.mandatory?'disabled':''}> ${labelText}</label>`;
+  }).join('');
+  container.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.onchange = ()=>{
+      columnVisibility[cb.dataset.colkey] = cb.checked;
+      renderInputTable();
+    };
+  });
+}
+
 function renderInputTab(){
   const empty = document.getElementById('input-empty');
   const body = document.getElementById('input-body');
@@ -1090,39 +1158,40 @@ function renderInputTable(){
   document.getElementById('mode-table-btn').classList.add('active');
   document.getElementById('mode-form-btn').classList.remove('active');
 
+  const cols = visibleColumns();
+
+  // 表示中の固定列だけを対象に、左位置を積み上げ計算する
+  let cumulativeLeft = 0;
+  const leftByKey = {};
+  cols.forEach(c=>{
+    if(c.frozen){ leftByKey[c.key] = cumulativeLeft; cumulativeLeft += c.width; }
+  });
+  const frozenKeys = cols.filter(c=>c.frozen).map(c=>c.key);
+  const lastFrozenKey = frozenKeys.length ? frozenKeys[frozenKeys.length-1] : null;
+
+  function cellAttrs(c){
+    const classes = [];
+    if(c.numeric) classes.push('num');
+    if(c.frozen) classes.push('frozen-col');
+    if(c.key === lastFrozenKey) classes.push('frozen-col-last');
+    const style = c.frozen ? ` style="left:${leftByKey[c.key]}px;width:${c.width}px;"` : '';
+    return { classAttr: classes.length?` class="${classes.join(' ')}"`:'', style };
+  }
+
+  const thead = document.getElementById('input-table-head');
+  thead.innerHTML = '<tr>' + cols.map(c=>{
+    const {classAttr, style} = cellAttrs(c);
+    return `<th${classAttr}${style}>${c.label}</th>`;
+  }).join('') + '</tr>';
+
   const tbody = document.getElementById('input-table-body');
   tbody.innerHTML = items.map((it,idx)=>{
     const calc = calcItem(it);
-    const isOwn = it.sourceType === 'own';
-    const isBuy = it.sourceType === 'buy';
-    return `
-    <tr data-idx="${idx}" class="${calc.missing.length? 'flag-row':''}">
-      <td>${escapeHtml(it.code)}</td>
-      <td>${escapeHtml(it.name)}</td>
-      <td>${escapeHtml(it.category || '')}</td>
-      <td class="num">${num(it.capacity)}ml</td>
-      <td class="num">${it.degree}%</td>
-      <td class="num">${num(it.qty)}</td>
-      <td>
-        <select class="row-sourceType" data-idx="${idx}">
-          <option value="" ${!it.sourceType?'selected':''}>未選択</option>
-          <option value="own" ${isOwn?'selected':''}>自社製造</option>
-          <option value="buy" ${isBuy?'selected':''}>仕入品</option>
-        </select>
-      </td>
-      <td>
-        ${isBuy
-          ? `<input type="number" class="row-purchaseUnitPrice" data-idx="${idx}" value="${it.purchaseUnitPrice ?? ''}" placeholder="仕入単価/本">`
-          : `<input type="number" class="row-unitPricePerL" data-idx="${idx}" value="${it.unitPricePerL ?? ''}" placeholder="①単価/L" ${isOwn?'':'disabled'}>`
-        }
-      </td>
-      <td>${isOwn ? `<select class="row-binId" data-idx="${idx}">${binOptions(it.binId, it.capacity)}</select>` : '－'}</td>
-      <td>${isOwn ? `<select class="row-capId" data-idx="${idx}">${capOptions(it.capId)}</select>` : '－'}</td>
-      <td class="num"><input type="number" class="row-labelTotal" data-idx="${idx}" value="${it.labelTotal ?? 0}"></td>
-      <td class="num"><input type="number" class="row-otherAmount" data-idx="${idx}" value="${it.otherAmount ?? 0}"></td>
-      <td><input type="text" class="row-otherNote" data-idx="${idx}" value="${escapeHtml(it.otherNote ?? '')}" placeholder="内容"></td>
-      <td class="num"><strong>${yen(calc.total)}</strong></td>
-    </tr>`;
+    const cells = cols.map(c=>{
+      const {classAttr, style} = cellAttrs(c);
+      return `<td${classAttr}${style}>${c.cell(it, idx, calc)}</td>`;
+    }).join('');
+    return `<tr data-idx="${idx}" class="${calc.missing.length? 'flag-row':''}">${cells}</tr>`;
   }).join('');
 
   attachTableRowEvents();
@@ -1455,6 +1524,7 @@ document.getElementById('export-csv-btn').onclick = ()=>{
   renderBinTable();
   renderCapTable();
   renderImportPreview();
+  renderColumnVisibilityPanel();
   renderInputTab();
   renderOutputTab();
   attachFormEvents();
