@@ -155,6 +155,26 @@
   .table-scroll td select, .table-scroll td input{
     white-space:normal;
   }
+  /* 品目別入力：商品コード〜本数の6列を左に固定し、それより右だけ横スクロールする */
+  #input-table-view .table-scroll table{ table-layout:fixed; }
+  #input-table-view .table-scroll th, #input-table-view .table-scroll td{ white-space:normal; }
+  #input-table-view .table-scroll th:nth-child(-n+6),
+  #input-table-view .table-scroll td:nth-child(-n+6){
+    position:sticky;
+    background:#FFFFFF;
+    z-index:2;
+  }
+  #input-table-view .table-scroll th:nth-child(-n+6){ z-index:3; background:#FFFFFF; }
+  #input-table-view .table-scroll tr.flag-row td:nth-child(-n+6){ background:var(--red-soft); }
+  #input-table-view .table-scroll th:nth-child(1), #input-table-view .table-scroll td:nth-child(1){ left:0px; width:88px; }
+  #input-table-view .table-scroll th:nth-child(2), #input-table-view .table-scroll td:nth-child(2){ left:88px; width:200px; }
+  #input-table-view .table-scroll th:nth-child(3), #input-table-view .table-scroll td:nth-child(3){ left:288px; width:56px; }
+  #input-table-view .table-scroll th:nth-child(4), #input-table-view .table-scroll td:nth-child(4){ left:344px; width:64px; }
+  #input-table-view .table-scroll th:nth-child(5), #input-table-view .table-scroll td:nth-child(5){ left:408px; width:56px; }
+  #input-table-view .table-scroll th:nth-child(6), #input-table-view .table-scroll td:nth-child(6){
+    left:464px; width:64px;
+    box-shadow: 3px 0 4px -2px rgba(0,0,0,.18);
+  }
   input:focus, select:focus{
     outline:2px solid var(--navy-2);
     outline-offset:1px;
