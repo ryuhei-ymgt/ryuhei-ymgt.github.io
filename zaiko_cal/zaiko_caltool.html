@@ -260,6 +260,29 @@
     body{ background:#fff; }
     .card{ border:none; padding:0; margin-bottom:22px; }
     main{ padding:0; max-width:100%; }
+
+    /* 横スクロール前提のレイアウトを解除し、印刷ページ幅に収める */
+    .table-scroll{ overflow:visible !important; }
+    .table-scroll table{
+      min-width:0 !important;
+      width:100% !important;
+      table-layout:auto !important;
+    }
+    .table-scroll th, .table-scroll td{
+      white-space:normal !important;
+      font-size:9.5px !important;
+      padding:3px 4px !important;
+      word-break:break-word;
+    }
+    /* 画面用の固定列（sticky）は印刷では不要かつ表示崩れの原因になるため解除 */
+    .table-scroll th.frozen-col, .table-scroll td.frozen-col{
+      position:static !important;
+      box-shadow:none !important;
+      background:transparent !important;
+    }
+    table{ page-break-inside:auto; }
+    tr{ page-break-inside:avoid; page-break-after:auto; }
+    thead{ display:table-header-group; }
   }
 </style>
 </head>
